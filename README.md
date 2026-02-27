@@ -34,7 +34,7 @@ tracepoints.
 ## Install
 
 ```
-claude plugin add --url https://github.com/chucklever/cel-kdev
+claude plugin add https://github.com/chucklever/cel-kdev
 ```
 
 ## License
