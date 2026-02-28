@@ -31,10 +31,26 @@ NFS/RDMA server and client events (sunrpc, svcrdma, xprtrdma,
 nfsd), RPCGSS, workqueue, scheduler, TCP, and TLS handshake
 tracepoints.
 
+## Layout
+
+```
+.claude-plugin/
+  marketplace.json   # marketplace manifest
+  plugin.json        # top-level plugin metadata
+plugin/cel-kdev/
+  .claude-plugin/
+    plugin.json      # plugin manifest
+  skills/
+    stg/SKILL.md
+    perf/SKILL.md
+    trace-cmd/SKILL.md
+```
+
 ## Install
 
 ```
-claude plugin add https://github.com/chucklever/cel-kdev
+claude plugin marketplace add chucklever/cel-kdev
+claude plugin install cel-kdev
 ```
 
 ## License
