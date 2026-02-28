@@ -1,0 +1,23 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "cel-kdev",
+  "description": "Claude Code skills for Linux kernel development",
+  "owner": {
+    "name": "Chuck Lever",
+    "email": "cel@kernel.org"
+  },
+  "plugins": [
+    {
+      "name": "cel-kdev",
+      "description": "StGit patch management, perf profiling analysis, and trace-cmd event tracing for Linux kernel development",
+      "version": "1.0.0",
+      "author": {
+        "name": "Chuck Lever",
+        "email": "cel@kernel.org"
+      },
+      "source": "./plugin/cel-kdev",
+      "category": "development",
+      "homepage": "https://github.com/chucklever/cel-kdev"
+    }
+  ]
+}
