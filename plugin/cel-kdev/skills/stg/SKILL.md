@@ -70,6 +70,33 @@ Write multi-line commit messages to a temp file and pass
 
 Prefer `stg goto` over manual `stg pop`/`stg push` sequences.
 
+### Viewing a Single Patch
+
+To see the commit message and diff for a patch (defaults to the
+top patch if no name is given):
+
+```bash
+stg show <patch-name>
+```
+
+To see just the commit message (no diff):
+
+```bash
+stg show -O --no-patch <patch-name>
+```
+
+(`-O` passes the following option through to `git diff`.)
+
+To see just the diff (no commit message):
+
+```bash
+stg diff -r <patch-name>~..<patch-name>
+```
+
+**Do NOT use `stg diff <patch-name>` without `-r`. The patch
+name is interpreted as a file path, producing silent wrong
+output.**
+
 ### Generating a Combined Diff Across Multiple Patches
 
 stg patch names are not git refs and cannot be used in
