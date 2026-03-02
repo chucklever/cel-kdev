@@ -2,6 +2,7 @@
 name: stg
 description: Load anytime the working directory is a git repository. When stg is active on a branch, use stg commands instead of raw git for creating commits, managing patch series, or performing version control operations.
 invocation_policy: automatic
+allowed-tools: Bash(*:stg series *), Bash(*:stg show *), Bash(*:stg log *), Bash(*:stg id *), Bash(*:stg diff *), Bash(*:stg files *), Bash(*:stg patches *), Bash(*:git diff *), Bash(*:git log *), Bash(*:git reflog *)
 ---
 
 # Use stg commands instead of raw git for commit operations
@@ -96,6 +97,14 @@ stg diff -r <patch-name>~..<patch-name>
 **Do NOT use `stg diff <patch-name>` without `-r`. The patch
 name is interpreted as a file path, producing silent wrong
 output.**
+
+### Inspecting Patch Metadata
+
+| Task | Command |
+| ---- | ------- |
+| Show commit log for a patch | `stg log <patch-name>` |
+| List files changed by a patch | `stg files <patch-name>` |
+| Show which patches modify a file | `stg patches <file-path>` |
 
 ### Generating a Combined Diff Across Multiple Patches
 

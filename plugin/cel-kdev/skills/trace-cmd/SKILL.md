@@ -2,6 +2,7 @@
 name: trace-cmd
 description: Analyze trace-cmd captures (.dat files) from kernel tracing sessions. Use when asked to look at a trace file, analyze tracing output, measure latency, or compare before/after trace captures. Supports nfsd, sunrpc, svcrdma, xprtrdma, rpcgss, workqueue, rdma, tcp, handshake, sched, and general ftrace events.
 invocation_policy: automatic
+allowed-tools: Bash(*:trace-cmd *)
 ---
 
 # Trace Analysis

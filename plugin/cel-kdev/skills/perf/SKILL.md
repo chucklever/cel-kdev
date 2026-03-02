@@ -2,6 +2,7 @@
 name: perf
 description: Analyze perf profiling data from Linux kernel and application workloads. Load when a perf.data file exists in the working directory, when asked to record a perf profile, analyze perf.data files, examine flamegraphs, or investigate CPU usage and performance bottlenecks.
 invocation_policy: automatic
+allowed-tools: Bash(*:perf *), Bash(*:sudo perf *)
 ---
 
 # perf Profiling
