@@ -1,6 +1,6 @@
 {
   "name": "cel-kdev",
-  "description": "Claude Code skills for Linux kernel development: StGit patch management, perf profiling analysis, and trace-cmd event tracing",
+  "description": "Claude Code skills for Linux kernel development: StGit patch management, perf profiling analysis, trace-cmd event tracing, and drgn live kernel debugging",
   "author": {
     "name": "Chuck Lever",
     "email": "cel@kernel.org"

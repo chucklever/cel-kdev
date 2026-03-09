@@ -21,6 +21,16 @@ recording options, symbol resolution with kallsyms, call-graph
 analysis, flamegraph generation, and a structured reporting
 workflow (overview, drill-down, comparison).
 
+### drgn
+
+Teaches Claude Code to inspect a running kernel through
+`/proc/kcore` using [drgn](https://drgn.readthedocs.io/).
+Covers core API patterns (Object creation, pointer handling,
+type introspection), per-CPU variable access, stack traces,
+container_of usage, and slab cache inspection. Includes
+subsystem-specific recipes for SUNRPC, NFS, and AIO, along
+with workarounds for common pitfalls.
+
 ### trace-cmd
 
 Guides Claude Code through analyzing kernel trace captures
@@ -41,6 +51,7 @@ plugin/cel-kdev/
   .claude-plugin/
     plugin.json      # plugin manifest
   skills/
+    drgn/SKILL.md
     stg/SKILL.md
     perf/SKILL.md
     trace-cmd/SKILL.md
