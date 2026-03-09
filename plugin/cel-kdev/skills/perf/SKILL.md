@@ -16,24 +16,28 @@ or pre-generated perf report/script output.
 Use these options for `perf record`:
 
 ```bash
-sudo perf record --call-graph fp -F99 <command>
+sudo perf record -e cycles -e cpu-clock \
+  --call-graph fp -F99 <command>
 ```
 
 | Option | Rationale |
 |--------|-----------|
+| `-e cycles -e cpu-clock` | `cpu-clock` provides a wall-clock baseline for measuring true CPU idle time (see Common Pitfalls) |
 | `--call-graph fp` | Kernel is built with frame pointers (`CONFIG_FRAME_POINTER=y`) |
 | `-F99` | 99 Hz sampling avoids lock-step aliasing with timer interrupts |
 
 To profile a running process by PID:
 
 ```bash
-sudo perf record --call-graph fp -F99 -p <pid>
+sudo perf record -e cycles -e cpu-clock \
+  --call-graph fp -F99 -p <pid>
 ```
 
 To profile system-wide (all CPUs):
 
 ```bash
-sudo perf record --call-graph fp -F99 -a
+sudo perf record -e cycles -e cpu-clock \
+  --call-graph fp -F99 -a
 ```
 
 `sudo` is needed for system-wide profiling (`-a`) and
@@ -522,6 +526,41 @@ copy_page                6.1%     6.0%      -0.1%
   ~99 samples per second per CPU. Short-lived operations
   (under 10 ms) may not appear. Increase `-F` for finer
   granularity at the cost of higher overhead.
+
+- **Idle time invisible to cycles profiling**: When a
+  CPU enters a hardware C-state (via `intel_idle`,
+  `poll_idle`, etc.), the PMU stops counting cycles.
+  Samples attributed to idle functions represent only
+  the brief entry/exit path, not time spent sleeping.
+  Do not use `swapper` or `intel_idle` overhead
+  percentages from a cycles profile as idle time
+  estimates — they dramatically undercount actual idle
+  time.
+
+  To measure real per-CPU utilization, add `cpu-clock`
+  as a second event when recording:
+
+  ```bash
+  sudo perf record -e cycles -e cpu-clock \
+    --call-graph fp -F99 -a
+  ```
+
+  Then compare the per-CPU sample distributions of
+  each event:
+
+  ```bash
+  sudo perf report --kallsyms=/proc/kallsyms \
+    --stdio --no-children -s cpu
+  ```
+
+  The output contains separate histograms for each
+  event. `cpu-clock` is a software event that ticks
+  on wall-clock time regardless of C-state, so its
+  samples distribute uniformly across CPUs. `cycles`
+  samples concentrate on busy CPUs. A CPU showing
+  10% of `cpu-clock` samples but 1% of `cycles`
+  samples is mostly idle; one showing 10% of both
+  is fully busy.
 
 - **perf.data location**: `perf record` writes to
   `./perf.data` by default. Use `-o <path>` to write
