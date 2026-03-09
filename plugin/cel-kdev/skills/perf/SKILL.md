@@ -562,6 +562,29 @@ copy_page                6.1%     6.0%      -0.1%
   samples is mostly idle; one showing 10% of both
   is fully busy.
 
+- **Garbled module symbols from inlining**: When call
+  chains show implausible function names (e.g. READ
+  functions appearing in a WRITE workload), the cause
+  is aggressive inlining creating large gaps in the
+  symbol table. Return addresses that fall inside an
+  inlined region are attributed to whatever unrelated
+  symbol precedes them in the address space.
+
+  Diagnostic: check the addresses of the suspect
+  symbols in `/proc/kallsyms` and compare them against
+  the actual caller function's address range. If the
+  suspect symbols sit in the gap between two large
+  functions, inlining is the cause.
+
+  `--no-inline` does not fix this — the problem is in
+  the base symbol lookup, not DWARF inline expansion.
+  Kernels built with `CONFIG_CC_OPTIMIZE_FOR_SIZE=y`
+  (`-Os`) and recent GCC versions are most affected.
+  Building the module of interest with
+  `CFLAGS_<file>.o += -fno-inline` in the Makefile
+  during profiling sessions restores symbol accuracy
+  at the cost of changing the code layout slightly.
+
 - **perf.data location**: `perf record` writes to
   `./perf.data` by default. Use `-o <path>` to write
   elsewhere. `perf report` reads `./perf.data` by default;
