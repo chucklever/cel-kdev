@@ -105,6 +105,28 @@ sudo perf report --kallsyms=/proc/kallsyms --stdio --no-children | head -80
 sudo perf report --kallsyms=/proc/kallsyms --stdio --call-graph callee
 ```
 
+### Multi-Event Data
+
+When recording with multiple events (`-e cycles -e cpu-clock`),
+`perf report` outputs a separate histogram section for each
+event. There is no `-e` flag on `perf report` to select a
+single event. When piping through `head`, only the first
+event's section may be visible.
+
+To reach the cycles section (typically the second):
+
+```bash
+sudo perf report --kallsyms=/proc/kallsyms --stdio \
+  --no-children --comms=nfsd 2>&1 | \
+  grep -A 200 'Samples:.*cycles'
+```
+
+The `cpu-clock` section includes idle time (useful for
+utilization analysis). The `cycles` section excludes
+C-state idle and concentrates on actual CPU work (useful
+for optimization analysis). Always check which section
+you are reading.
+
 ### Per-Symbol Drill-Down
 
 ```bash
@@ -114,6 +136,27 @@ sudo perf report --kallsyms=/proc/kallsyms --stdio --symbol-filter=<function_nam
 Note: `perf report` uses `--symbol-filter`; `perf annotate`
 uses `--symbol`. These are different flags on different
 subcommands.
+
+**Caveat**: `--symbol-filter` with `--call-graph callee`
+shows the filtered symbol and its full ancestor chain in
+the hierarchy, not just its callees. To isolate the self
+cost of specific functions, use `-S` instead:
+
+```bash
+# Self overhead of specific symbols only
+sudo perf report --kallsyms=/proc/kallsyms --stdio \
+  --no-children --comms=nfsd \
+  -S func_a,func_b,func_c
+```
+
+To find everything called beneath a parent function,
+use the `-p` (parent) filter:
+
+```bash
+# All symbols with <parent_function> in their call chain
+sudo perf report --kallsyms=/proc/kallsyms --stdio \
+  --no-children --comms=nfsd -p <parent_function>
+```
 
 ## perf script
 
@@ -373,7 +416,7 @@ Use `perf c2c` when profiling reveals high overhead in
 memory access paths but the cause is not obvious from
 call chains alone — this often indicates false sharing
 or cache line contention across CPUs. Requires hardware
-memory access sampling (Intel PEBS or AMD IBS).
+memory access sampling (Intel PEBS on Intel, IBS on AMD).
 
 ```bash
 # Record memory accesses
@@ -397,6 +440,176 @@ layouts to determine whether padding,
 `____cacheline_aligned`, or per-CPU data conversion
 is appropriate.
 
+## Cache and Memory Events
+
+The generic perf events (`LLC-load-misses`,
+`LLC-store-misses`, `cache-misses`) work on Intel but
+are not mapped on AMD Zen. This section covers
+platform-specific events for cache hierarchy analysis,
+memory bandwidth measurement, and lock contention
+characterization.
+
+### Detecting the platform
+
+```bash
+# Check CPU vendor
+grep -m1 vendor_id /proc/cpuinfo
+```
+
+### AMD EPYC (Zen 3/4/5)
+
+AMD exposes cache events through two PMU layers:
+
+**L3 uncore events** (`amd_l3` PMU) are system-wide,
+per-CCX counters. They require `-a` and do not
+distinguish loads from stores — the L3 sees coherence
+requests, not individual load/store instructions.
+
+```bash
+# L3 miss count and miss ratio
+sudo perf stat -a \
+  -e amd_l3/event=0x04,umask=0x01/ \
+  -e amd_l3/event=0x04,umask=0xff/ \
+  -- sleep 10
+```
+
+If the perf binary was built with JSON event tables,
+symbolic names work:
+
+```bash
+sudo perf stat -a \
+  -e l3_lookup_state.l3_miss \
+  -e l3_lookup_state.all_coherent_accesses_to_l3 \
+  -- sleep 10
+```
+
+**Core fill events** (`ls_dmnd_fills_from_sys`, event
+0x43) are per-core and support per-process measurement.
+They classify demand data cache fills by where the data
+came from:
+
+| Umask | Name | Source | Implication |
+|-------|------|--------|-------------|
+| 0x01 | `local_l2` | L2 cache | L1 miss, L2 hit |
+| 0x02 | `local_ccx` | L3 or sibling L2 | L2 miss, L3 hit |
+| 0x04 | `near_cache` | Another CCX, same NUMA | Cross-CCX coherence |
+| 0x08 | `dram_io_near` | Local NUMA DRAM/MMIO | **L3 miss** |
+| 0x10 | `far_cache` | Another CCX, remote NUMA | Remote coherence |
+| 0x40 | `dram_io_far` | Remote NUMA DRAM/MMIO | **L3 miss, remote** |
+| 0xff | `all` | All sources | Total fills |
+
+Fills from `dram_io_near` + `dram_io_far` necessarily
+missed L3. This is the per-process equivalent of
+`LLC-load-misses`:
+
+```bash
+sudo perf stat \
+  -e ls_dmnd_fills_from_sys.dram_io_near \
+  -e ls_dmnd_fills_from_sys.dram_io_far \
+  -e ls_dmnd_fills_from_sys.all \
+  -- workload
+```
+
+**L3 miss latency** (Zen 4+):
+
+```bash
+sudo perf stat -a -M l3_read_miss_latency -- sleep 10
+```
+
+**Memory bandwidth**:
+
+```bash
+sudo perf stat -a \
+  -M umc_mem_read_bandwidth,umc_mem_write_bandwidth \
+  -- sleep 10
+```
+
+#### I/O workload recipe
+
+For network I/O workloads (NFS, iSCSI, etc.) where
+data flows between NIC DMA and kernel buffers:
+
+```bash
+sudo perf stat -a \
+  -e l3_lookup_state.l3_miss \
+  -e l3_lookup_state.all_coherent_accesses_to_l3 \
+  -e ls_dmnd_fills_from_sys.dram_io_near \
+  -e ls_dmnd_fills_from_sys.dram_io_far \
+  -e ls_dmnd_fills_from_sys.near_cache \
+  -e ls_dmnd_fills_from_sys.far_cache \
+  -- sleep 10
+```
+
+High `dram_io_*` counts relative to total fills
+indicate the working set exceeds the L3. High
+`near_cache` / `far_cache` counts indicate cross-CCX
+cacheline sharing — data touched by one CCX (e.g.,
+NIC interrupt handler) then consumed by another
+(e.g., nfsd thread).
+
+#### Spinlock contention recipe
+
+When `perf report` shows `native_queued_spin_lock_slowpath`
+or `mutex_spin_on_owner`, the contended cacheline is
+bouncing between cores. Characterize the cross-core
+traffic:
+
+```bash
+sudo perf stat -a \
+  -e ls_dmnd_fills_from_sys.local_ccx \
+  -e ls_dmnd_fills_from_sys.near_cache \
+  -e ls_dmnd_fills_from_sys.far_cache \
+  -e ls_any_fills_from_sys.remote_cache \
+  -- sleep 10
+```
+
+High `remote_cache` (cross-CCX) fill counts during
+lock contention indicate the lock cacheline is
+migrating across CCX boundaries. Pinning contending
+threads to the same CCX via CPU affinity, or
+restructuring to reduce cross-CCX sharing, can
+reduce this overhead.
+
+Combine with `perf c2c` (which uses IBS on AMD) to
+identify the specific cache lines and data structures
+involved.
+
+### Intel (Skylake / Ice Lake and later)
+
+The generic events work directly:
+
+```bash
+sudo perf stat \
+  -e LLC-load-misses \
+  -e LLC-store-misses \
+  -e LLC-loads \
+  -e LLC-stores \
+  -- workload
+```
+
+For finer-grained fill source analysis, use
+`mem_load_retired` events (Skylake+):
+
+```bash
+sudo perf stat \
+  -e mem_load_retired.l3_miss \
+  -e mem_load_retired.l3_hit \
+  -e mem_load_retired.l2_miss \
+  -e mem_load_retired.l2_hit \
+  -- workload
+```
+
+For memory bandwidth, use the uncore IMC
+(integrated memory controller) events or the
+`-M` metric groups if available:
+
+```bash
+sudo perf stat -a -M Memory_BW -- sleep 10
+```
+
+For lock contention, the same `perf c2c` workflow
+applies (using PEBS on Intel instead of IBS).
+
 ## Filtering
 
 ### By DSO (module or binary)
@@ -412,6 +625,14 @@ sudo perf report --kallsyms=/proc/kallsyms --stdio \
 
 Bracket syntax `[name]` denotes kernel modules.
 User-space binaries use their full path or basename.
+
+**Caveat**: `--dsos` only works for loadable kernel
+modules (`.ko` files), not for subsystems built into
+vmlinux. If a subsystem (e.g., sunrpc, nfsd) is
+compiled in rather than loaded as a module, its symbols
+appear under `[kernel.kallsyms]` and cannot be isolated
+with `--dsos`. Use `--comms`, `-S`, or `-p` filters
+instead.
 
 ### By CPU
 
@@ -528,11 +749,11 @@ copy_page                6.1%     6.0%      -0.1%
   granularity at the cost of higher overhead.
 
 - **Idle time invisible to cycles profiling**: When a
-  CPU enters a hardware C-state (via `intel_idle`,
-  `poll_idle`, etc.), the PMU stops counting cycles.
-  Samples attributed to idle functions represent only
-  the brief entry/exit path, not time spent sleeping.
-  Do not use `swapper` or `intel_idle` overhead
+  CPU enters a hardware C-state (via `cpuidle_enter_state`,
+  `intel_idle`, `poll_idle`, etc.), the PMU stops counting
+  cycles. Samples attributed to idle functions represent
+  only the brief entry/exit path, not time spent sleeping.
+  Do not use `swapper` or idle function overhead
   percentages from a cycles profile as idle time
   estimates — they dramatically undercount actual idle
   time.
@@ -584,6 +805,34 @@ copy_page                6.1%     6.0%      -0.1%
   `CFLAGS_<file>.o += -fno-inline` in the Makefile
   during profiling sessions restores symbol accuracy
   at the cost of changing the code layout slightly.
+
+- **AMD SRSO mitigations**: On AMD Zen 3/4 CPUs,
+  `srso_alias_safe_ret` and `srso_alias_return_thunk`
+  appear as overhead from the Speculative Return Stack
+  Overflow mitigation. This is an AMD-specific retbleed
+  variant. In trusted environments, `spec_rstack_overflow=off`
+  on the kernel command line eliminates this cost.
+
+- **Distribution security hardening**: Fedora and similar
+  distributions enable security features that add
+  measurable profiling overhead. These are not bugs:
+
+  - `CONFIG_HARDENED_USERCOPY`: `check_heap_object`,
+    `__check_object_size`, `__virt_addr_valid` appear in
+    data copy paths (e.g., `simple_copy_to_iter` during
+    TCP receive). Can add several percent overhead to
+    memcpy-heavy workloads.
+
+  - `init_on_alloc=1` (boot parameter): The page allocator
+    zeros all pages at allocation time. Shows up as
+    `clear_page_erms` under `alloc_pages_bulk_noprof` even
+    when the caller did not request `__GFP_ZERO`. Check
+    `/proc/cmdline` before attributing page-clearing
+    overhead to the calling code.
+
+  When profiling for optimization, note these costs
+  separately — they represent the distribution's security
+  tax, not inefficiency in the code under analysis.
 
 - **perf.data location**: `perf record` writes to
   `./perf.data` by default. Use `-o <path>` to write
