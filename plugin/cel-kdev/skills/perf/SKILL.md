@@ -231,8 +231,11 @@ automated delta computation.
 
 ```bash
 sudo perf diff /tmp/before.data /tmp/after.data \
-  --kallsyms=/proc/kallsyms --stdio
+  --kallsyms=/proc/kallsyms
 ```
+
+`perf diff` is always stdio-only (no TUI mode), so
+`--stdio` is neither needed nor accepted.
 
 Output shows baseline overhead, the delta, and the
 symbol name. Positive deltas indicate functions that
@@ -242,7 +245,7 @@ To focus on the largest changes:
 
 ```bash
 sudo perf diff /tmp/before.data /tmp/after.data \
-  --kallsyms=/proc/kallsyms --stdio -o 0.5
+  --kallsyms=/proc/kallsyms -o 0.5
 ```
 
 `-o 0.5` filters out symbols with less than 0.5%
@@ -253,7 +256,7 @@ shifts:
 
 ```bash
 sudo perf diff /tmp/before.data /tmp/after.data \
-  --kallsyms=/proc/kallsyms --stdio --sort delta
+  --kallsyms=/proc/kallsyms --sort delta
 ```
 
 ## perf lock
