@@ -60,18 +60,22 @@ needs the runtime address-to-module mapping that only
 kallsyms provides.
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms
+perf report --kallsyms=/proc/kallsyms
 ```
 
-`sudo` is needed for access to `/proc/kallsyms` and
-`/proc/modules`.
+Do not use `sudo` for `perf report`, `perf diff`,
+`perf script`, or `perf annotate`. Running as root
+allows perf to open `/proc/kcore`, which collapses
+all kernel module boundaries into a single
+`[kernel.kallsyms]` DSO. This breaks `--dsos`
+filtering by module name (see Common Pitfalls).
 
 If module symbols still appear as hex addresses after using
 `--kallsyms`, add `--symfs=/` so perf can locate the module
 ELF files under `/lib/modules/` for full symbol resolution:
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --symfs=/
+perf report --kallsyms=/proc/kallsyms --symfs=/
 ```
 
 `--kallsyms` maps addresses to symbol names, but perf also
@@ -85,24 +89,24 @@ for these binaries.
 For scripted analysis or piping, add `--stdio`:
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio > /tmp/perf-report.txt
+perf report --kallsyms=/proc/kallsyms --stdio > /tmp/perf-report.txt
 ```
 
 To limit output depth or sort by specific fields:
 
 ```bash
 # Flat profile (no call graph unfolding)
-sudo perf report --kallsyms=/proc/kallsyms --stdio --no-children
+perf report --kallsyms=/proc/kallsyms --stdio --no-children
 
 # Sort by overhead, show top entries (head -80 accounts
 # for perf's header lines, yielding ~30 symbols)
-sudo perf report --kallsyms=/proc/kallsyms --stdio --no-children | head -80
+perf report --kallsyms=/proc/kallsyms --stdio --no-children | head -80
 ```
 
 ### Caller/Callee View
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio --call-graph callee
+perf report --kallsyms=/proc/kallsyms --stdio --call-graph callee
 ```
 
 ### Multi-Event Data
@@ -116,7 +120,7 @@ event's section may be visible.
 To reach the cycles section (typically the second):
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+perf report --kallsyms=/proc/kallsyms --stdio \
   --no-children --comms=nfsd 2>&1 | \
   grep -A 200 'Samples:.*cycles'
 ```
@@ -130,7 +134,7 @@ you are reading.
 ### Per-Symbol Drill-Down
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio --symbol-filter=<function_name>
+perf report --kallsyms=/proc/kallsyms --stdio --symbol-filter=<function_name>
 ```
 
 Note: `perf report` uses `--symbol-filter`; `perf annotate`
@@ -144,7 +148,7 @@ cost of specific functions, use `-S` instead:
 
 ```bash
 # Self overhead of specific symbols only
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+perf report --kallsyms=/proc/kallsyms --stdio \
   --no-children --comms=nfsd \
   -S func_a,func_b,func_c
 ```
@@ -154,7 +158,7 @@ use the `-p` (parent) filter:
 
 ```bash
 # All symbols with <parent_function> in their call chain
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+perf report --kallsyms=/proc/kallsyms --stdio \
   --no-children --comms=nfsd -p <parent_function>
 ```
 
@@ -163,7 +167,7 @@ sudo perf report --kallsyms=/proc/kallsyms --stdio \
 For detailed per-sample output (timestamps, stacks, CPUs):
 
 ```bash
-sudo perf script --kallsyms=/proc/kallsyms > /tmp/perf-script.txt
+perf script --kallsyms=/proc/kallsyms > /tmp/perf-script.txt
 ```
 
 This output is the input for flamegraph generation and
@@ -173,7 +177,7 @@ custom post-processing.
 
 ```bash
 # Select specific fields
-sudo perf script --kallsyms=/proc/kallsyms \
+perf script --kallsyms=/proc/kallsyms \
   -F comm,pid,tid,cpu,time,event,sym,ip,dso
 ```
 
@@ -183,7 +187,7 @@ Generate flamegraphs from perf script output using Brendan
 Gregg's FlameGraph tools:
 
 ```bash
-sudo perf script --kallsyms=/proc/kallsyms | \
+perf script --kallsyms=/proc/kallsyms | \
   stackcollapse-perf.pl | flamegraph.pl > /tmp/flame.svg
 ```
 
@@ -219,7 +223,7 @@ sudo perf stat -e cycles,instructions -a -A -- sleep 5
 Source-level annotation of hot functions:
 
 ```bash
-sudo perf annotate --kallsyms=/proc/kallsyms --stdio --symbol=<function_name>
+perf annotate --kallsyms=/proc/kallsyms --stdio --symbol=<function_name>
 ```
 
 ## perf diff
@@ -230,7 +234,7 @@ adjustment. It replaces manual table construction with
 automated delta computation.
 
 ```bash
-sudo perf diff /tmp/before.data /tmp/after.data \
+perf diff /tmp/before.data /tmp/after.data \
   --kallsyms=/proc/kallsyms --stdio
 ```
 
@@ -241,7 +245,7 @@ grew hotter; negative deltas indicate improvement.
 To focus on the largest changes:
 
 ```bash
-sudo perf diff /tmp/before.data /tmp/after.data \
+perf diff /tmp/before.data /tmp/after.data \
   --kallsyms=/proc/kallsyms --stdio -o 0.5
 ```
 
@@ -252,7 +256,7 @@ Sort by delta magnitude to surface the most significant
 shifts:
 
 ```bash
-sudo perf diff /tmp/before.data /tmp/after.data \
+perf diff /tmp/before.data /tmp/after.data \
   --kallsyms=/proc/kallsyms --stdio --sort delta
 ```
 
@@ -275,7 +279,7 @@ sudo perf lock record -- <command>
 Report contention:
 
 ```bash
-sudo perf lock report --stdio
+perf lock report --stdio
 ```
 
 The report shows per-lock statistics: number of
@@ -287,14 +291,14 @@ find the locks causing the most cumulative delay.
 when supported:
 
 ```bash
-sudo perf lock contention --stdio
+perf lock contention --stdio
 ```
 
 For call-chain context on which code paths contend:
 
 ```bash
 sudo perf lock record --call-graph fp -- sleep 10
-sudo perf lock contention --stdio --call-graph
+perf lock contention --stdio --call-graph
 ```
 
 ## perf sched
@@ -313,7 +317,7 @@ sudo perf sched record -a -- sleep 10   # system-wide
 ### Latency summary
 
 ```bash
-sudo perf sched latency --stdio
+perf sched latency --stdio
 ```
 
 Shows per-task maximum and average scheduling latency
@@ -325,7 +329,7 @@ inversion.
 ### Time history
 
 ```bash
-sudo perf sched timehist
+perf sched timehist
 ```
 
 Detailed per-event timeline showing context switches,
@@ -335,7 +339,7 @@ Add `--cpu <N>` to filter by CPU.
 ### Scheduler statistics
 
 ```bash
-sudo perf sched map
+perf sched map
 ```
 
 Visual CPU-to-task mapping over time. Frequent task
@@ -377,7 +381,7 @@ sudo perf record -e probe:<probe_name> -a -- sleep 10
 3. Analyze:
 
 ```bash
-sudo perf script --kallsyms=/proc/kallsyms
+perf script --kallsyms=/proc/kallsyms
 ```
 
 4. Clean up probes when finished:
@@ -423,7 +427,7 @@ memory access sampling (Intel PEBS on Intel, IBS on AMD).
 sudo perf c2c record -a -- sleep 10
 
 # Report cache line contention
-sudo perf c2c report --stdio
+perf c2c report --stdio
 ```
 
 The report groups memory accesses by cache line and
@@ -615,11 +619,11 @@ applies (using PEBS on Intel instead of IBS).
 ### By DSO (module or binary)
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+perf report --kallsyms=/proc/kallsyms --stdio \
   --dsos='[sunrpc]'
 
 # Multiple DSOs
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+perf report --kallsyms=/proc/kallsyms --stdio \
   --dsos='[nfsd],[sunrpc],[svcrdma]'
 ```
 
@@ -637,11 +641,11 @@ instead.
 ### By CPU
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+perf report --kallsyms=/proc/kallsyms --stdio \
   --cpu=0,1,2
 
 # CPU range
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+perf report --kallsyms=/proc/kallsyms --stdio \
   --cpu=0-3
 ```
 
@@ -650,21 +654,21 @@ sudo perf report --kallsyms=/proc/kallsyms --stdio \
 ```bash
 # Show only samples between 5% and 50% of the
 # recording duration
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+perf report --kallsyms=/proc/kallsyms --stdio \
   --time '5%,50%'
 
 # Absolute time range (seconds from start)
-sudo perf script --kallsyms=/proc/kallsyms \
+perf script --kallsyms=/proc/kallsyms \
   --time '10.0,20.0'
 ```
 
 ### By comm (process name)
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+perf report --kallsyms=/proc/kallsyms --stdio \
   --comms=nfsd
 
-sudo perf script --kallsyms=/proc/kallsyms \
+perf script --kallsyms=/proc/kallsyms \
   --comms=nfsd,kworker
 ```
 
@@ -683,7 +687,7 @@ Produce a top-level flat profile to identify the hottest
 functions:
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio --no-children 2>&1 | head -60
+perf report --kallsyms=/proc/kallsyms --stdio --no-children 2>&1 | head -60
 ```
 
 Record:
@@ -697,7 +701,7 @@ For the top functions identified in Phase 1, examine call
 chains to understand why they are hot:
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio --call-graph callee \
+perf report --kallsyms=/proc/kallsyms --stdio --call-graph callee \
   --symbol-filter=<hot_function>
 ```
 
@@ -770,7 +774,7 @@ copy_page                6.1%     6.0%      -0.1%
   each event:
 
   ```bash
-  sudo perf report --kallsyms=/proc/kallsyms \
+  perf report --kallsyms=/proc/kallsyms \
     --stdio --no-children -s cpu
   ```
 
@@ -833,6 +837,25 @@ copy_page                6.1%     6.0%      -0.1%
   When profiling for optimization, note these costs
   separately — they represent the distribution's security
   tax, not inefficiency in the code under analysis.
+
+- **kcore collapses module DSOs**: When `perf report`
+  runs as root, it can open `/proc/kcore`. If the
+  perf.data was recorded on the currently running
+  kernel, perf matches the kcore build-id embedded
+  in the recording, opens kcore, and maps the entire
+  kernel address space as a single monolithic DSO.
+  All module symbols then appear under
+  `[kernel.kallsyms]` rather than their respective
+  `[rpcrdma]`, `[nfsd]`, `[sunrpc]` DSOs. This
+  silently breaks `--dsos` filtering by module name
+  -- the filter matches nothing and the report is
+  empty.
+
+  Run `perf report` (and `perf diff`, `perf script`,
+  `perf annotate`) without `sudo` to prevent kcore
+  access and preserve per-module DSO attribution.
+  `sudo` is needed only for `perf record` and
+  `perf top`.
 
 - **perf.data location**: `perf record` writes to
   `./perf.data` by default. Use `-o <path>` to write
