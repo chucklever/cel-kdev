@@ -48,6 +48,7 @@ patch names, producing "invalid patch range" errors.
 | Create new patch | `stg new <name> -m "message"` |
 | Update current patch with working tree changes | `stg refresh` |
 | Update current patch with staged changes only | `stg refresh --index` |
+| Update current patch with specific files only | `stg refresh -- <file1> <file2>` |
 | Edit current patch message | `stg edit --file <path>` |
 | Edit patch message and diff | `stg edit --diff --file <path>` |
 
@@ -198,6 +199,24 @@ into the stg stack for further editing.
 pop, refresh, new, delete, etc.). Safe to use for recovery
 after an unintended operation.
 
+### Repairing the Stack
+
+```bash
+stg repair
+```
+
+Reconciles stg's stack metadata with the actual git state.
+Use after an accidental raw git operation (`git commit`,
+`git cherry-pick`, `git reset`, etc.) has moved HEAD behind
+stg's back. `stg repair` detects new commits that appeared
+above the stack base and incorporates them as patches,
+restoring a consistent stack.
+
+**Merge commits cannot become patches. If a merge commit
+sits above the stack base, `stg repair` marks all patches
+below it as unapplied. Use `stg undo` to remove an
+accidental merge before running `stg repair`.**
+
 ### Rebasing the Stack
 
 To rebase all patches onto a new base commit:
@@ -211,6 +230,19 @@ and re-applies patches one at a time. Conflicts may arise
 at each patch; resolve them using the Merge Conflict
 Resolution procedure in this document.
 
+When rebasing onto an upstream that already contains some of
+the stack's patches (e.g., after a maintainer merges part of
+a series), use `--merged`:
+
+```bash
+stg rebase --merged <new-base>
+```
+
+This checks each patch against the new base during
+reapplication. Patches whose changes already exist upstream
+become empty instead of producing spurious conflicts.
+Follow up with `stg clean` to remove the empty patches.
+
 ### Importing Patches
 
 | Task | Command |
@@ -222,6 +254,70 @@ Resolution procedure in this document.
 When importing from an mbox, each email becomes a separate
 patch. The commit message is taken from the email subject
 and body.
+
+### Picking and Folding
+
+| Task | Command |
+| ---- | ------- |
+| Pick a patch from another branch | `stg pick -B <branch> <patch>` |
+| Pick a commit by SHA | `stg pick <committish>` |
+| Fold a diff into the current patch | `stg fold <file.diff>` |
+
+`stg pick` copies a patch from another branch or imports
+a commit object into the current stack. The source patch
+remains on its original branch.
+
+`stg fold` applies a diff file to the working tree without
+creating a new patch. Run `stg refresh` afterward to
+incorporate the folded changes.
+
+**Do NOT run `stg fold` when the stack has no applied
+patches or when the target patch is not on top. Use
+`stg goto` first to position the stack.**
+
+### Exporting Patches
+
+| Task | Command |
+| ---- | ------- |
+| Export patches to a directory | `stg export -d <dir>` |
+| Export patches to stdout | `stg export -s` |
+
+`stg export` writes each applied patch as a plain diff file
+and includes a `series` file in the output directory.
+Recipients can import the result with `stg import` or
+`git am`.
+
+### Email Workflow
+
+`stg email` wraps `git format-patch` and `git send-email`
+for formatting and sending patch series.
+
+**Formatting patches:**
+
+| Task | Command |
+| ---- | ------- |
+| Format all applied patches | `stg email format -a -o <dir>` |
+| Format with cover letter | `stg email format --cover-letter -o <dir>` |
+| Format a version 2 resubmission | `stg email format -v2 -o <dir>` |
+| Format with custom subject prefix | `stg email format --subject-prefix="PATCH net-next" -o <dir>` |
+| Add Signed-off-by | `stg email format -s -o <dir>` |
+| Mark as RFC | `stg email format --rfc -o <dir>` |
+
+**Sending patches:**
+
+| Task | Command |
+| ---- | ------- |
+| Send formatted patches | `stg email send --to <addr> <dir>/` |
+| Dry run (preview without sending) | `stg email send --dry-run <dir>/` |
+| Thread as reply to prior message | `stg email send --in-reply-to <msg-id> <dir>/` |
+
+Always specify `-o <dir>` when formatting to avoid
+scattering patch files into the working tree.
+
+`stg email send` also accepts patch names directly,
+bypassing the format step. The two-step workflow above
+is preferred because it allows reviewing email content
+before sending.
 
 ### Cleaning Up Empty Patches
 
