@@ -52,12 +52,54 @@ target command.
 
 ## Reporting
 
-`--kallsyms=/proc/kallsyms` provides the runtime kernel
-symbol table, including module symbols at their loaded
-addresses. This is required for resolving module symbols;
-the build-id cache alone is not sufficient because perf
-needs the runtime address-to-module mapping that only
-kallsyms provides.
+### Symbol resolution and DSO attribution
+
+`/proc/kallsyms` contains symbols for vmlinux **and** all
+loaded modules in a single flat address-to-name table.
+When `--kallsyms=/proc/kallsyms` is passed to perf, it
+resolves all kernel addresses through that table and
+attributes every symbol to `[kernel.kallsyms]`, collapsing
+the distinction between vmlinux and individual module
+DSOs (`[sunrpc]`, `[rpcrdma]`, `[nfsd]`, etc.).
+
+This collapse only affects data recorded on the currently
+running kernel, where the recorded addresses match the
+live kallsyms entries. Data from a different kernel build
+has modules at different addresses; those addresses do
+not match the current kallsyms, so perf falls through to
+the recorded MMAP data and resolves symbols from the
+`.ko` files, preserving correct DSO attribution.
+
+**Workaround -- stripped kallsyms**: Create a kallsyms
+file containing only vmlinux symbols (no module symbols).
+perf uses it to resolve vmlinux addresses, and falls back
+to the recorded MMAP records plus `.ko` files for module
+addresses, preserving per-module DSO attribution:
+
+```bash
+sudo grep -v '\[' /proc/kallsyms > /tmp/vmlinux-kallsyms.txt
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt
+```
+
+Module symbols in `/proc/kallsyms` are identified by a
+trailing `[module_name]` field; `grep -v '\['` removes
+them.
+
+**Alternative -- `--vmlinux`**: `perf report` (but not
+`perf diff`) accepts `--vmlinux=<path>` which provides
+vmlinux symbol resolution without absorbing module
+symbols. Do not combine with `--kallsyms`:
+
+```bash
+sudo perf report \
+  --vmlinux=/lib/modules/$(uname -r)/build/vmlinux
+```
+
+**When DSO separation does not matter**: If the analysis
+only needs symbol names and does not depend on DSO-level
+filtering or grouping, `--kallsyms=/proc/kallsyms` is
+simpler and resolves all symbols (vmlinux and module)
+in one pass:
 
 ```bash
 sudo perf report --kallsyms=/proc/kallsyms
@@ -66,43 +108,29 @@ sudo perf report --kallsyms=/proc/kallsyms
 `sudo` is needed for access to `/proc/kallsyms` and
 `/proc/modules`.
 
-If module symbols still appear as hex addresses after using
-`--kallsyms`, add `--symfs=/` so perf can locate the module
-ELF files under `/lib/modules/` for full symbol resolution:
-
-```bash
-sudo perf report --kallsyms=/proc/kallsyms --symfs=/
-```
-
-`--kallsyms` maps addresses to symbol names, but perf also
-needs access to the module `.ko` files for certain operations
-(annotation, inline frame expansion, DSO-level grouping).
-`--symfs=/` directs perf to search the live root filesystem
-for these binaries.
-
 ### Non-interactive Report
 
 For scripted analysis or piping, add `--stdio`:
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio > /tmp/perf-report.txt
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio > /tmp/perf-report.txt
 ```
 
 To limit output depth or sort by specific fields:
 
 ```bash
 # Flat profile (no call graph unfolding)
-sudo perf report --kallsyms=/proc/kallsyms --stdio --no-children
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio --no-children
 
 # Sort by overhead, show top entries (head -80 accounts
 # for perf's header lines, yielding ~30 symbols)
-sudo perf report --kallsyms=/proc/kallsyms --stdio --no-children | head -80
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio --no-children | head -80
 ```
 
 ### Caller/Callee View
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio --call-graph callee
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio --call-graph callee
 ```
 
 ### Multi-Event Data
@@ -116,7 +144,7 @@ event's section may be visible.
 To reach the cycles section (typically the second):
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio \
   --no-children --comms=nfsd 2>&1 | \
   grep -A 200 'Samples:.*cycles'
 ```
@@ -130,7 +158,7 @@ you are reading.
 ### Per-Symbol Drill-Down
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio --symbol-filter=<function_name>
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio --symbol-filter=<function_name>
 ```
 
 Note: `perf report` uses `--symbol-filter`; `perf annotate`
@@ -144,7 +172,7 @@ cost of specific functions, use `-S` instead:
 
 ```bash
 # Self overhead of specific symbols only
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio \
   --no-children --comms=nfsd \
   -S func_a,func_b,func_c
 ```
@@ -154,7 +182,7 @@ use the `-p` (parent) filter:
 
 ```bash
 # All symbols with <parent_function> in their call chain
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio \
   --no-children --comms=nfsd -p <parent_function>
 ```
 
@@ -163,7 +191,7 @@ sudo perf report --kallsyms=/proc/kallsyms --stdio \
 For detailed per-sample output (timestamps, stacks, CPUs):
 
 ```bash
-sudo perf script --kallsyms=/proc/kallsyms > /tmp/perf-script.txt
+sudo perf script --kallsyms=/tmp/vmlinux-kallsyms.txt > /tmp/perf-script.txt
 ```
 
 This output is the input for flamegraph generation and
@@ -173,7 +201,7 @@ custom post-processing.
 
 ```bash
 # Select specific fields
-sudo perf script --kallsyms=/proc/kallsyms \
+sudo perf script --kallsyms=/tmp/vmlinux-kallsyms.txt \
   -F comm,pid,tid,cpu,time,event,sym,ip,dso
 ```
 
@@ -183,7 +211,7 @@ Generate flamegraphs from perf script output using Brendan
 Gregg's FlameGraph tools:
 
 ```bash
-sudo perf script --kallsyms=/proc/kallsyms | \
+sudo perf script --kallsyms=/tmp/vmlinux-kallsyms.txt | \
   stackcollapse-perf.pl | flamegraph.pl > /tmp/flame.svg
 ```
 
@@ -196,7 +224,7 @@ If FlameGraph tools are not in `$PATH`, check
 Live sampling display (no perf.data file needed):
 
 ```bash
-sudo perf top --kallsyms=/proc/kallsyms
+sudo perf top --kallsyms=/tmp/vmlinux-kallsyms.txt
 ```
 
 Add `--call-graph fp` for live call-chain display.
@@ -219,7 +247,7 @@ sudo perf stat -e cycles,instructions -a -A -- sleep 5
 Source-level annotation of hot functions:
 
 ```bash
-sudo perf annotate --kallsyms=/proc/kallsyms --stdio --symbol=<function_name>
+sudo perf annotate --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio --symbol=<function_name>
 ```
 
 ## perf diff
@@ -231,8 +259,19 @@ automated delta computation.
 
 ```bash
 sudo perf diff /tmp/before.data /tmp/after.data \
-  --kallsyms=/proc/kallsyms
+  --kallsyms=/tmp/vmlinux-kallsyms.txt
 ```
+
+Use the stripped kallsyms file (see Reporting section)
+to preserve per-module DSO attribution. `perf diff`
+does not support `--vmlinux`, so the stripped kallsyms
+workaround is the only way to maintain DSO separation.
+If any data file was recorded on the currently running
+kernel and `--kallsyms=/proc/kallsyms` is used, all
+module symbols collapse into `[kernel.kallsyms]`,
+preventing accurate per-module comparison and causing
+symbols to appear as "new" or "disappeared" when only
+the DSO attribution changed.
 
 `perf diff` is always stdio-only (no TUI mode), so
 `--stdio` is neither needed nor accepted.
@@ -241,22 +280,12 @@ Output shows baseline overhead, the delta, and the
 symbol name. Positive deltas indicate functions that
 grew hotter; negative deltas indicate improvement.
 
-To focus on the largest changes:
-
-```bash
-sudo perf diff /tmp/before.data /tmp/after.data \
-  --kallsyms=/proc/kallsyms -o 0.5
-```
-
-`-o 0.5` filters out symbols with less than 0.5%
-absolute delta, reducing noise from unchanged functions.
-
 Sort by delta magnitude to surface the most significant
 shifts:
 
 ```bash
 sudo perf diff /tmp/before.data /tmp/after.data \
-  --kallsyms=/proc/kallsyms --sort delta
+  --kallsyms=/tmp/vmlinux-kallsyms.txt --sort delta
 ```
 
 ## perf lock
@@ -380,7 +409,7 @@ sudo perf record -e probe:<probe_name> -a -- sleep 10
 3. Analyze:
 
 ```bash
-sudo perf script --kallsyms=/proc/kallsyms
+sudo perf script --kallsyms=/tmp/vmlinux-kallsyms.txt
 ```
 
 4. Clean up probes when finished:
@@ -618,11 +647,11 @@ applies (using PEBS on Intel instead of IBS).
 ### By DSO (module or binary)
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio \
   --dsos='[sunrpc]'
 
 # Multiple DSOs
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio \
   --dsos='[nfsd],[sunrpc],[svcrdma]'
 ```
 
@@ -640,11 +669,11 @@ instead.
 ### By CPU
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio \
   --cpu=0,1,2
 
 # CPU range
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio \
   --cpu=0-3
 ```
 
@@ -653,21 +682,21 @@ sudo perf report --kallsyms=/proc/kallsyms --stdio \
 ```bash
 # Show only samples between 5% and 50% of the
 # recording duration
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio \
   --time '5%,50%'
 
 # Absolute time range (seconds from start)
-sudo perf script --kallsyms=/proc/kallsyms \
+sudo perf script --kallsyms=/tmp/vmlinux-kallsyms.txt \
   --time '10.0,20.0'
 ```
 
 ### By comm (process name)
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio \
   --comms=nfsd
 
-sudo perf script --kallsyms=/proc/kallsyms \
+sudo perf script --kallsyms=/tmp/vmlinux-kallsyms.txt \
   --comms=nfsd,kworker
 ```
 
@@ -680,13 +709,21 @@ specific time window.
 
 ## Analysis Workflow
 
+Before starting analysis, generate the stripped kallsyms
+file (if it does not already exist) so that all commands
+preserve per-module DSO attribution:
+
+```bash
+sudo grep -v '\[' /proc/kallsyms > /tmp/vmlinux-kallsyms.txt
+```
+
 ### Phase 1: Overview
 
 Produce a top-level flat profile to identify the hottest
 functions:
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio --no-children 2>&1 | head -60
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio --no-children 2>&1 | head -60
 ```
 
 Record:
@@ -700,7 +737,7 @@ For the top functions identified in Phase 1, examine call
 chains to understand why they are hot:
 
 ```bash
-sudo perf report --kallsyms=/proc/kallsyms --stdio --call-graph callee \
+sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio --call-graph callee \
   --symbol-filter=<hot_function>
 ```
 
@@ -773,7 +810,7 @@ copy_page                6.1%     6.0%      -0.1%
   each event:
 
   ```bash
-  sudo perf report --kallsyms=/proc/kallsyms \
+  sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt \
     --stdio --no-children -s cpu
   ```
 
