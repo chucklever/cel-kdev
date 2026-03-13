@@ -2,7 +2,7 @@
 name: trace-cmd
 description: Analyze trace-cmd captures (.dat files) from kernel tracing sessions. Use when asked to look at a trace file, analyze tracing output, measure latency, or compare before/after trace captures. Supports nfsd, sunrpc, svcrdma, xprtrdma, rpcgss, workqueue, rdma, tcp, handshake, sched, and general ftrace events.
 invocation_policy: automatic
-allowed-tools: Bash(*:trace-cmd *)
+allowed-tools: Bash(*:trace-cmd *), Bash(*:/sys/kernel/tracing/*), Bash(*:/sys/kernel/debug/tracing/*)
 ---
 
 # Trace Analysis
@@ -85,6 +85,48 @@ Determine what is available before analyzing:
 # Event summary and buffer stats
 trace-cmd report -i <file> --stat
 ```
+
+The `--stat` output includes per-CPU ring buffer statistics.
+Always check for data loss and report findings before
+proceeding to event analysis. If any loss counter is
+non-zero, state this prominently at the top of the
+summary:
+
+- **overrun**: Events dropped because the ring buffer was
+  full and older events were overwritten (the default
+  `overwrite` mode). A non-zero overrun means the capture
+  is incomplete — the earliest events were silently
+  discarded.
+- **commit overrun**: Events dropped during nested tracing
+  (re-entrant writes). Should be zero; non-zero indicates
+  extreme event rates that exceeded the buffer's nesting
+  depth.
+- **dropped events**: Events lost because the buffer was
+  full and `overwrite` was disabled (non-overwrite mode).
+  Non-zero values mean recent events were discarded.
+
+Any non-zero loss count means overhead percentages and
+event pairing are unreliable. The highest-rate events
+are the most likely to be undercounted. If losses
+appear, the recording should be repeated with a larger
+buffer (`trace-cmd record -b <size_kb>`).
+
+### Trace clock and cross-CPU timestamps
+
+The `--stat` output also shows which trace clock was
+used. The `local` clock (the default) is per-CPU and
+not synchronized — cross-CPU timestamp deltas are
+unreliable. All other clocks (`global`, `mono`,
+`mono_raw`, `boot`, `x86-tsc` with invariant TSC)
+are synchronized and safe for cross-CPU pairing.
+
+When cross-CPU event pairing is part of the analysis
+(e.g., enqueue on one CPU, dequeue on another), check
+the clock and note if deltas are approximate. If the
+clock is `local`, qualify cross-CPU latency results
+as approximate. For future recordings where cross-CPU
+accuracy matters, suggest `trace-cmd record -C global`
+or `-C mono`.
 
 If `--stat` is uninformative, fall back to:
 
@@ -549,6 +591,33 @@ trace-cmd report -i <file> -v -F 'svc_xprt_enqueue'
 Numeric operators: `==`, `!=`, `<`, `<=`, `>`, `>=`, `&` (bitmask).
 String operators: `==`, `!=`, `~` (glob with `*`, `?`, `[]`).
 
+The `.function` postfix converts a `long` field to a
+function address range, allowing filtering by kernel
+function name instead of raw address:
+
+```bash
+# Events where call_site falls within security_prepare_creds
+trace-cmd report -i <file> \
+  -F 'kmalloc: call_site.function == security_prepare_creds'
+```
+
+`.function` only works on `long`-sized fields and only
+with `==` or `!=`. Use `.function` when attributing
+allocations or other addressed operations to a specific
+kernel function.
+
+For cpumask fields or scalar fields that encode a CPU
+number, the `CPUS{}` syntax filters by CPU list:
+
+```bash
+# Events where target_cpu is in the given set
+trace-cmd report -i <file> \
+  -F 'sched_switch: target_cpu & CPUS{0-3,8-11}'
+```
+
+Use `CPUS{}` when isolating events to a CPU range or
+NUMA node.
+
 **Field name caveat**: The field names in `-F` filters must
 match the kernel event format definition exactly. These often
 differ from the abbreviated labels in report output. For
@@ -597,10 +666,132 @@ awk '{match($0, /[0-9]+\.[0-9]+:/);
     {split($i,a,"="); print a[2]}}' | sort -n | awk '...'
 ```
 
+## In-Kernel Histogram Triggers
+
+When a capture shows ring buffer overruns (see Phase 1),
+histogram triggers can aggregate data inside the kernel
+without generating individual trace records. The
+aggregation is lossless regardless of event rate. Set
+up histograms when per-event capture has proven
+insufficient, or when only distribution shape matters.
+
+The basic syntax is
+`hist:key=<field>:val=<field>:sort=<field>.<order>`.
+Histograms are written to the event's trigger file
+and read back from its hist file:
+
+```bash
+# Set up a histogram keyed on call_site with byte totals
+echo 'hist:key=call_site.sym:val=bytes_req:sort=bytes_req.descending' > \
+  /sys/kernel/tracing/events/kmem/kmalloc/trigger
+
+# Let the workload run, then read results
+cat /sys/kernel/tracing/events/kmem/kmalloc/hist
+
+# Clean up -- prefix with ! to remove
+echo '!hist:key=call_site.sym:val=bytes_req' > \
+  /sys/kernel/tracing/events/kmem/kmalloc/trigger
+```
+
+Key modifiers: `.sym` (address to symbol), `.execname`
+(pid to comm), `.log2`, `.buckets=N`, `.usecs`
+(timestamp as microseconds). Use `common_stacktrace`
+as a key for stack-keyed aggregation. Compound keys
+(up to three fields) produce per-combination entries.
+The implicit `hitcount` val tracks event count.
+
+Control a running histogram without removing it by
+appending `:pause`, `:continue`, or `:clear` with
+`>>` (append mode).
+
+Always clean up histogram triggers after reading
+results. Triggers persist until explicitly removed.
+
+## Dynamic Trace Events (kprobe / fprobe)
+
+When static tracepoints do not cover a code path of
+interest, dynamic events provide ad-hoc instrumentation
+without kernel rebuilds. Set up probes before recording;
+they appear as normal trace events in the capture.
+If any dynamic probes are created during a session,
+remove them before ending the analysis -- even if the
+analysis hit an error.
+
+### kprobe events
+
+Probe any kernel function (except those marked
+`NOKPROBE_SYMBOL`). Requires `CONFIG_KPROBE_EVENTS=y`.
+Entry probes use `p:`, return probes use `r:`.
+Arguments are positional (`$arg1`, `$arg2`, ...);
+return probes can capture `$retval`.
+
+```bash
+# Entry probe capturing two arguments
+echo 'p:myprobe nfsd_dispatch $arg1 $arg2' > \
+  /sys/kernel/tracing/kprobe_events
+
+# Return probe capturing return value
+echo 'r:myretprobe nfsd_dispatch $retval' >> \
+  /sys/kernel/tracing/kprobe_events
+
+# Record
+trace-cmd record -e probe:myprobe -e probe:myretprobe \
+  -b 4096 -- sleep 10
+
+# Clean up
+echo '-:myprobe' >> /sys/kernel/tracing/kprobe_events
+echo '-:myretprobe' >> /sys/kernel/tracing/kprobe_events
+```
+
+### fprobe events
+
+Function-entry/exit probes with BTF-aware argument
+access. Requires `CONFIG_FPROBE_EVENTS=y` and
+`CONFIG_DEBUG_INFO_BTF=y`. Arguments are referenced
+by name rather than positional `$argN`. Prefer fprobes
+over kprobes when BTF is available -- named arguments
+are self-documenting and types are inferred
+automatically.
+
+```bash
+# Probe vfs_read capturing named arguments
+echo 'f:myprobe vfs_read count pos' > \
+  /sys/kernel/tracing/dynamic_events
+
+# Return probe
+echo 'f:myret vfs_read%return $retval' >> \
+  /sys/kernel/tracing/dynamic_events
+
+# Record
+trace-cmd record -e fprobes:myprobe -e fprobes:myret \
+  -b 4096 -- sleep 10
+
+# Clean up
+echo '-:fprobes/myprobe' >> /sys/kernel/tracing/dynamic_events
+echo '-:fprobes/myret' >> /sys/kernel/tracing/dynamic_events
+```
+
+### Listing and removing dynamic events
+
+```bash
+# List all active kprobe events
+cat /sys/kernel/tracing/kprobe_events
+
+# List all dynamic events (kprobe, fprobe, eprobe)
+cat /sys/kernel/tracing/dynamic_events
+
+# Remove all kprobe events
+echo > /sys/kernel/tracing/kprobe_events
+
+# Remove all dynamic events
+echo > /sys/kernel/tracing/dynamic_events
+```
+
 ## What This Skill Does Not Do
 
 - Does not set up trace-cmd recording sessions (the user manages
-  capture separately)
+  capture separately), but may set up histogram triggers or
+  dynamic probes as part of targeted analysis
 - Does not modify kernel code (that happens outside this skill)
 - Does not interpret application-level semantics beyond what the
   trace events encode
