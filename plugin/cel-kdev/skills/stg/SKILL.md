@@ -46,6 +46,7 @@ patch names, producing "invalid patch range" errors.
 | Task | Command |
 | ---- | ------- |
 | Create new patch | `stg new <name> -m "message"` |
+| Create new patch with Signed-off-by | `stg new <name> -s -m "message"` |
 | Update current patch with working tree changes | `stg refresh` |
 | Update current patch with staged changes only | `stg refresh --index` |
 | Update current patch with specific files only | `stg refresh -- <file1> <file2>` |
@@ -54,6 +55,10 @@ patch names, producing "invalid patch range" errors.
 
 Always provide `-m` flag to `stg new` and `--file <path>`
 to `stg edit` to avoid interactive editors.
+
+Use `-s` / `--sign` on `stg new`, `stg refresh`, and `stg
+edit` to auto-generate a Signed-off-by tag from git config
+rather than constructing it manually.
 
 `stg edit --diff` includes the patch diff in the edit file,
 allowing changes to both the commit message and the patch
@@ -254,6 +259,12 @@ Follow up with `stg clean` to remove the empty patches.
 When importing from an mbox, each email becomes a separate
 patch. The commit message is taken from the email subject
 and body.
+
+**Caveat**: `stg import -m` automatically appends the
+importer's Signed-off-by tag to each imported patch. A
+Signed-off-by matching the tree owner does not indicate
+acceptance or endorsement of the patch; it only means the
+patch was imported with stg.
 
 ### Picking and Folding
 
