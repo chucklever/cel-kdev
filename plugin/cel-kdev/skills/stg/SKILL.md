@@ -17,6 +17,38 @@ stg series >/dev/null 2>&1
 
 If this succeeds, use stg commands. If it fails, fall back to standard git.
 
+## Stack Model: Applied vs Unapplied
+
+The stg stack is an ordered list of patches sitting on top of
+a base commit. `stg series` displays the stack from bottom
+(applied first) to top (applied last):
+
+```
++ patch-a          ← applied, ancestor of HEAD
++ patch-b          ← applied, ancestor of HEAD
+> patch-c          ← current top patch = HEAD
+- patch-d          ← unapplied, not an ancestor of HEAD
+- patch-e          ← unapplied, not an ancestor of HEAD
+```
+
+**Applied patches** (`+` and `>`) form a contiguous sequence
+of commits above the stack base. HEAD points at the topmost
+applied patch (marked `>`). Commits below the stack base are
+ordinary git history and are not part of the stg stack.
+
+**Unapplied patches** (`-`) are real commit objects tracked by
+stg metadata, but they are not ancestors of HEAD. They do not
+appear in `git log`, are not reachable from HEAD, and have no
+effect on the working tree. `stg id <patch>` retrieves the
+commit hash of any patch, applied or unapplied. Patches may
+be unapplied because they are still under development, have
+been set aside, or are waiting to be pushed back on top.
+
+When asked to examine "unapplied patches," use `stg show` with
+the unapplied patch names (from `stg series --unapplied`).
+Do not look at `HEAD~1` or earlier commits—those are applied
+patches or pre-stack history, not unapplied patches.
+
 ## CRITICAL: Prohibited git commands when stg is active
 
 **NEVER use these git commands when stg is active on a branch.
