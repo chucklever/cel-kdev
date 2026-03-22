@@ -109,6 +109,12 @@ for automated comparison (see references/subcommands.md).
   Kernel-side stacks should be complete with
   `CONFIG_FRAME_POINTER=y`.
 
+- **No `-e` on `perf report`**: `perf report` has no `-e`
+  flag to select a single event from multi-event data.
+  Each event produces a separate histogram section in the
+  output. Use `grep -A` to reach the desired section
+  (see references/reporting.md for examples).
+
 - **Sampling bias at 99 Hz**: A 99 Hz profile captures
   ~99 samples per second per CPU. Short-lived operations
   (under 10 ms) may not appear. Increase `-F` for finer
