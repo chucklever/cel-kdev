@@ -84,9 +84,11 @@ all options before patch names.
 merge commits into patches. Use `stg undo` to remove an
 accidental merge before running `stg repair`.
 
-**`stg import -m` Signed-off-by**: Automatically appends
-the importer's Signed-off-by. This does not indicate
-acceptance of the patch.
+**`stgit.autosign` trailer**: When `stgit.autosign` is set
+in git config (e.g., to `Signed-off-by`), `stg new`,
+`stg import`, and `stg edit` automatically append that
+trailer. The `-m` flag on `stg import` selects mail/mbox
+input format and has no effect on trailer behavior.
 
 ## Avoiding interactive editors
 
