@@ -15,7 +15,7 @@ When stg is active on a branch, use stg commands instead of
 raw git for all commit operations. Check activation with:
 
 ```bash
-stg series >/dev/null 2>&1
+git show-ref --verify "refs/stacks/$(git symbolic-ref --short HEAD)" >/dev/null 2>&1
 ```
 
 ## CRITICAL: Prohibited git commands
