@@ -1,461 +1,116 @@
 ---
 name: stg
-description: Load anytime the working directory is a git repository. When stg is active on a branch, use stg commands instead of raw git for creating commits, managing patch series, or performing version control operations.
+description: >-
+  StGit (stg) patch stack management. When stg is active on a
+  branch, replaces git commit, amend, rebase, and reset with stg
+  equivalents to prevent stack corruption. Covers patch creation,
+  reordering, squashing, conflict resolution, and series management.
 invocation_policy: automatic
 allowed-tools: Bash(*:stg series *), Bash(*:stg show *), Bash(*:stg log *), Bash(*:stg id *), Bash(*:stg diff *), Bash(*:stg files *), Bash(*:stg patches *), Bash(*:git diff *), Bash(*:git log *), Bash(*:git reflog *)
 ---
 
-# Use stg commands instead of raw git for commit operations
+# stg: patch stack management
 
-## Detection
-
-Check if stg is active before using these commands:
+When stg is active on a branch, use stg commands instead of
+raw git for all commit operations. Check activation with:
 
 ```bash
 stg series >/dev/null 2>&1
 ```
 
-If this succeeds, use stg commands. If it fails, fall back to standard git.
-
-## Stack Model: Applied vs Unapplied
-
-The stg stack is an ordered list of patches sitting on top of
-a base commit. `stg series` displays the stack from bottom
-(applied first) to top (applied last):
-
-```
-+ patch-a          ← applied, ancestor of HEAD
-+ patch-b          ← applied, ancestor of HEAD
-> patch-c          ← current top patch = HEAD
-- patch-d          ← unapplied, not an ancestor of HEAD
-- patch-e          ← unapplied, not an ancestor of HEAD
-```
-
-**Applied patches** (`+` and `>`) form a contiguous sequence
-of commits above the stack base. HEAD points at the topmost
-applied patch (marked `>`). Commits below the stack base are
-ordinary git history and are not part of the stg stack.
-
-**Unapplied patches** (`-`) are real commit objects tracked by
-stg metadata, but they are not ancestors of HEAD. They do not
-appear in `git log`, are not reachable from HEAD, and have no
-effect on the working tree. `stg id <patch>` retrieves the
-commit hash of any patch, applied or unapplied. Patches may
-be unapplied because they are still under development, have
-been set aside, or are waiting to be pushed back on top.
-
-When asked to examine "unapplied patches," use `stg show` with
-the unapplied patch names (from `stg series --unapplied`).
-Do not look at `HEAD~1` or earlier commits—those are applied
-patches or pre-stack history, not unapplied patches.
-
-## CRITICAL: Prohibited git commands when stg is active
-
-**NEVER use these git commands when stg is active on a branch.
-They move HEAD behind stg's back, corrupting the stack metadata
-and requiring `stg repair` to recover.**
-
-- `git commit` (use `stg new` + `stg refresh`)
-- `git commit --amend` (use `stg refresh` or `stg edit --file <path>`)
-- `git rebase` (use `stg rebase` or `stg sink`/`stg float`)
-- `git reset` (use `stg pop`/`stg undo`)
-- `git cherry-pick` (pop to the target position, `stg import`)
-
-This applies to all agents and subagents. A raw `git commit
---amend` to fix a commit message MUST use `stg edit --file
-<path>` instead.
-
-## Core Commands
-
-Several stg commands accept variadic `[patch]...` positional
-arguments (`squash`, `float`, `sink`, `push`, `pop`, etc.).
-Always place options before patch names on the command line;
-options placed after the first patch name are consumed as
-patch names, producing "invalid patch range" errors.
-
-### Creating and Updating Patches
-
-| Task | Command |
-| ---- | ------- |
-| Create new patch | `stg new <name> -m "message"` |
-| Create new patch with Signed-off-by | `stg new <name> -s -m "message"` |
-| Update current patch with working tree changes | `stg refresh` |
-| Update current patch with staged changes only | `stg refresh --index` |
-| Update current patch with specific files only | `stg refresh -- <file1> <file2>` |
-| Edit current patch message | `stg edit --file <path>` |
-| Edit patch message and diff | `stg edit --diff --file <path>` |
-
-Always provide `-m` flag to `stg new` and `--file <path>`
-to `stg edit` to avoid interactive editors.
-
-Use `-s` / `--sign` on `stg new`, `stg refresh`, and `stg
-edit` to auto-generate a Signed-off-by tag from git config
-rather than constructing it manually.
-
-`stg edit --diff` includes the patch diff in the edit file,
-allowing changes to both the commit message and the patch
-content in one operation.
-
-### Squashing Patches
-
-| Task | Command |
-| ---- | ------- |
-| Squash with message from file | `stg squash -n <name> -f <path> <patch1> <patch2>` |
-| Squash with inline message | `stg squash -n <name> -m "message" <patch1> <patch2>` |
-
-Write multi-line commit messages to a temp file and pass
-`-f /tmp/msg.txt` rather than using heredocs or `/dev/stdin`.
-
-### Navigation
-
-| Task | Command |
-| ---- | ------- |
-| Go to specific patch | `stg goto <patch-name>` |
-| View patch series | `stg series` |
-| View series with descriptions | `stg series -d` |
-
-Prefer `stg goto` over manual `stg pop`/`stg push` sequences.
-
-### Viewing a Single Patch
-
-To see the commit message and diff for a patch (defaults to the
-top patch if no name is given):
-
-```bash
-stg show <patch-name>
-```
-
-To see just the commit message (no diff):
-
-```bash
-stg show -O --no-patch <patch-name>
-```
-
-(`-O` passes the following option through to `git diff`.)
-
-To see just the diff (no commit message):
-
-```bash
-stg diff -r <patch-name>~..<patch-name>
-```
-
-**Do NOT use `stg diff <patch-name>` without `-r`. The patch
-name is interpreted as a file path, producing silent wrong
-output.**
-
-### Inspecting Patch Metadata
-
-| Task | Command |
-| ---- | ------- |
-| Show commit log for a patch | `stg log <patch-name>` |
-| List files changed by a patch | `stg files <patch-name>` |
-| Show which patches modify a file | `stg patches <file-path>` |
-
-### Generating a Combined Diff Across Multiple Patches
-
-stg patch names are not git refs and cannot be used in
-`git diff` ranges. To produce a single unified diff spanning
-a range of patches, resolve the patch names to commit SHAs
-with `stg id`, then use `git diff`:
-
-```bash
-git diff $(stg id <first-patch>~1) $(stg id <last-patch>)
-```
-
-The `~1` on the first patch gives the base commit before that
-patch was applied, so the resulting diff covers all changes
-from `<first-patch>` through `<last-patch>` inclusive.
-
-### Series Management
-
-| Task | Command |
-| ---- | ------- |
-| Pop top patch | `stg pop` |
-| Push next patch | `stg push` |
-| Pop all patches | `stg pop -a` |
-| Push all patches | `stg push -a` |
-
-### Reordering
-
-| Task | Command |
-| ---- | ------- |
-| Move patch earlier in the series | `stg sink <patch-name>` |
-| Move patch later in the series | `stg float <patch-name>` |
-| Move patch to specific position | `stg sink --to <target> <patch>` |
-
-Earlier means closer to the base (applied first); later means
-closer to the top (applied last).
-
-### Deleting and Renaming Patches
-
-| Task | Command |
-| ---- | ------- |
-| Delete a patch | `stg delete <patch-name>` |
-| Delete multiple patches | `stg delete <patch1> <patch2>` |
-| Rename a patch | `stg rename <old-name> <new-name>` |
-
-`stg delete` removes a patch from the series entirely. The
-patch need not be on top; stg handles the pop/push cycle
-internally.
-
-### Refreshing a Non-Current Patch
-
-To fold working tree changes into a patch that is not on top:
-
-```bash
-stg refresh -p <patch-name>
-```
-
-This avoids the need to `stg goto <patch>`, refresh, then
-push the rest of the series back.
-
-### Initializing and Finalizing
-
-| Task | Command |
-| ---- | ------- |
-| Initialize stg on current branch | `stg init` |
-| Convert bottom N patches to git commits | `stg commit -n <N>` |
-| Convert all applied patches to git commits | `stg commit -a` |
-| Turn N most recent git commits into stg patches | `stg uncommit -n <N>` |
-
-`stg commit` permanently converts applied patches at the
-bottom of the stack into ordinary git commits. Use this when
-a series is finalized and no longer needs stg management.
-`stg uncommit` does the reverse, pulling git commits back
-into the stg stack for further editing.
-
-### Undo and Redo
-
-| Task | Command |
-| ---- | ------- |
-| Undo last stg operation | `stg undo` |
-| Redo last undone operation | `stg redo` |
-| Undo N operations | `stg undo -n <N>` |
-
-`stg undo` reverts the last stack-mutating operation (push,
-pop, refresh, new, delete, etc.). Safe to use for recovery
-after an unintended operation.
-
-### Repairing the Stack
-
-```bash
-stg repair
-```
-
-Reconciles stg's stack metadata with the actual git state.
-Use after an accidental raw git operation (`git commit`,
-`git cherry-pick`, `git reset`, etc.) has moved HEAD behind
-stg's back. `stg repair` detects new commits that appeared
-above the stack base and incorporates them as patches,
-restoring a consistent stack.
-
-**Merge commits cannot become patches. If a merge commit
-sits above the stack base, `stg repair` marks all patches
-below it as unapplied. Use `stg undo` to remove an
-accidental merge before running `stg repair`.**
-
-### Rebasing the Stack
-
-To rebase all patches onto a new base commit:
-
-```bash
-stg rebase <new-base>
-```
-
-This pops all patches, moves the stack base to `<new-base>`,
-and re-applies patches one at a time. Conflicts may arise
-at each patch; resolve them using the Merge Conflict
-Resolution procedure in this document.
-
-When rebasing onto an upstream that already contains some of
-the stack's patches (e.g., after a maintainer merges part of
-a series), use `--merged`:
-
-```bash
-stg rebase --merged <new-base>
-```
-
-This checks each patch against the new base during
-reapplication. Patches whose changes already exist upstream
-become empty instead of producing spurious conflicts.
-Follow up with `stg clean` to remove the empty patches.
-
-### Importing Patches
-
-| Task | Command |
-| ---- | ------- |
-| Import from mbox file | `stg import -m <file.mbx>` |
-| Import a single patch file | `stg import <file.patch>` |
-| Import from stdin | `stg import -m` (reads stdin) |
-
-When importing from an mbox, each email becomes a separate
-patch. The commit message is taken from the email subject
-and body.
-
-**Caveat**: `stg import -m` automatically appends the
-importer's Signed-off-by tag to each imported patch. A
-Signed-off-by matching the tree owner does not indicate
-acceptance or endorsement of the patch; it only means the
-patch was imported with stg.
-
-### Picking and Folding
-
-| Task | Command |
-| ---- | ------- |
-| Pick a patch from another branch | `stg pick -B <branch> <patch>` |
-| Pick a commit by SHA | `stg pick <committish>` |
-| Fold a diff into the current patch | `stg fold <file.diff>` |
-
-`stg pick` copies a patch from another branch or imports
-a commit object into the current stack. The source patch
-remains on its original branch.
-
-`stg fold` applies a diff file to the working tree without
-creating a new patch. Run `stg refresh` afterward to
-incorporate the folded changes.
-
-**Do NOT run `stg fold` when the stack has no applied
-patches or when the target patch is not on top. Use
-`stg goto` first to position the stack.**
-
-### Exporting Patches
-
-| Task | Command |
-| ---- | ------- |
-| Export patches to a directory | `stg export -d <dir>` |
-| Export patches to stdout | `stg export -s` |
-
-`stg export` writes each applied patch as a plain diff file
-and includes a `series` file in the output directory.
-Recipients can import the result with `stg import` or
-`git am`.
-
-### Email Workflow
-
-`stg email` wraps `git format-patch` and `git send-email`
-for formatting and sending patch series.
-
-**Formatting patches:**
-
-| Task | Command |
-| ---- | ------- |
-| Format all applied patches | `stg email format -a -o <dir>` |
-| Format with cover letter | `stg email format --cover-letter -o <dir>` |
-| Format a version 2 resubmission | `stg email format -v2 -o <dir>` |
-| Format with custom subject prefix | `stg email format --subject-prefix="PATCH net-next" -o <dir>` |
-| Add Signed-off-by | `stg email format -s -o <dir>` |
-| Mark as RFC | `stg email format --rfc -o <dir>` |
-
-**Sending patches:**
-
-| Task | Command |
-| ---- | ------- |
-| Send formatted patches | `stg email send --to <addr> <dir>/` |
-| Dry run (preview without sending) | `stg email send --dry-run <dir>/` |
-| Thread as reply to prior message | `stg email send --in-reply-to <msg-id> <dir>/` |
-
-Always specify `-o <dir>` when formatting to avoid
-scattering patch files into the working tree.
-
-`stg email send` also accepts patch names directly,
-bypassing the format step. The two-step workflow above
-is preferred because it allows reviewing email content
-before sending.
-
-### Cleaning Up Empty Patches
-
-```bash
-stg clean
-```
-
-Removes patches that have become empty (no diff). Useful
-after conflict resolution or editing leaves a patch with
-no actual changes.
-
-### Spilling a Patch
-
-`stg spill` resets the current patch to empty while leaving
-its changes in the working tree (or index, with `--index`).
-This is useful for repartitioning a patch's content.
-
-### Splitting a Patch
-
-To split one patch into multiple patches:
-
-1. Navigate to the patch: `stg goto <patch-name>`
-2. Spill its changes back to the working tree: `stg spill`
-3. Selectively stage the first portion of changes.
-4. Refresh the current (now-empty) patch: `stg refresh --index`
-5. Create a new patch for the remainder:
-   `stg new <next-name> -m "message"` then `stg refresh`
-6. Repeat steps 3-5 if splitting into more than two patches.
-7. Push the rest of the series: `stg push -a`
-
-### Inserting a Patch in the Middle of the Series
-
-1. Navigate to the patch that should precede the new one:
-   `stg goto <predecessor>`
-2. Create the new patch: `stg new <name> -m "message"`
-3. Make changes and refresh: `stg refresh`
-4. Push the rest of the series: `stg push -a`
-
-### Series Output Format
-
-`stg series` marks each patch with a prefix:
-
-| Prefix | Meaning |
-| ------ | ------- |
-| `>` | Current (top applied) patch |
-| `+` | Applied patch |
-| `-` | Unapplied patch |
-
-Filter with `--applied` or `--unapplied` to show only
-patches in that state.
-
-## Git-to-Stg Command Mapping
-
-The prohibited commands section above lists the primary
-mappings. These additional mappings cover git operations
-that are safe but have more idiomatic stg equivalents:
-
-| Instead of | Use |
-| ---------- | --- |
+## CRITICAL: Prohibited git commands
+
+**NEVER use these git commands when stg is active. They move
+HEAD behind stg's back, corrupting the stack metadata.**
+
+| Prohibited | Replacement |
+| ---------- | ----------- |
+| `git commit` | `stg new <name> -m "msg"` + `stg refresh` |
+| `git commit --amend` | `stg refresh` or `stg edit --file <path>` |
+| `git rebase` | `stg rebase`, `stg sink`, `stg float` |
+| `git reset` | `stg pop`, `stg undo` |
+| `git cherry-pick` | `stg pick` or `stg import` |
 | `git rebase -i` (reorder) | `stg sink`, `stg float` |
-| `git rebase -i` (squash/fixup) | `stg squash` |
+| `git rebase -i` (squash) | `stg squash` |
 
-## Parallelism Prohibition
+This applies to all agents and subagents.
 
-**CRITICAL: stg stack operations are strictly sequential.**
+## CRITICAL: No parallel stg operations
 
-The stg stack is a single shared resource. Every `stg new`,
-`stg refresh`, `stg goto`, `stg push`, `stg pop`, `stg float`,
-and `stg sink` mutates HEAD and the on-disk stack metadata.
-Two agents performing stg operations concurrently will
-interleave those mutations, producing patches with wrong
-contents, hunks absorbed into the wrong patch, or a corrupted
-stack requiring `stg repair`.
+The stg stack is a single shared resource. Every mutating
+command (`new`, `refresh`, `goto`, `push`, `pop`, `float`,
+`sink`) changes HEAD and on-disk metadata. Concurrent stg
+operations from parallel agents corrupt the stack.
 
-**When stg is active on the branch, do NOT delegate patch
-creation or editing to parallel subagents.** All stg operations
-on a given branch must be performed by a single agent in a
-single sequential session. Parallelism is safe only for work
-that produces no stg operations (e.g., read-only research,
-building, testing).
+**Do NOT delegate patch creation or editing to parallel
+subagents.** All stg operations on a given branch must run
+in a single sequential session. Parallelism is safe only
+for read-only work (research, building, testing).
 
-When a plan-execution coordinator detects that stg is active,
-it MUST abandon parallel delegation for implementation tasks
-and fall back to a single sequential developer agent for all
-patch creation and editing.
+## Stack model
 
-## Merge Conflict Resolution
+```
++ patch-a          <- applied, ancestor of HEAD
++ patch-b          <- applied, ancestor of HEAD
+> patch-c          <- current top patch = HEAD
+- patch-d          <- unapplied, not ancestor of HEAD
+- patch-e          <- unapplied, not ancestor of HEAD
+```
 
-When `stg push` or `stg rebase` results in merge conflicts:
+Applied patches (`+` and `>`) form a contiguous commit
+sequence above the stack base. HEAD points at the topmost
+applied patch (`>`).
 
-1. Use `git reflog` to examine the pre-merge state of the patch.
-   The reflog entry before the failed push shows the original
-   patch content, which guides the correct conflict resolution.
-2. Edit the conflicted files to resolve each conflict.
-3. Mark each resolved file with `stg resolved <filename>` (not
-   `git add`). stg will not permit `stg refresh` until all
-   conflicted files have been marked resolved this way.
-4. Run `stg refresh` to update the patch with the resolution.
+Unapplied patches (`-`) are commit objects in stg metadata
+but not ancestors of HEAD. They do not appear in `git log`.
+Use `stg show` with patch names from `stg series --unapplied`
+to examine them -- not `HEAD~N`.
+
+## Pitfalls
+
+**`stg diff` without `-r`**: `stg diff <patch-name>` treats
+the argument as a file path, producing silent wrong output.
+Use `stg diff -r <patch-name>~..<patch-name>` for a patch diff.
+
+**`stg fold` positioning**: `stg fold` applies to the current
+top patch only. Use `stg goto` first to position the stack.
+
+**Options vs patch names**: Commands accepting `[patch]...`
+arguments (`squash`, `float`, `sink`, `push`, `pop`) consume
+everything after the first patch name as patch names. Place
+all options before patch names.
+
+**Merge commits and repair**: `stg repair` cannot convert
+merge commits into patches. Use `stg undo` to remove an
+accidental merge before running `stg repair`.
+
+**`stg import -m` Signed-off-by**: Automatically appends
+the importer's Signed-off-by. This does not indicate
+acceptance of the patch.
+
+## Avoiding interactive editors
+
+Always provide `-m` to `stg new` and `--file <path>` to
+`stg edit`. Write multi-line messages to a temp file and
+pass `-f /tmp/msg.txt` to `stg squash`.
+
+Use `-s` / `--sign` to auto-generate Signed-off-by from
+git config.
+
+## Merge conflict resolution
+
+When `stg push` or `stg rebase` produces conflicts:
+
+1. Run `git reflog` to examine the pre-merge patch state.
+2. Edit conflicted files to resolve each conflict.
+3. Mark resolved files with `stg resolved <file>` (not
+   `git add`).
+4. Run `stg refresh` to finalize the resolution.
+
+To abort: `stg undo` reverts the failed operation.
+
+## Command reference
+
+See [references/commands.md](references/commands.md) for
+the full command table covering creation, navigation,
+reordering, splitting, importing, exporting, and email.
