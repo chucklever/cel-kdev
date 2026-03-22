@@ -10,7 +10,7 @@
     {
       "name": "cel-kdev",
       "description": "Assorted skills for Linux kernel development",
-      "version": "2.0.1",
+      "version": "2.0.2",
       "author": {
         "name": "Chuck Lever",
         "email": "cel@kernel.org"
