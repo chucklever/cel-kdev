@@ -32,8 +32,15 @@ HEAD behind stg's back, corrupting the stack metadata.**
 | `git cherry-pick` | `stg pick` or `stg import` |
 | `git rebase -i` (reorder) | `stg sink`, `stg float` |
 | `git rebase -i` (squash) | `stg squash` |
+| `git worktree add` | (not supported with stg) |
 
 This applies to all agents and subagents.
+
+**`git worktree`** creates a new checkout that shares refs
+with the main working tree. Stg tracks its stack state in
+refs (`refs/stacks/<branch>`); a worktree that checks out
+the same branch or manipulates shared refs corrupts the
+stack metadata just like a raw `git commit` would.
 
 ## CRITICAL: No parallel stg operations
 
@@ -110,6 +117,49 @@ When `stg push` or `stg rebase` produces conflicts:
 4. Run `stg refresh` to finalize the resolution.
 
 To abort: `stg undo` reverts the failed operation.
+
+## Tracing patch evolution with stg log
+
+`stg log [<patch>]` prints the history of stack operations
+for a patch (or the whole stack). Each line has the form:
+
+```
+<meta-sha>   <date>   <description>
+```
+
+**The `<meta-sha>` is an stg metadata commit, not the
+patch's code commit.** It records a snapshot of the stack
+state (which patches are applied, their order, and their
+content). Do not pass it to `git show` or `git diff`
+expecting code -- it contains stg internal files
+(`stack.json`, `patches/<name>`, etc.).
+
+`stg log` accepts no formatting flags (no `--format`,
+`--oneline`, etc.). Its output format is fixed.
+
+### Extracting a patch diff at a historical point
+
+Each metadata commit stores per-patch content as tree
+OIDs in `patches/<name>`:
+
+```
+Bottom: <tree-oid-before>
+Top:    <tree-oid-after>
+```
+
+To reconstruct the patch diff at a given `stg log` entry:
+
+```bash
+# Read the Top and Bottom tree OIDs
+git show <meta-sha>:patches/<patch-name>
+
+# Diff the two trees to see the patch content
+git diff <bottom-tree> <top-tree> -- <file>
+```
+
+For bisecting when a change entered a patch or inspecting
+the cumulative HEAD across patches, see
+[references/stg-log.md](references/stg-log.md).
 
 ## Command reference
 
