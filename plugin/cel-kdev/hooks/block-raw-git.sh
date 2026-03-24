@@ -5,8 +5,12 @@
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
+# Strip quoted strings so that "git commit" inside a message
+# argument (e.g. stg edit -m "...git commit...") is not matched.
+STRIPPED=$(echo "$COMMAND" | sed -e 's/"[^"]*"//g' -e "s/'[^']*'//g")
+
 # Only check commands that match prohibited git operations
-if ! echo "$COMMAND" | grep -qE '\bgit\s+(commit|rebase|reset|cherry-pick)\b'; then
+if ! echo "$STRIPPED" | grep -qE '\bgit\s+(commit|rebase|reset|cherry-pick)\b'; then
     exit 0
 fi
 
