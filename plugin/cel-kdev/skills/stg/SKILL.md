@@ -6,17 +6,24 @@ description: >-
   equivalents to prevent stack corruption. Covers patch creation,
   reordering, squashing, conflict resolution, and series management.
 invocation_policy: automatic
-allowed-tools: Bash(*:stg series *), Bash(*:stg show *), Bash(*:stg log *), Bash(*:stg id *), Bash(*:stg diff *), Bash(*:stg files *), Bash(*:stg patches *), Bash(*:git diff *), Bash(*:git log *), Bash(*:git reflog *)
+allowed-tools: Bash(*:stg series *), Bash(*:stg show *), Bash(*:stg log *), Bash(*:stg id *), Bash(*:stg diff *), Bash(*:stg files *), Bash(*:stg patches *), Bash(*:git diff *), Bash(*:git log *), Bash(*:git reflog *), Bash(*:git show-ref *), Bash(*:git branch --show-current*)
 ---
 
 # stg: patch stack management
 
 When stg is active on a branch, use stg commands instead of
-raw git for all commit operations. Check activation with:
+raw git for all commit operations. Check activation in two
+steps so each command matches an allowed-tool prefix and
+avoids a permission prompt:
 
-```bash
-git show-ref --verify "refs/stacks/$(git symbolic-ref --short HEAD)" >/dev/null 2>&1
-```
+1. `git branch --show-current` — get the branch name
+2. `git show-ref --verify refs/stacks/<branch>` — check
+   for the stg stack ref
+
+A zero exit status on step 2 means stg is active; non-zero
+means it is not. Do not combine these into a single shell
+command (pipes, `$()`, and `xargs` defeat prefix matching
+and trigger a permission prompt).
 
 ## CRITICAL: Prohibited git commands
 
