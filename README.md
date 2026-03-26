@@ -41,6 +41,15 @@ NFS/RDMA server and client events (sunrpc, svcrdma, xprtrdma,
 nfsd), RPCGSS, workqueue, scheduler, TCP, and TLS handshake
 tracepoints.
 
+### b4
+
+Teaches Claude Code the `b4` patch workflow for applying
+patches from lore (`b4 am`), comparing series revisions
+(`b4 diff`), and managing outbound patch series with
+`b4 prep` and `b4 send`. Covers coexistence with StGit,
+cover letter strategies, recipient management, and
+non-interactive operation constraints.
+
 ## Layout
 
 ```
@@ -51,6 +60,7 @@ plugin/cel-kdev/
   .claude-plugin/
     plugin.json      # plugin manifest
   skills/
+    b4/SKILL.md
     drgn/SKILL.md
     stg/SKILL.md
     perf/SKILL.md
