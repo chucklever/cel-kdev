@@ -12,6 +12,11 @@
 | Update a non-current patch | `stg refresh -p <patch-name>` |
 | Edit current patch message | `stg edit --file <path>` |
 | Edit message and diff | `stg edit --diff --file <path>` |
+| Track a new file | `stg add <file>` |
+
+`stg refresh` picks up all changes to already-tracked files
+automatically. `stg add` is needed only to place a new file
+under version control for the first time.
 
 ## Squashing
 

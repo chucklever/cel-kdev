@@ -98,6 +98,15 @@ all options before patch names.
 merge commits into patches. Use `stg undo` to remove an
 accidental merge before running `stg repair`.
 
+**`git add` before `stg refresh`**: `stg refresh` picks up
+all changes to tracked files automatically. Do not run
+`git add <file> && stg refresh` or `stg add <file> &&
+stg refresh` -- the staging step is unnecessary. `stg add`
+is needed only when introducing a new file to the repository
+(adding it to the tracked list for the first time).
+`stg resolved` is needed only to indicate that merge
+conflicts have been cleared, not for routine refreshes.
+
 **`stgit.autosign` trailer**: When `stgit.autosign` is set
 in git config (e.g., to `Signed-off-by`), `stg new`,
 `stg import`, and `stg edit` automatically append that
