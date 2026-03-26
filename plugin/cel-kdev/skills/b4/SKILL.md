@@ -73,8 +73,11 @@ recipients) in `.git/config` without inserting tracking
 commits.
 
 ```bash
-b4 prep --enroll -F <fork-point>
+b4 prep --enroll -f <fork-point>
 ```
+
+(`-f` is `--fork-point`; `-F` is `--from-thread`, a
+different option.)
 
 The fork-point is the upstream ref the series is based on
 (e.g., `origin/main`). When stg is active, derive it from
@@ -125,7 +128,29 @@ unavailable in Claude's shell.
 
 **Fork-point goes stale after rebase**: After `stg rebase`
 onto a new base, the fork-point b4 recorded at enrollment
-time no longer matches. Re-enroll or update the base.
+time no longer matches. b4 has no CLI command to update
+`base-branch` on an already-enrolled branch (`-f` only
+applies during initial enrollment). Update the tracking
+JSON directly:
+
+The tracking value is a JSON object like:
+```
+{"base-branch":"origin/master","series-id":"...","prefixes":["PATCH"]}
+```
+
+```bash
+# Read current tracking
+git config branch.<name>.b4-tracking
+
+# Write back with corrected "base-branch" value
+git config branch.<name>.b4-tracking '<updated JSON>'
+```
+
+The `base-branch` field determines which
+remote ref b4 uses to compute `base-commit` (the
+merge-base). After updating, verify with
+`b4 prep --show-info` that `base-commit` and
+`series-range` look correct.
 
 **GPG/patatt signing requires pinentry**: Signing is
 interactive and unavailable in Claude's shell. Either
