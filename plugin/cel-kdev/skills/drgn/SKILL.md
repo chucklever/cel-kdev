@@ -7,7 +7,6 @@ description: >-
   type introspection, container_of usage, and common pitfalls
   for SUNRPC, NFS, and AIO subsystems.
 invocation_policy: automatic
-allowed-tools: Bash(*:drgn *), Bash(*:sudo drgn *), Bash(*:sudo timeout * drgn *)
 ---
 
 # drgn live kernel debugger

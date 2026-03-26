@@ -6,7 +6,6 @@ description: >-
   analysis. Handles symbol resolution, DSO attribution, AMD and Intel
   platform events, and common profiling pitfalls.
 invocation_policy: automatic
-allowed-tools: Bash(*:perf *), Bash(*:sudo perf *)
 ---
 
 # perf profiling

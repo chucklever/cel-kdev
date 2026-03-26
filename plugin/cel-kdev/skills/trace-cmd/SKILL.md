@@ -8,7 +8,6 @@ description: >-
   xprtrdma, rpcgss, workqueue, rdma, tcp, handshake, and sched
   subsystems.
 invocation_policy: automatic
-allowed-tools: Bash(*:trace-cmd *), Bash(*:awk *), Bash(*:grep *), Bash(*:sort *), Bash(*:cat /sys/kernel/tracing/*), Bash(*:cat /sys/kernel/debug/tracing/*), Bash(*:/sys/kernel/tracing/*), Bash(*:/sys/kernel/debug/tracing/*)
 ---
 
 # Trace analysis

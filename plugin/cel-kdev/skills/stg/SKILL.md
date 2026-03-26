@@ -6,7 +6,6 @@ description: >-
   equivalents to prevent stack corruption. Covers patch creation,
   reordering, squashing, conflict resolution, and series management.
 invocation_policy: automatic
-allowed-tools: Bash(*:stg series *), Bash(*:stg show *), Bash(*:stg log *), Bash(*:stg id *), Bash(*:stg diff *), Bash(*:stg files *), Bash(*:stg patches *), Bash(*:git diff *), Bash(*:git log *), Bash(*:git reflog *), Bash(*:git show-ref *), Bash(*:git branch --show-current*)
 ---
 
 # stg: patch stack management
