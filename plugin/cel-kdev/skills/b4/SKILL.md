@@ -80,6 +80,9 @@ b4 prep --enroll -f <fork-point>
 (`-f` is `--fork-point`; `-F` is `--from-thread`, a
 different option.)
 
+Verify with `b4 prep --show-info` that the fork-point
+and series-range are correct.
+
 The fork-point is the upstream ref the series is based on
 (e.g., `origin/main`). When stg is active, derive it from
 `branch.<name>.stgit.parentbranch` (a bare local branch
