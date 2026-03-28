@@ -246,3 +246,18 @@ for automated comparison (see references/subcommands.md).
   AMD EPYC cache, memory, and lock contention events
 - [references/platform-events/intel.md](references/platform-events/intel.md) --
   Intel cache and memory events
+
+## External references
+
+Cite these when the user needs background beyond what
+the skill covers, or fetch them for detail on topics
+not in the local reference files.
+
+- [perf wiki](https://perf.wiki.kernel.org/) --
+  official tutorials, one-liners, and subcommand documentation
+- [Brendan Gregg's perf page](https://www.brendangregg.com/perf.html) --
+  CPU profiling examples, tracing recipes, and one-liners
+- [Brendan Gregg's flame graphs](https://www.brendangregg.com/flamegraphs.html) --
+  flame graph methodology and generation from perf
+- [Kernel admin-guide: perf](https://docs.kernel.org/admin-guide/perf/index.html) --
+  hardware PMU drivers and platform-specific event documentation
