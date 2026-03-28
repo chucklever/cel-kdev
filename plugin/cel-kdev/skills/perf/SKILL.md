@@ -1,10 +1,14 @@
 ---
 name: perf
 description: >-
-  Linux perf profiling and tracing. Guides perf record, perf report,
-  perf diff, perf stat, flamegraph generation, and cache/lock/scheduler
-  analysis. Handles symbol resolution, DSO attribution, AMD and Intel
-  platform events, and common profiling pitfalls.
+  Linux perf profiling and tracing. Analyze perf.data captures,
+  CPU profiling results, and lock contention profiles. Guides
+  perf record, perf report, perf script, perf annotate, perf diff,
+  perf stat, perf lock, perf c2c, and perf sched subcommands.
+  Covers flamegraph generation, symbol resolution (kallsyms,
+  DSO attribution, garbled module symbols), overhead analysis,
+  hot path identification, and common profiling pitfalls.
+  Handles AMD and Intel platform events.
 invocation_policy: automatic
 ---
 
