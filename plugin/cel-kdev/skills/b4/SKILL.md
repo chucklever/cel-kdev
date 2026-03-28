@@ -36,6 +36,7 @@ fork-point (e.g., origin/master)
   > patch-c          <- HEAD, visible to b4
   - patch-d          <- unapplied, in refs/stacks/ only
   - patch-e          <- unapplied, NOT visible to b4
+                        => stg push -a before b4 send
 ```
 
 Unapplied patches exist only in stg metadata and are
