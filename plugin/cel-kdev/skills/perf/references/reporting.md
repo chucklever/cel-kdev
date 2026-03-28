@@ -33,6 +33,24 @@ Module symbols in `/proc/kallsyms` are identified by a
 trailing `[module_name]` field; `grep -v '\['` removes
 them.
 
+**Caveat -- `-ffunction-sections` breaks `.ko` resolution**:
+When the kernel is built with `-ffunction-sections`
+(present in `KBUILD_CFLAGS_KERNEL` in recent kernels),
+each function occupies its own `.text.<name>` ELF section.
+The module loader lays out these sections in an order that
+differs from the `.ko` linker output. The stripped-kallsyms
+technique forces perf to resolve module addresses from the
+`.ko` file, which assumes relative function positions are
+preserved. They are not, so module symbols are
+misattributed. When `-ffunction-sections` is active, use
+full `/proc/kallsyms` instead (see below). Check with:
+
+```bash
+grep -q -- '-ffunction-sections' \
+  /lib/modules/$(uname -r)/build/Makefile && \
+  echo "ffunction-sections active -- use full kallsyms"
+```
+
 **Alternative -- `--vmlinux`**: `perf report` (but not
 `perf diff`) accepts `--vmlinux=<path>` which provides
 vmlinux symbol resolution without absorbing module

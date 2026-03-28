@@ -31,9 +31,27 @@ sudo perf record -e cycles -e cpu-clock \
 
 Add `-p <pid>` for a running process or `-a` for system-wide.
 
-### Stripped kallsyms for DSO attribution
+### Symbol resolution for modules
 
-Generate once before analysis:
+When the kernel is built with `-ffunction-sections`
+(check `KBUILD_CFLAGS_KERNEL` in the Makefile), the
+module loader rearranges function sections at load time.
+perf cannot resolve module symbols from `.ko` files in
+this case because the runtime layout no longer matches
+the ELF layout. Use full `/proc/kallsyms`:
+
+```bash
+sudo perf report --kallsyms=/proc/kallsyms
+```
+
+This collapses all kernel symbols into
+`[kernel.kallsyms]`, losing per-module DSO attribution,
+but gives correct symbol names. If the build
+configuration is uncertain, prefer full `/proc/kallsyms`.
+
+When `-ffunction-sections` is **not** active, the
+stripped-kallsyms technique preserves per-module DSO
+attribution. Generate once before analysis:
 
 ```bash
 sudo grep -v '\[' /proc/kallsyms > /tmp/vmlinux-kallsyms.txt
@@ -41,17 +59,18 @@ sudo grep -v '\[' /proc/kallsyms > /tmp/vmlinux-kallsyms.txt
 
 This removes module symbols so perf resolves vmlinux
 addresses from the file and module addresses from the
-recorded MMAP records, preserving per-module DSO
-attribution. Without this, `--kallsyms=/proc/kallsyms`
-collapses all kernel symbols into `[kernel.kallsyms]`.
-
-Pass `--kallsyms=/tmp/vmlinux-kallsyms.txt` to all
+recorded MMAP records. Pass
+`--kallsyms=/tmp/vmlinux-kallsyms.txt` to all
 `perf report`, `perf script`, and `perf annotate`
 invocations. `perf diff` does not support `--vmlinux`,
 so the stripped kallsyms workaround is the only way to
 maintain DSO separation in comparisons.
 
 ## Analysis workflow
+
+The examples below use `/tmp/vmlinux-kallsyms.txt`;
+substitute `/proc/kallsyms` when `-ffunction-sections` is
+active (see "Symbol resolution for modules" above).
 
 ### Phase 1: Overview
 
@@ -147,6 +166,38 @@ for automated comparison (see references/subcommands.md).
   precedes them. `--no-inline` does not fix this.
   Building the module with `CFLAGS_<file>.o += -fno-inline`
   restores accuracy at the cost of changing code layout.
+
+- **Garbled module symbols from `-ffunction-sections`**:
+  When `-ffunction-sections -fdata-sections` is enabled
+  (as in recent kernel Makefiles), each function gets its
+  own `.text.<name>` ELF section. The module loader places
+  these sections in an order that differs from the `.ko`
+  linker output. perf resolves module addresses by applying
+  a base offset to the `.ko` symbol table, assuming
+  relative positions are preserved. They are not, so
+  return addresses get attributed to whichever `.ko`-offset
+  symbol lands at that position in the pre-relocation
+  layout. vmlinux symbols are unaffected because they
+  resolve through kallsyms (runtime addresses).
+
+  The stripped-kallsyms workaround (removing module symbols
+  so perf falls back to `.ko` ELF resolution) makes this
+  worse, not better. Use full `/proc/kallsyms` instead:
+
+  ```bash
+  sudo perf report --kallsyms=/proc/kallsyms
+  ```
+
+  This sacrifices per-module DSO attribution (all symbols
+  collapse into `[kernel.kallsyms]`) but gives correct
+  symbol names. Check whether `-ffunction-sections` is
+  active before choosing the stripped vs. full kallsyms
+  approach:
+
+  ```bash
+  grep -q -- '-ffunction-sections' /lib/modules/$(uname -r)/build/Makefile && \
+    echo "ffunction-sections active -- use full kallsyms"
+  ```
 
 - **AMD SRSO mitigations**: On AMD Zen 3/4 CPUs,
   `srso_alias_safe_ret` and `srso_alias_return_thunk`
