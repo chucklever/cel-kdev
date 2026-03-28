@@ -152,6 +152,11 @@ merge-base). After updating, verify with
 `b4 prep --show-info` that `base-commit` and
 `series-range` look correct.
 
+If the series has not yet been sent, `b4 prep --cleanup`
+followed by re-enrollment is simpler. Use the `git config`
+path when preserving an in-flight change-id and cover
+letter matters.
+
 **GPG/patatt signing requires pinentry**: Signing is
 interactive and unavailable in Claude's shell. Either
 pass `--no-sign` to `b4 send` (or set
