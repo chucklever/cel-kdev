@@ -125,6 +125,39 @@ in git config (e.g., to `Signed-off-by`), `stg new`,
 trailer. The `-m` flag on `stg import` selects mail/mbox
 input format and has no effect on trailer behavior.
 
+## Token efficiency
+
+**Do not verify after refresh.** After `stg refresh`, do not
+call `stg show`, `stg series`, or `stg diff` to confirm the
+operation succeeded.  Check the exit code instead.  Only
+read patch content when the next step actually requires it
+(e.g., editing the commit message or reviewing the diff at
+the user's request).
+
+**Do not diff before refresh.** `stg refresh` captures all
+modifications to tracked files automatically.  Do not run
+`stg diff` before `stg refresh` to preview what will be
+folded in — unless the user explicitly asks to review
+pending changes first.
+
+**Batch patch inspection.** When reviewing multiple patches,
+avoid walking the stack one `stg show` at a time.  Prefer:
+
+- `stg series -d` — names and descriptions in one call.
+- `stg diff -r <first>~..<last>` — combined diff across a
+  range of patches.
+- `stg show -O --stat <patch>` — summary only, when the
+  full diff is not needed.
+
+**Limit stg series calls.** Run `stg series` (or
+`stg series -d`) once for orientation at the start of a
+session.  After `stg push`, `stg pop`, `stg goto`, or
+`stg new`, the new stack position is known from the command
+output — do not re-run `stg series` to confirm it.  Prefer
+`stg series -d` over a plain `stg series` followed by
+individual `stg show` calls when both names and descriptions
+are needed.
+
 ## Avoiding interactive editors
 
 Always provide `-m` to `stg new` and `--file <path>` to
