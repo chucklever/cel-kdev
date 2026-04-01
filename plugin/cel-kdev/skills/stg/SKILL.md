@@ -1,10 +1,11 @@
 ---
 name: stg
 description: >-
-  StGit (stg) patch stack management. When stg is active on a
-  branch, replaces git commit, amend, rebase, and reset with stg
-  equivalents to prevent stack corruption. Covers patch creation,
-  reordering, squashing, conflict resolution, and series management.
+  Load when committing, amending, rebasing, or managing patches
+  in any repository that uses StGit (stg). Required whenever
+  the user asks to commit changes, update a commit, create or
+  edit a patch, reorder patches, or resolve merge conflicts
+  on a branch with an active stg stack.
 invocation_policy: automatic
 ---
 
