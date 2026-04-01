@@ -106,6 +106,19 @@ is needed only when introducing a new file to the repository
 `stg resolved` is needed only to indicate that merge
 conflicts have been cleared, not for routine refreshes.
 
+**Dirty index guard on `stg refresh`**: When changes exist
+in both the index and the worktree (e.g., after `stg add`,
+`stg mv`, or `stg rm` staged some paths), plain `stg refresh`
+refuses with "the index is dirty." Two flags override this:
+
+- `--index` (`-i`): refresh only from what is staged in the
+  index, ignoring worktree changes. Use after `stg add`,
+  `stg mv`, or `stg rm` when only the staged changes belong
+  in the patch. Mutually exclusive with pathspecs, `--update`,
+  and `--force`.
+- `--force` (`-F`): fold in all changes from both the index
+  and the worktree, bypassing the dirty-index check.
+
 **`stgit.autosign` trailer**: When `stgit.autosign` is set
 in git config (e.g., to `Signed-off-by`), `stg new`,
 `stg import`, and `stg edit` automatically append that
