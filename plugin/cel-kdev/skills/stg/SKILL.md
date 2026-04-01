@@ -134,6 +134,12 @@ read patch content when the next step actually requires it
 (e.g., editing the commit message or reviewing the diff at
 the user's request).
 
+**Use `git status` for working tree state.** `git status`
+is the cheapest way to check whether there are modified
+tracked files, untracked files, or merge conflicts.  Use
+it instead of `stg diff` when the goal is to determine
+whether anything needs refreshing, not what the changes are.
+
 **Do not diff before refresh.** `stg refresh` captures all
 modifications to tracked files automatically.  Do not run
 `stg diff` before `stg refresh` to preview what will be
@@ -171,11 +177,12 @@ git config.
 
 When `stg push` or `stg rebase` produces conflicts:
 
-1. Run `git reflog` to examine the pre-merge patch state.
-2. Edit conflicted files to resolve each conflict.
-3. Mark resolved files with `stg resolved <file>` (not
+1. Run `git status` to identify conflicted files.
+2. Run `git reflog` to examine the pre-merge patch state.
+3. Edit conflicted files to resolve each conflict.
+4. Mark resolved files with `stg resolved <file>` (not
    `git add`).
-4. Run `stg refresh` to finalize the resolution.
+5. Run `stg refresh` to finalize the resolution.
 
 To abort: `stg undo` reverts the failed operation.
 
