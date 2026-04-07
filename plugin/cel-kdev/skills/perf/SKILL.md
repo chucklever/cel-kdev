@@ -96,9 +96,14 @@ For the top functions, examine call chains:
 
 ```bash
 sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt \
-  --stdio --call-graph callee \
+  --stdio --no-inline --call-graph callee \
   --symbol-filter=<hot_function>
 ```
+
+Always pass `--no-inline` when analyzing call chains
+unless the user explicitly requests inline frame
+expansion (see "Garbled call chains from DWARF inline
+expansion" in pitfalls).
 
 Identify:
 - Which callers drive the most overhead into this function
@@ -162,14 +167,25 @@ for automated comparison (see references/subcommands.md).
   `cycles` samples is mostly idle; one showing 10% of
   both is fully busy.
 
-- **Garbled module symbols from inlining**: When call
-  chains show implausible function names (e.g., READ
-  functions in a WRITE workload), aggressive inlining
-  creates large gaps in the symbol table. Return addresses
-  in the gap are attributed to whatever unrelated symbol
-  precedes them. `--no-inline` does not fix this.
-  Building the module with `CFLAGS_<file>.o += -fno-inline`
-  restores accuracy at the cost of changing code layout.
+- **Garbled call chains from DWARF inline expansion**:
+  When call chains show implausible function names (e.g.,
+  READ functions in a WRITE workload), the most common
+  cause is perf's DWARF inline expansion.  Pass
+  `--no-inline` to disable it.  The flat (Self) profile
+  is unaffected; only call chain frames are garbled.
+  See [references/reporting.md](references/reporting.md)
+  for the full mechanism and diagnosis procedure.
+
+- **Garbled module symbols from symbol table gaps**: When
+  aggressive inlining is active (no `-fno-inline` flag)
+  and small functions are inlined into their callers, the
+  ELF symbol table has large gaps between surviving
+  symbols.  Return addresses in a gap are attributed to
+  whichever symbol precedes them.  `--no-inline` does not
+  fix this because the problem is in the symbol table,
+  not in DWARF.  Building the module with
+  `CFLAGS_<file>.o += -fno-inline` restores accuracy at
+  the cost of changing code layout.
 
 - **Garbled module symbols from `-ffunction-sections`**:
   When `-ffunction-sections -fdata-sections` is enabled

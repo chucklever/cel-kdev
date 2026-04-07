@@ -70,6 +70,43 @@ simpler and resolves all symbols in one pass:
 sudo perf report --kallsyms=/proc/kallsyms
 ```
 
+## DWARF inline expansion (`--no-inline`)
+
+By default, perf reads DWARF `DW_TAG_inlined_subroutine`
+entries from `.ko` debug info to expand inline frames in
+call chains.  This expansion frequently produces garbled
+symbol names for kernel modules because `__always_inline`
+helpers generate DWARF inline records even when the module
+is built with `-fno-inline`.  perf maps return addresses
+to whichever inline record spans that address range,
+yielding implausible names (e.g., `sunrpc_nl_ip_map_get_reqs_dumpit`
+appearing in an NFS WRITE call chain).
+
+Pass `--no-inline` to suppress DWARF inline expansion
+and fall back to ELF symbol table resolution:
+
+```bash
+sudo perf report --no-inline \
+  --kallsyms=/tmp/vmlinux-kallsyms.txt --stdio
+
+sudo perf script --no-inline \
+  --kallsyms=/tmp/vmlinux-kallsyms.txt
+
+sudo perf annotate --no-inline \
+  --kallsyms=/tmp/vmlinux-kallsyms.txt -s <symbol>
+```
+
+The flat (Self) profile is unaffected — only call chain
+frames are garbled by DWARF inline expansion.  Always use
+`--no-inline` when examining call chains for modules
+unless the user explicitly requests inline frame
+expansion.
+
+To diagnose whether DWARF inline expansion is the cause
+of garbled symbols, compare one stack with and without
+`--no-inline`.  If the `--no-inline` output shows a
+sensible call chain, DWARF is the problem.
+
 ## Non-interactive report
 
 For scripted analysis or piping, add `--stdio`:
