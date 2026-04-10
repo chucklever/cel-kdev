@@ -144,12 +144,21 @@ event. There is no `-e` flag on `perf report` to select a
 single event. When piping through `head`, only the first
 event's section may be visible.
 
-To reach the cycles section (typically the second):
+Section order matches the `-e` order on the `perf record`
+command line.  To extract individual event sections, save
+the full report and locate section boundaries:
 
 ```bash
 sudo perf report --kallsyms=/tmp/vmlinux-kallsyms.txt \
-  --stdio --no-children --comms=nfsd 2>&1 | \
-  grep -A 200 'Samples:.*cycles'
+  --stdio --no-children --comms=nfsd 2>&1 > /tmp/perf-report.txt
+grep -n "^# Samples" /tmp/perf-report.txt
+```
+
+This prints the line number and event name for each section.
+Extract a section by line range:
+
+```bash
+sed -n '<start>,<end>p' /tmp/perf-report.txt
 ```
 
 The `cpu-clock` section includes idle time (useful for
