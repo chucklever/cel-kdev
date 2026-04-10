@@ -1,0 +1,6 @@
+# Skill feedback observations contain personal session data
+skill-feedback/*.md
+skill-feedback/archive/
+
+# Local-only skill (not part of the published plugin)
+.claude/skills/skill-improve/
