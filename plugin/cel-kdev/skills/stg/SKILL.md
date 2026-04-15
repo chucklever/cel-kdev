@@ -265,14 +265,24 @@ There is no generic `--trailer` / `-t` flag on `stg edit`;
 
 When `stg push` or `stg rebase` produces conflicts:
 
-1. Run `git status` to identify conflicted files.
-2. Run `git reflog` to examine the pre-merge patch state.
-3. Edit conflicted files to resolve each conflict.
-4. Mark resolved files with `stg resolved <file>` (not
-   `git add`).
-5. Run `stg refresh` to finalize the resolution.
+1. `git status` — identify every conflicted file.
+2. Classify each conflict (take-ours, take-theirs,
+   concatenate, or semantic).  Resolve trivial cases
+   directly.
+3. For semantic conflicts, recover the three-way view
+   (`git show :1:`, `:2:`, `:3:` for base/ours/theirs)
+   and read both sides' commit messages before editing.
+4. `stg resolved <file>` (not `git add`) after each file.
+5. `stg refresh` to finalize.
+
+If intent cannot be determined, leave conflict markers in
+place and report what is ambiguous rather than guessing.
 
 To abort: `stg undo` reverts the failed operation.
+
+See [references/conflict-resolution.md](references/conflict-resolution.md)
+for the full context-gathering strategy, classification
+table, and prior-resolution retrieval.
 
 ## Tracing patch evolution with stg log
 
