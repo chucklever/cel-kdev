@@ -50,6 +50,18 @@ patches from lore (`b4 am`), comparing series revisions
 cover letter strategies, recipient management, and
 non-interactive operation constraints.
 
+### sashiko
+
+Teaches Claude Code how to retrieve and interpret reviews
+from the [sashiko](https://sashiko.dev) kernel-patch review
+bot. Points at the unauthenticated `/api/patchset` endpoint
+and away from two common dead ends: lore searches (the bot
+does not post to public lists by default) and `WebFetch`
+against the SPA web UI (returns only the app shell). Covers
+the email delivery policy, review-status transitions, and
+the false-positive rate that governs how review output
+should be treated.
+
 ## Layout
 
 ```
@@ -64,6 +76,7 @@ plugin/cel-kdev/
     drgn/SKILL.md
     stg/SKILL.md
     perf/SKILL.md
+    sashiko/SKILL.md
     trace-cmd/SKILL.md
 ```
 
