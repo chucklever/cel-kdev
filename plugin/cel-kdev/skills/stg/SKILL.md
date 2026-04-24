@@ -171,8 +171,41 @@ Always provide `-m` to `stg new` and `--file <path>` to
 `stg edit`. Write multi-line messages to a temp file and
 pass `-f /tmp/msg.txt` to `stg squash`.
 
-Use `-s` / `--sign` to auto-generate Signed-off-by from
-git config.
+### Trailer flags
+
+`stg new`, `stg edit`, and `stg refresh` accept three
+non-interactive trailer flags (no editor launched):
+
+- `-s` / `--signoff[=<value>]` -- Signed-off-by
+- `--ack[=<value>]` -- Acked-by
+- `--review[=<value>]` -- Reviewed-by
+
+With no `=<value>`, each uses the configured git user
+identity; with `=<value>`, the given string is inserted
+verbatim. The `=` is mandatory when supplying a value --
+`--review="Name <email>"` works, but `--review "Name
+<email>"` fails because stg consumes the next token as a
+patch name. Each flag may be repeated to add multiple
+trailers of the same type in one invocation.
+
+Compose with a `stg series --noprefix` loop to stamp a
+trailer across the whole stack:
+
+```bash
+for p in $(stg series --noprefix); do
+    stg edit --review="Name <email>" "$p"
+done
+```
+
+Each `stg edit` rewrites that patch's commit; expect every
+patch at or above the edited one to get a new SHA.
+
+Use `stg refresh --signoff` / `--ack` / `--review` to stamp
+the top patch in place without a `stg goto`.
+
+There is no generic `--trailer` / `-t` flag on `stg edit`;
+`-t` is `--set-tree`. Do not extrapolate from
+`git commit --trailer`.
 
 ## Merge conflict resolution
 
