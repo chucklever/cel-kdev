@@ -203,8 +203,47 @@ content). Do not pass it to `git show` or `git diff`
 expecting code -- it contains stg internal files
 (`stack.json`, `patches/<name>`, etc.).
 
-`stg log` accepts no formatting flags (no `--format`,
-`--oneline`, etc.). Its output format is fixed.
+`stg log` accepts no `--format` or `--oneline`; output is
+limited to its default, `--full` (full git-log format), or
+`--diff` (stack-state diffs).
+
+### Branch reflog vs stg log
+
+`git reflog <branch>` (an alias for
+`git log -g --abbrev-commit --pretty=oneline <branch>`)
+and `stg log` show overlapping but different histories:
+
+| View                   | What entries record                              | SHA points at      | Best for                                                  |
+| ---------------------- | ------------------------------------------------ | ------------------ | --------------------------------------------------------- |
+| `git reflog <branch>`  | stg ops that moved HEAD on the active branch     | The code commit    | "What did the top patch look like N refreshes ago?"       |
+| `stg log [<patch>]`    | Every stack-state change, incl. unapplied moves  | An stg meta commit | "When did patch X enter the stack? Was it ever popped?"   |
+
+Reflog and `stg log` entries for the same op carry the
+same message string, so the two views can be aligned by
+matching on that description.
+
+Recipe for the reflog case -- walk HEAD snapshots and
+inspect the file at each one. Do not pair `-- <path>`
+with a reflog walk (`git reflog` or `git log -g`):
+pathspec filtering treats reflog entries as linear
+ancestors, which they are not in a shuffled stg history.
+The filter silently elides relevant entries -- often
+every entry -- because each step's commit is diffed
+against its git-parent rather than the prior reflog step.
+
+```bash
+git reflog <branch>
+git show <sha>:<path>
+git diff <old-sha> <new-sha> -- <path>
+```
+
+The branch reflog records only HEAD movements on the
+active branch. Metadata-only operations (those that do
+not move HEAD) and edits to a patch made while it is
+unapplied appear only in `stg log`. HEAD-moving ops
+performed while some patch is unapplied (e.g., `stg pop`,
+`stg push <patch>`, `stg goto`) still appear in the
+reflog.
 
 ### Extracting a patch diff at a historical point
 
