@@ -94,6 +94,15 @@ arguments (`squash`, `float`, `sink`, `push`, `pop`) consume
 everything after the first patch name as patch names. Place
 all options before patch names.
 
+**`stg push <name>` and `stg pop <name>` reorder the series.**
+The named forms reposition that one patch -- they do not step
+the stack in series order. Using them to walk a stack lifts
+patches ahead of their prerequisites, and later pushes hit
+context-shift conflicts whose root cause is the silent
+reordering, not the patches. To navigate without reordering
+use `stg goto <name>`, or `stg push -n N` / `stg push -a` for
+forward steps. See [references/commands.md](references/commands.md).
+
 **Merge commits and repair**: `stg repair` cannot convert
 merge commits into patches. Use `stg undo` to remove an
 accidental merge before running `stg repair`.

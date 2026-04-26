@@ -27,6 +27,17 @@ under version control for the first time.
 
 ## Navigation
 
+**Use `stg goto <patch-name>` to move the stack position
+without reordering patches.** `stg push` and `stg pop` with
+no arguments step one position in series order. The named
+forms `stg push <name>` and `stg pop <name>` reorder the
+series (see "Reordering by named push/pop" below). For any
+navigation task -- "go to patch X," "step through the stack,"
+"walk the series" -- use `stg goto`, `stg push` / `stg pop`
+with no name, `stg push -n N`, or `stg push -a`. Reach for
+the named forms only when the explicit intent is to change
+the order of patches in the series.
+
 | Task | Command |
 | ---- | ------- |
 | Go to specific patch | `stg goto <patch-name>` |
@@ -34,10 +45,28 @@ under version control for the first time.
 | Push next patch | `stg push` |
 | Pop all patches | `stg pop -a` |
 | Push all patches | `stg push -a` |
+| Push N patches in order | `stg push -n N` |
 | View series | `stg series` |
 | View series with descriptions | `stg series -d` |
 
-Prefer `stg goto` over manual pop/push sequences.
+### Reordering by named push/pop
+
+| Task | Command |
+| ---- | ------- |
+| Reorder + apply patch | `stg push <patch-name>` |
+| Reorder + unapply patch | `stg pop <patch-name>` |
+
+`stg push <name>` does not push patches in series order up to
+`<name>`; it lifts that single patch over any intervening
+unapplied patches and applies it on top, silently reordering
+the series so the named patch sits ahead of patches that
+originally preceded it. Likewise `stg pop <name>` pops only
+the named patch, leaving patches that were applied above it
+still applied -- again a reorder, not a step. Walking a stack
+this way lifts patches ahead of their prerequisites and
+produces phantom merge conflicts on later pushes. Reach for
+these forms only when reordering is the goal; for navigation
+use `stg goto`, `stg push -n N`, or `stg push -a`.
 
 ## Viewing patches
 
