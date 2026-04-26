@@ -126,6 +126,14 @@ in git config (e.g., to `Signed-off-by`), `stg new`,
 trailer. The `-m` flag on `stg import` selects mail/mbox
 input format and has no effect on trailer behavior.
 
+**`Edit` cache stale after stack ops**: Any stg command that
+moves HEAD or rewrites a patch's tree (`push`, `pop`, `goto`,
+`refresh`, `squash`, `fold`, `sink`, `float`, `pick`, `import`,
+`rebase`, `undo`, `redo`, `edit --set-tree`) rewrites tracked
+files on disk. The `Edit` tool's per-file freshness snapshot
+goes stale; the next `Edit` fails with "File has been modified
+since read." `Read` the file again before the next `Edit`.
+
 ## Token efficiency
 
 **Do not verify after refresh.** After `stg refresh`, do not
