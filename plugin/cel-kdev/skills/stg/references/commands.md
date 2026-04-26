@@ -68,6 +68,33 @@ produces phantom merge conflicts on later pushes. Reach for
 these forms only when reordering is the goal; for navigation
 use `stg goto`, `stg push -n N`, or `stg push -a`.
 
+## Listing patches for shell loops
+
+`stg series` prefixes each line with a status marker
+(`>` current, `+` applied, `-` unapplied). For shell loops,
+strip the prefix with `--noprefix` and filter with the flags
+below:
+
+| Flag | Output |
+| ---- | ------ |
+| `--noprefix` | Patch names only, no marker column |
+| `--applied` | Limit to applied patches |
+| `--unapplied` | Limit to unapplied patches |
+| `--all` | Include hidden patches too |
+| `-d` / `--description` | Append commit subject -- human reading only; breaks `for p in $(...)` word-splitting |
+
+```bash
+# All applied patch names (oldest first)
+for p in $(stg series --applied --noprefix); do ... done
+
+# All unapplied patches still to push
+for p in $(stg series --unapplied --noprefix); do ... done
+```
+
+Always pass `--noprefix` for scripting. Do not strip the
+marker with `awk '{print $2}'` or `cut -c3-` -- the marker
+column is variable width during operations.
+
 ## Viewing patches
 
 | Task | Command |
