@@ -65,6 +65,27 @@ b4 commands when available. See `series-send --help` or
 the series-send table in CLAUDE.md for the full command
 set.
 
+### Series metadata files
+
+Check `git config b4.prep-cover-strategy` first. When the
+strategy is `file`, b4 stores per-series state under
+`.git/b4-prep/<change-id>/`:
+
+| File | Contents |
+| ---- | -------- |
+| `cover` | Cover letter (subject, blank line, body) |
+| `changelog` | Per-revision changelog, newest first |
+| `recipients` | Per-patch To/Cc from `--auto-to-cc` |
+
+`b4 prep --show-info change-id` prints the bare change-id.
+Edit these files directly; b4 reads them at send time.
+
+Under the `branch-description` strategy there are no such
+files: the cover and changelog live in
+`branch.<name>.description` and the recipients live in
+`.git/config`. See [references/cover-strategies.md](references/cover-strategies.md)
+for that strategy and the changelog format.
+
 ### Setup
 
 b4 prep and stg coexist on the same branch when b4 uses
