@@ -1,0 +1,34 @@
+{
+  "name": "cel-kdev",
+  "version": "2.4.1",
+  "description": "Skills for Linux kernel development workflows",
+  "author": {
+    "name": "Chuck Lever",
+    "email": "cel@kernel.org",
+    "url": "https://github.com/chucklever"
+  },
+  "homepage": "https://github.com/chucklever/cel-kdev",
+  "repository": "https://github.com/chucklever/cel-kdev",
+  "license": "MIT",
+  "keywords": [
+    "linux-kernel",
+    "stgit",
+    "perf",
+    "trace-cmd",
+    "drgn",
+    "b4",
+    "sashiko"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "cel-kdev",
+    "shortDescription": "Linux kernel development skills for Codex",
+    "longDescription": "Codex skills for StGit patch management, b4 patch workflows, perf analysis, trace-cmd analysis, drgn debugging, and sashiko review retrieval.",
+    "developerName": "Chuck Lever",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ]
+  }
+}
