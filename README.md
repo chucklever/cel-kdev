@@ -102,6 +102,40 @@ claude plugin marketplace add chucklever/cel-kdev
 claude plugin install cel-kdev
 ```
 
+## Codex
+
+The `.claude-plugin/` wrapper packages these skills for Claude
+Code. Codex consumes the same skills directly, either through
+the `.codex-plugin/` manifest or by installing the individual
+SKILL.md directories.
+
+Codex reads the Claude-style marketplace at
+`.claude-plugin/marketplace.json`, which points at the
+`.codex-plugin/` manifest under `plugin/cel-kdev/`. The
+preferred install path is therefore the marketplace:
+
+```
+codex plugin marketplace add chucklever/cel-kdev
+```
+
+Then complete the install from `/plugins` inside Codex.
+
+If the marketplace path is unavailable, the skill installer
+script fetches the SKILL.md directories directly as a fallback:
+
+```
+python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo chucklever/cel-kdev \
+  --path plugin/cel-kdev/skills/b4 \
+  --path plugin/cel-kdev/skills/drgn \
+  --path plugin/cel-kdev/skills/perf \
+  --path plugin/cel-kdev/skills/sashiko \
+  --path plugin/cel-kdev/skills/stg \
+  --path plugin/cel-kdev/skills/trace-cmd
+```
+
+Restart Codex after installation.
+
 ## License
 
 MIT
