@@ -80,6 +80,21 @@ plugin/cel-kdev/
     trace-cmd/SKILL.md
 ```
 
+## Requirements
+
+The `block-raw-git.sh` `PreToolUse` hook (installed by the
+Claude Code manifest, wired in by hand on Codex) parses the
+harness's tool-input JSON with `jq`, so `jq` must be present
+on the host:
+
+```
+apt install jq      # Debian, Ubuntu
+dnf install jq      # Fedora, RHEL
+```
+
+The hook aborts with a diagnostic when `jq` is missing rather
+than failing open.
+
 ## Install
 
 ```

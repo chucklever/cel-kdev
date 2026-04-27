@@ -2,6 +2,11 @@
 # Block raw git commands that corrupt stg patch stacks.
 # Only blocks when stg is active on the current branch.
 
+if ! command -v jq >/dev/null 2>&1; then
+    echo "block-raw-git: jq is required but not installed; install jq to enable the stg guard." >&2
+    exit 2
+fi
+
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
