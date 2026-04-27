@@ -1,0 +1,46 @@
+#!/bin/bash
+# pre-push: enforce plugin version bump when plugin contents change.
+# Claude Code keys its plugin cache off the manifest version, so any
+# push that touches plugin contents must carry a fresh version.
+
+set -e
+
+ZERO=0000000000000000000000000000000000000000
+MARKETPLACE=.claude-plugin/marketplace.json
+CODEX=plugin/cel-kdev/.codex-plugin/plugin.json
+
+fail() {
+    echo "pre-push: $*" >&2
+    exit 1
+}
+
+if ! command -v jq >/dev/null 2>&1; then
+    fail "jq is required but not installed"
+fi
+
+local_market=$(jq -r '.plugins[0].version' "$MARKETPLACE")
+local_codex=$(jq -r '.version' "$CODEX")
+
+if [ "$local_market" != "$local_codex" ]; then
+    fail "manifest version mismatch ($MARKETPLACE=$local_market, $CODEX=$local_codex); run scripts/bump-version.sh"
+fi
+
+while read -r _ local_sha _ remote_sha; do
+    [ "$local_sha" = "$ZERO" ] && continue
+    [ "$remote_sha" = "$ZERO" ] && continue
+
+    if git diff --quiet "$remote_sha" "$local_sha" -- .claude-plugin plugin; then
+        continue
+    fi
+
+    old_market=$(git show "$remote_sha:$MARKETPLACE" 2>/dev/null | jq -r '.plugins[0].version' 2>/dev/null || true)
+    if [ -z "$old_market" ] || [ "$old_market" = "null" ]; then
+        continue
+    fi
+
+    if [ "$old_market" = "$local_market" ]; then
+        fail "plugin contents changed but version is still $local_market; run scripts/bump-version.sh <new>"
+    fi
+done
+
+exit 0

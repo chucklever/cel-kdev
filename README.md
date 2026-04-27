@@ -195,6 +195,40 @@ shell interception is incomplete for newer streaming-shell
 execution paths, so treat this hook as defense in depth rather
 than a hard guarantee.
 
+## Releasing
+
+Claude Code keys its plugin cache off the manifest version, so
+every push that changes plugin contents needs a fresh version.
+Bump it with:
+
+```
+scripts/bump-version.sh 2.4.2
+```
+
+Both manifests are rewritten in place. Commit the bump as its
+own patch, separate from the content change it accompanies:
+
+```
+git add .claude-plugin/marketplace.json plugin/cel-kdev/.codex-plugin/plugin.json
+git commit -m "cel-kdev: Bump plugin version to 2.4.2"
+```
+
+Or with StGit:
+
+```
+stg new bump-2.4.2 -m "cel-kdev: Bump plugin version to 2.4.2"
+stg refresh
+```
+
+A `pre-push` hook under `scripts/git-hooks/` enforces the bump
+on every push that touches `.claude-plugin/` or `plugin/`, and
+also fails when the two manifests disagree. Activate it once
+after cloning:
+
+```
+git config core.hooksPath scripts/git-hooks
+```
+
 ## License
 
 MIT
