@@ -136,6 +136,65 @@ python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-githu
 
 Restart Codex after installation.
 
+## Codex hook setup
+
+The Claude Code plugin manifest installs a `PreToolUse` hook
+that blocks raw `git` commands on branches with an active stg
+stack. The Codex plugin manifest cannot currently package
+hooks, so Codex users wire the same protection in by hand.
+
+Codex hook support is feature-flagged. Enable it in
+`~/.codex/config.toml` (or a per-repo `.codex/config.toml`):
+
+```
+[features]
+codex_hooks = true
+```
+
+Clone the plugin repo somewhere you can keep updated, for
+example under `~/src/`:
+
+```
+git clone https://github.com/chucklever/cel-kdev.git ~/src/cel-kdev
+```
+
+Refresh later with:
+
+```
+git -C ~/src/cel-kdev pull --ff-only
+```
+
+Register it as a `PreToolUse` Bash hook by writing the
+following JSON to `~/.codex/hooks.json` (user-level) or
+`<repo>/.codex/hooks.json` (per-repo), per the
+[Codex hooks documentation](https://developers.openai.com/codex/hooks):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/YOU/src/cel-kdev/plugin/cel-kdev/hooks/block-raw-git.sh",
+            "timeout": 5,
+            "statusMessage": "Checking StGit policy"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The script exits 2 with the reason on stderr when it blocks,
+matching Codex's documented deny protocol. Codex notes that
+shell interception is incomplete for newer streaming-shell
+execution paths, so treat this hook as defense in depth rather
+than a hard guarantee.
+
 ## License
 
 MIT
