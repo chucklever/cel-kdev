@@ -1,6 +1,6 @@
 {
   "name": "cel-kdev",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "Skills for Linux kernel development workflows",
   "author": {
     "name": "Chuck Lever",
