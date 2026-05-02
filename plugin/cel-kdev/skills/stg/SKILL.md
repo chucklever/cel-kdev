@@ -49,6 +49,11 @@ refs (`refs/stacks/<branch>`); a worktree that checks out
 the same branch or manipulates shared refs corrupts the
 stack metadata just like a raw `git commit` would.
 
+This rule overrides the `superpowers:using-git-worktrees`
+skill on stg branches.  Do not create a worktree for an
+stg branch even when that skill recommends one for plan
+isolation; on an stg branch, the stg prohibition wins.
+
 ## CRITICAL: No parallel stg operations
 
 The stg stack is a single shared resource. Every mutating
