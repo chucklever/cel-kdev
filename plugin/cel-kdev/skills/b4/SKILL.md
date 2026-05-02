@@ -183,11 +183,13 @@ path when preserving an in-flight change-id and cover
 letter matters.
 
 **GPG/patatt signing requires pinentry**: Signing is
-interactive and unavailable in Claude's shell. Either
-pass `--no-sign` to `b4 send` (or set
-`b4.send-no-patatt-sign` to `true`), or ask the user to
+interactive and unavailable in Claude's shell. Default
+posture is to keep the patch signed: ask the user to
 pre-cache the GPG passphrase in a separate terminal before
-sending.
+sending. Use `--no-sign` (or set `b4.send-no-patatt-sign`
+to `true`) only after the user has explicitly authorized
+sending the series unsigned -- bypassing signing without
+that authorization violates the harness signing policy.
 
 **`b4 send` requires enrollment**: `b4 send` cannot send
 arbitrary patch files. The branch must be enrolled with
