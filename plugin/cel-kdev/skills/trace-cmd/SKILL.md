@@ -20,6 +20,13 @@ When the user provides a trace file path, begin analysis
 immediately. If no specific question is asked, produce a
 general summary first, then offer deeper analysis.
 
+trace-cmd .dat files are binary captures and `trace-cmd
+report` output streams through pipelines rather than
+landing in a file `Read` can open.  `awk`, `grep`, `head`,
+and similar shell tools are the correct way to extract
+fields and summaries from this data; the system prompt's
+preference for dedicated file tools does not apply here.
+
 ## CRITICAL: trace-cmd argument order
 
 The input file MUST be specified with `-i` BEFORE any
