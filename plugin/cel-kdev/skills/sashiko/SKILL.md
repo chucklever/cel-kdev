@@ -138,6 +138,38 @@ The `series-v<N>:` line gives `<range> <msgid>`, where
 `<msgid>` is the patch-0 cover Message-ID to pass as
 `?id=<msgid>`.
 
+## Local sashiko-cli
+
+When the sashiko source is checked out locally (typically
+at `~/src/sashiko/`) and the daemon is running, prefer the
+`sashiko-cli` wrapper over hitting the JSON API directly.
+Subcommands are stable, default output is human-readable,
+and `--format json` returns the same shape as the Backend
+API above.
+
+Default server is `http://127.0.0.1:8080`.  Override with
+`--server <url>` or `SASHIKO_SERVER=<url>`.  Build via
+`cargo run --bin sashiko-cli -- <subcommand>` from the
+sashiko source tree, or install per the upstream README.
+
+| Command | Purpose |
+| ------- | ------- |
+| `sashiko-cli show <id>` | Print the review for a patchset (numeric id, or `latest`) |
+| `sashiko-cli list [filter]` | List patchsets (`pending`, `failed`, list-name, etc.) |
+| `sashiko-cli status` | Daemon status and aggregate counts |
+| `sashiko-cli submit <input>` | Queue a commit, range, mbox file, or lore.kernel.org thread for review |
+| `sashiko-cli local [<input>]` | Run a one-shot review without enqueuing on a daemon (defaults to `HEAD`) |
+| `sashiko-cli rerun <id>` | Re-review a completed patchset |
+| `sashiko-cli cancel <id>` | Cancel a pending review |
+
+When a numeric patchset id appears in user input (e.g.,
+"run `sashiko-cli show 10`"), it refers to the local
+daemon's patchset id, not the public sashiko.dev id; the
+two are independent.
+
+Fall back to the Backend API for the public sashiko.dev
+deployment, or when no local daemon is running.
+
 ## Email delivery policy
 
 Defaults in `email_policy.toml` (in the `sashiko-dev/sashiko`
