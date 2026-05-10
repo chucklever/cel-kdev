@@ -93,6 +93,30 @@ but not ancestors of HEAD. They do not appear in `git log`.
 Use `stg show` with patch names from `stg series --unapplied`
 to examine them -- not `HEAD~N`.
 
+## Finding the stack base
+
+The stack base is the commit each applied patch sits above.
+It is recorded per branch in stg metadata; do not assume
+`origin/master` -- a branch may be rooted on any ref.
+
+```bash
+# Commit hash of the base (canonical lookup)
+stg id {base}
+
+# Upstream ref name (the form b4 expects as a fork-point)
+remote=$(git config branch.<name>.remote)
+parent=$(git config branch.<name>.stgit.parentbranch)
+echo "${remote}/${parent#refs/heads/}"
+```
+
+`stgit.parentbranch` may be stored as a bare branch name
+(`master`) or as a `refs/heads/` ref; stripping the prefix
+handles both.  Not every stg branch has `parentbranch`
+configured, so `stg id {base}` is the more reliable lookup
+when only the commit hash is needed.  When the base is a
+tag or an explicit remote ref, read `parentbranch` directly
+without composing.
+
 ## Pitfalls
 
 **`stg diff` without `-r`**: `stg diff <patch-name>` treats
