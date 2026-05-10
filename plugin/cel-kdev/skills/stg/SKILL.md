@@ -40,8 +40,16 @@ HEAD behind stg's back, corrupting the stack metadata.**
 | `git rebase -i` (reorder) | `stg sink`, `stg float` |
 | `git rebase -i` (squash) | `stg squash` |
 | `git worktree add` | (not supported with stg) |
+| `git checkout <branch>` / `git switch <branch>` | `stg branch <branch>` |
 
 This applies to all agents and subagents.
+
+`stg branch <name>` both creates and switches branches; it
+is the canonical stg interface for branch operations. The
+runtime hook's `git branch -> stg branch` line refers to
+this. A raw `git checkout` between two stg branches does
+not always corrupt the stack, but it bypasses the stg
+metadata bookkeeping and is not the supported interface.
 
 **`git worktree`** creates a new checkout that shares refs
 with the main working tree. Stg tracks its stack state in
