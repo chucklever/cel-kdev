@@ -126,6 +126,36 @@ for r in sorted(reviews, key=lambda r: parts.get(r["patch_id"], {}).get("part_in
 '
 ```
 
+### Pitfall: keep the python heredoc single-quoted
+
+The recipe relies on `python3 -c '...'` (single-quoted), so
+double-quoted Python strings (`"patches"`, `"part_index"`)
+inside the script reach the interpreter unmodified.  Do not
+flip the quoting to `python3 -c "..."` with embedded `\"`:
+when the command is issued through a wrapper that already
+shell-quotes the outer string (Claude Code's Bash tool, most
+subprocess shells), the nested escapes collapse and Python
+fails with `SyntaxError: unexpected character after line
+continuation character`.  Curl then exits with error 23
+("Failure writing output to destination") because its pipe
+partner has gone away.  The symptom resembles a sashiko or
+network failure; the root cause is the quoting change.
+
+For scripts longer than a few lines, or any script that
+needs to embed single-quoted Python literals, write the
+JSON to a file and read it from a quoted heredoc:
+
+```bash
+curl -fsSG --data-urlencode "id=$MSGID" \
+  https://sashiko.dev/api/patchset > /tmp/sashiko.json
+python3 <<'PY'
+import json
+with open("/tmp/sashiko.json") as f:
+    d = json.load(f)
+# ... your code with any quoting style ...
+PY
+```
+
 ### Finding the cover-letter Message-ID for the current series
 
 When the user is working on a b4 prep branch:
