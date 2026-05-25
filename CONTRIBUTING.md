@@ -13,9 +13,10 @@ rest of this project.
 
 ## Guidelines
 
-- Keep skill text concise and actionable. Claude Code loads the
-  entire SKILL.md into context; verbose prose wastes tokens.
+- Keep skill text concise and actionable. Claude Code and Codex
+  both load selected skill instructions into context; verbose
+  prose wastes tokens.
 - Test changes by installing the plugin locally and exercising
-  the skill in a real session.
+  the skill in a real Claude Code or Codex session.
 - One skill per pull request unless the changes are closely
   related.

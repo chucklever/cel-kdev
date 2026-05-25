@@ -61,8 +61,7 @@ search query.
 `series-send` is a local wrapper around `b4 prep` and
 `b4 send` with stg-aware defaults. Prefer it over raw
 b4 commands when available. See `series-send --help` or
-the series-send table in CLAUDE.md for the full command
-set.
+local project documentation for the full command set.
 
 ### Series metadata files
 
@@ -136,7 +135,7 @@ letter.
 ## Avoiding interactive editors
 
 `b4 prep --edit-cover` launches `$EDITOR`, which is
-unavailable in Claude's shell.
+unavailable in non-interactive agent shells.
 
 - **`file` strategy**: edit `.git/b4-prep/<change-id>/cover`
   directly. No editor trick needed.
@@ -182,7 +181,7 @@ path when preserving an in-flight change-id and cover
 letter matters.
 
 **GPG/patatt signing requires pinentry**: Signing is
-interactive and unavailable in Claude's shell. Default
+interactive and unavailable in non-interactive agent shells. Default
 posture is to keep the patch signed: ask the user to
 pre-cache the GPG passphrase in a separate terminal before
 sending. Use `--no-sign` (or set `b4.send-no-patatt-sign`

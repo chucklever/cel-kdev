@@ -4,8 +4,8 @@ description: >-
   Load when the user asks to find, read, or interpret reviews
   from the sashiko kernel-patch review bot, or when they
   reference sashiko.dev.  Also load when a lore search for
-  bot reviewer output returns empty, or a WebFetch against
-  sashiko.dev returns only the SPA app shell -- this skill
+  bot reviewer output returns empty, or fetching sashiko.dev
+  returns only the SPA app shell -- this skill
   covers those failure signatures and the correct retrieval
   path.  Prefer over b4 and kreview when the review source
   is an LLM bot rather than a human reviewer.
@@ -42,12 +42,12 @@ bot's prose will return nothing for most subsystems -- do
 not run one "to confirm" either.  Go directly to the
 backend API.
 
-## CRITICAL: Do not WebFetch the web UI URLs
+## CRITICAL: Do not fetch the web UI URLs
 
 `https://sashiko.dev/#/patchset/<msgid>?part=<n>` is a
-client-side SPA route.  `WebFetch` receives only the app
-shell and reports "no reviews found" even when reviews
-exist.  Use the JSON API below instead.
+client-side SPA route. Generic web fetch tools receive only
+the app shell and report "no reviews found" even when
+reviews exist. Use the JSON API below instead.
 
 ## Backend API (unauthenticated)
 
@@ -132,7 +132,7 @@ double-quoted Python strings (`"patches"`, `"part_index"`)
 inside the script reach the interpreter unmodified.  Do not
 flip the quoting to `python3 -c "..."` with embedded `\"`:
 when the command is issued through a wrapper that already
-shell-quotes the outer string (Claude Code's Bash tool, most
+shell-quotes the outer string (agent shell tools, most
 subprocess shells), the nested escapes collapse and Python
 fails with `SyntaxError: unexpected character after line
 continuation character`.  Curl then exits with error 23

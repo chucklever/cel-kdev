@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${PLUGIN_ROOT}/hooks/block-raw-git.sh",
+            "timeout": 5,
+            "statusMessage": "Checking StGit policy"
+          }
+        ]
+      }
+    ]
+  }
+}

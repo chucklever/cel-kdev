@@ -33,13 +33,13 @@ sudo drgn -k -c 'print(prog["jiffies"])'
 ```
 
 For multi-line scripts, materialize the script with the
-`Write` tool and then invoke drgn against the resulting
-file in a separate Bash step.  Do not use a `cat <<EOF`
-heredoc to create the script: the Claude Code harness
-directs file creation through `Write`, and the heredoc
-form bypasses that policy.
+platform's file-editing mechanism and then invoke drgn
+against the resulting file in a separate shell step. Do
+not use a `cat <<EOF` heredoc to create the script:
+heredocs are harder for agent harnesses and hooks to
+inspect and can bypass edit policies.
 
-1. `Write` the script to `/tmp/drgn-script.py`, e.g.:
+1. Create `/tmp/drgn-script.py`, e.g.:
 
    ```python
    from drgn.helpers.linux.pid import find_task

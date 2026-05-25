@@ -1,0 +1,4 @@
+interface:
+  display_name: "trace-cmd"
+  short_description: "Kernel trace-cmd capture analysis"
+  default_prompt: "Use $trace-cmd to analyze a kernel trace-cmd capture or event report."

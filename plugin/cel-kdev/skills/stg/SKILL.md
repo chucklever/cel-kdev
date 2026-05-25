@@ -12,8 +12,8 @@ description: >-
 
 When stg is active on a branch, use stg commands instead of
 raw git for all commit operations. Check activation in two
-steps so each command matches an allowed-tool prefix and
-avoids a permission prompt:
+steps so each command stays simple and avoids unnecessary
+permission prompts:
 
 1. `git branch --show-current` — get the branch name
 2. `git show-ref --verify refs/stacks/<branch>` — check
@@ -21,8 +21,8 @@ avoids a permission prompt:
 
 A zero exit status on step 2 means stg is active; non-zero
 means it is not. Do not combine these into a single shell
-command (pipes, `$()`, and `xargs` defeat prefix matching
-and trigger a permission prompt).
+command: pipes, `$()`, and `xargs` are harder for hooks and
+approval rules to inspect and can trigger prompts.
 
 ## CRITICAL: Prohibited git commands
 
@@ -171,13 +171,14 @@ in git config (e.g., to `Signed-off-by`), `stg new`,
 trailer. The `-m` flag on `stg import` selects mail/mbox
 input format and has no effect on trailer behavior.
 
-**`Edit` cache stale after stack ops**: Any stg command that
+**File-edit cache stale after stack ops**: Any stg command that
 moves HEAD or rewrites a patch's tree (`push`, `pop`, `goto`,
 `refresh`, `squash`, `fold`, `sink`, `float`, `pick`, `import`,
 `rebase`, `undo`, `redo`, `edit --set-tree`) rewrites tracked
-files on disk. The `Edit` tool's per-file freshness snapshot
-goes stale; the next `Edit` fails with "File has been modified
-since read." `Read` the file again before the next `Edit`.
+files on disk. Per-file freshness snapshots held by editing
+tools can go stale; the next edit may fail with "File has
+been modified since read." Re-read the file before the next
+edit.
 
 ## Token efficiency
 

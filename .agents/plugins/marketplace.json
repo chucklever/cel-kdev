@@ -1,0 +1,20 @@
+{
+  "name": "cel-kdev",
+  "interface": {
+    "displayName": "cel-kdev"
+  },
+  "plugins": [
+    {
+      "name": "cel-kdev",
+      "source": {
+        "source": "local",
+        "path": "./plugin/cel-kdev"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

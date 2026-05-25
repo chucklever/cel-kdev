@@ -1,0 +1,4 @@
+interface:
+  display_name: "perf"
+  short_description: "Linux perf profiling workflow"
+  default_prompt: "Use $perf to analyze a Linux perf capture or profiling question."

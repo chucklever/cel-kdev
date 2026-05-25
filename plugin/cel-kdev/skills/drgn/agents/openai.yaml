@@ -1,0 +1,4 @@
+interface:
+  display_name: "drgn"
+  short_description: "Live kernel debugging with drgn"
+  default_prompt: "Use $drgn to inspect live kernel state with drgn."

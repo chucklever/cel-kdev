@@ -15,7 +15,7 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 STRIPPED=$(echo "$COMMAND" | sed -e 's/"[^"]*"//g' -e "s/'[^']*'//g")
 
 # Only check commands that match prohibited git operations
-if ! echo "$STRIPPED" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pick)\b'; then
+if ! echo "$STRIPPED" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pick|checkout|switch|worktree)\b'; then
     exit 0
 fi
 
@@ -36,6 +36,20 @@ if echo "$STRIPPED" | grep -qE '\bgit\s+branch\b'; then
     fi
 fi
 
+# Only worktree creation is prohibited here. Read-only worktree
+# inspection does not move HEAD or update stg stack metadata.
+if echo "$STRIPPED" | grep -qE '\bgit\s+worktree\b'; then
+    if ! echo "$STRIPPED" | grep -qE '\bgit\s+worktree\s+add\b'; then
+        exit 0
+    fi
+fi
+
+# Path checkout does not switch branches. Branch checkout and all
+# git-switch forms bypass stg branch bookkeeping and remain blocked.
+if echo "$STRIPPED" | grep -qE '\bgit\s+checkout\s+--\s+'; then
+    exit 0
+fi
+
 echo "BLOCKED: stg is active on this branch. Use stg commands instead:" >&2
 echo "  git branch       -> stg branch (manages stg metadata alongside branches)" >&2
 echo "  git commit       -> stg new + stg refresh" >&2
@@ -45,4 +59,6 @@ echo "  git rebase -i    -> stg reorder / stg squash / stg edit / stg delete" >&
 echo "  git reset HEAD~N -> stg pop (unapply patches)" >&2
 echo "  git reset --hard -> stg reset --hard (restore to last stg state)" >&2
 echo "  git cherry-pick  -> stg pick" >&2
+echo "  git checkout/switch <branch> -> stg branch <branch>" >&2
+echo "  git worktree add -> unsupported on stg branches" >&2
 exit 2

@@ -1,0 +1,4 @@
+interface:
+  display_name: "b4"
+  short_description: "Kernel patch series workflow"
+  default_prompt: "Use $b4 to prepare, apply, or send a kernel patch series with b4."

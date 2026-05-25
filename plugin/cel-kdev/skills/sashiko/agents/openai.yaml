@@ -1,0 +1,4 @@
+interface:
+  display_name: "sashiko"
+  short_description: "Sashiko bot review retrieval"
+  default_prompt: "Use $sashiko to retrieve and verify a sashiko kernel patch review."

@@ -1,6 +1,6 @@
 {
   "name": "cel-kdev",
-  "version": "2.5.2",
+  "version": "2.6.0",
   "description": "Skills for Linux kernel development workflows",
   "author": {
     "name": "Chuck Lever",
@@ -29,6 +29,11 @@
     "capabilities": [
       "Read",
       "Write"
+    ],
+    "defaultPrompt": [
+      "Use cel-kdev to work on Linux kernel patches safely.",
+      "Use cel-kdev to analyze perf, trace-cmd, or drgn data.",
+      "Use cel-kdev to prepare a kernel patch series."
     ]
   }
 }

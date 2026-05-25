@@ -19,10 +19,10 @@ or pre-generated perf report/script output.
 
 perf.data is a binary capture and `perf report` / `perf
 script` output streams through pipelines rather than
-landing in a file `Read` can open.  `awk`, `grep`, `head`,
+landing in a normal text file. `awk`, `grep`, `head`,
 and similar shell tools are the correct way to extract
-fields and summaries from this data; the system prompt's
-preference for dedicated file tools does not apply here.
+fields and summaries from this data; any general preference
+for dedicated file-reading tools does not apply here.
 
 ## Key defaults
 

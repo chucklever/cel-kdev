@@ -1,7 +1,7 @@
 #!/bin/bash
-# pre-push: enforce plugin version bump when plugin contents change.
-# Claude Code keys its plugin cache off the manifest version, so any
-# push that touches plugin contents must carry a fresh version.
+# pre-push: enforce plugin version bump when plugin packaging changes.
+# Claude Code and Codex cache installed plugin contents, so any push
+# that touches plugin contents must carry a fresh version.
 
 set -e
 
@@ -29,7 +29,7 @@ while read -r _ local_sha _ remote_sha; do
     [ "$local_sha" = "$ZERO" ] && continue
     [ "$remote_sha" = "$ZERO" ] && continue
 
-    if git diff --quiet "$remote_sha" "$local_sha" -- .claude-plugin plugin; then
+    if git diff --quiet "$remote_sha" "$local_sha" -- .agents/plugins .claude-plugin plugin; then
         continue
     fi
 

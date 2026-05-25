@@ -1,0 +1,4 @@
+interface:
+  display_name: "stg"
+  short_description: "StGit patch stack management"
+  default_prompt: "Use $stg to manage commits, rebases, and patch edits on a StGit branch."

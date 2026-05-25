@@ -1,7 +1,7 @@
 #!/bin/bash
 # Bump the plugin version in every manifest that carries it.
-# Claude Code keys its plugin cache off the version field, so
-# this runs on every push that changes plugin contents.
+# Claude Code and Codex key plugin caches off the version field,
+# so this runs on every push that changes plugin contents.
 
 set -e
 
