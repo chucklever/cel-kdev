@@ -46,9 +46,12 @@ require_file ".agents/plugins/marketplace.json" &&
     require_jq ".agents/plugins/marketplace.json" '.plugins[0].policy.installation' "AVAILABLE" &&
     require_jq ".agents/plugins/marketplace.json" '.plugins[0].policy.authentication' "ON_INSTALL"
 
-require_file "plugin/cel-kdev/hooks/hooks.json" &&
-    require_jq "plugin/cel-kdev/hooks/hooks.json" '.hooks.PreToolUse[0].matcher' "^Bash$" &&
-    require_jq "plugin/cel-kdev/hooks/hooks.json" '.hooks.PreToolUse[0].hooks[0].command' '${PLUGIN_ROOT}/hooks/block-raw-git.sh'
+require_file "plugin/cel-kdev/hooks/codex-hooks.json" &&
+    require_jq "plugin/cel-kdev/hooks/codex-hooks.json" '.hooks.PreToolUse[0].matcher' "^Bash$" &&
+    require_jq "plugin/cel-kdev/hooks/codex-hooks.json" '.hooks.PreToolUse[0].hooks[0].command' '${PLUGIN_ROOT}/hooks/block-raw-git.sh'
+
+require_file "plugin/cel-kdev/.codex-plugin/plugin.json" &&
+    require_jq "plugin/cel-kdev/.codex-plugin/plugin.json" '.hooks' "./hooks/codex-hooks.json"
 
 for skill in b4 drgn perf sashiko stg trace-cmd; do
     require_file "plugin/cel-kdev/skills/$skill/agents/openai.yaml"

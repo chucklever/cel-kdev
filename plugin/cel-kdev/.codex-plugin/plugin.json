@@ -1,6 +1,6 @@
 {
   "name": "cel-kdev",
-  "version": "2.6.0",
+  "version": "2.6.1",
   "description": "Skills for Linux kernel development workflows",
   "author": {
     "name": "Chuck Lever",
@@ -20,6 +20,7 @@
     "sashiko"
   ],
   "skills": "./skills/",
+  "hooks": "./hooks/codex-hooks.json",
   "interface": {
     "displayName": "cel-kdev",
     "shortDescription": "Linux kernel development skills for Codex",
