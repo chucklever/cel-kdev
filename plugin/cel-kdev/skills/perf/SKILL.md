@@ -9,7 +9,6 @@ description: >-
   DSO attribution, garbled module symbols), overhead analysis,
   hot path identification, and common profiling pitfalls.
   Handles AMD and Intel platform events.
-invocation_policy: automatic
 ---
 
 # perf profiling

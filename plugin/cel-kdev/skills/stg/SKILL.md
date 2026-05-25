@@ -6,7 +6,6 @@ description: >-
   the user asks to commit changes, update a commit, create or
   edit a patch, reorder patches, or resolve merge conflicts
   on a branch with an active stg stack.
-invocation_policy: automatic
 ---
 
 # stg: patch stack management

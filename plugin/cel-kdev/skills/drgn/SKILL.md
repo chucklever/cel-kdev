@@ -6,7 +6,6 @@ description: >-
   and data structure traversal. Covers correct API patterns,
   type introspection, container_of usage, and common pitfalls
   for SUNRPC, NFS, and AIO subsystems.
-invocation_policy: automatic
 ---
 
 # drgn live kernel debugger

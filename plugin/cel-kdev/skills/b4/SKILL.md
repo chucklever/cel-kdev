@@ -5,7 +5,6 @@ description: >-
   patches from lore with b4 am, and the b4 prep workflow for
   sending multi-revision patch series. Includes stg interaction
   rules to prevent stack corruption.
-invocation_policy: automatic
 ---
 
 # b4 for kernel patch workflows

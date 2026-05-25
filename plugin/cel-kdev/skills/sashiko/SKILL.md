@@ -9,7 +9,6 @@ description: >-
   covers those failure signatures and the correct retrieval
   path.  Prefer over b4 and kreview when the review source
   is an LLM bot rather than a human reviewer.
-invocation_policy: automatic
 ---
 
 # sashiko: retrieving bot reviews for kernel patch series

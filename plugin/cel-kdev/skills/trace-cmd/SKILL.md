@@ -7,7 +7,6 @@ description: >-
   dynamic kprobe/fprobe events. Supports nfsd, sunrpc, svcrdma,
   xprtrdma, rpcgss, workqueue, rdma, tcp, handshake, and sched
   subsystems.
-invocation_policy: automatic
 ---
 
 # Trace analysis
