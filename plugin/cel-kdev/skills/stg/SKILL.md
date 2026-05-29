@@ -245,10 +245,23 @@ refuses with "the index is dirty." Two flags override this:
   and the worktree, bypassing the dirty-index check.
 
 **`stgit.autosign` trailer**: When `stgit.autosign` is set
-in git config (e.g., to `Signed-off-by`), `stg new`,
-`stg import`, and `stg edit` automatically append that
-trailer. The `-m` flag on `stg import` selects mail/mbox
-input format and has no effect on trailer behavior.
+in git config (e.g., to `Signed-off-by`), `stg new` and
+`stg import` append that trailer automatically, including
+the non-interactive `-m`/`--file` paths; do not also write
+it into those messages by hand. The `-m` flag on
+`stg import` selects mail/mbox input format and has no
+effect on trailer behavior.
+
+`stg edit` is the exception: it autosigns only when it
+opens the interactive editor. The `stg edit -m` and
+`stg edit --file` forms this skill mandates do NOT
+autosign, so a `Signed-off-by` line omitted from the
+message leaves the patch with none. Default: include the
+`Signed-off-by` line in the `stg edit` message text. These
+paths do not autosign, so exactly one trailer results
+regardless of stg version. Alternatively, omit it from the
+message and stamp it with the `-s`/`--signoff` flag (see
+Trailer flags below).
 
 **File-edit cache stale after stack ops**: Any stg command that
 moves HEAD or rewrites a patch's tree (`push`, `pop`, `goto`,
