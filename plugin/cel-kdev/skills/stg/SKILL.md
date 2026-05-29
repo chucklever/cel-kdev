@@ -40,6 +40,7 @@ HEAD behind stg's back, corrupting the stack metadata.**
 | `git rebase -i` (squash) | `stg squash` |
 | `git worktree add` | (not supported with stg) |
 | `git checkout <branch>` / `git switch <branch>` | `stg branch <branch>` |
+| `git merge` | No stg merge; build a base merge commit and `stg rebase` onto it (see "Combining branches: there is no stg merge") |
 
 This applies to all agents and subagents.
 
@@ -116,6 +117,79 @@ when only the commit hash is needed.  When the base is a
 tag or an explicit remote ref, read `parentbranch` directly
 without composing.
 
+## Combining branches: there is no stg merge
+
+StGit has no `stg merge`. The stack is a linear sequence of
+patches above a single base commit, so it cannot hold a
+multi-parent merge commit -- this is why `stg repair` refuses
+merge commits. The base *below* the stack can still be any
+commit, including a merge. To integrate several branches under
+the stack, build the merge as ordinary history at the base, then
+replay the stack onto it with `stg rebase`.
+
+Split on intent:
+
+- **Linearize onto a new base** (the stg-shaped task): replay or
+  absorb commits, no merge commit involved.
+  - `stg rebase <new-base>` -- replay the stack on a new base
+    (e.g. a release tag).
+  - `stg pick -B <branch> <commit>` / `stg pick <sha>` -- absorb
+    individual commits from another branch as new patches.
+  - `stg import -m <mbox>` -- pull a series in as patches.
+- **True merge** (combine branch histories, keep a merge commit
+  as the base): construct the merge commit, then rebase onto it.
+
+### Constructing a base merge commit locally
+
+Build the merge commit with plumbing so HEAD never leaves the stg
+branch and no stack metadata is touched. Do not switch to a
+scratch branch, and do not run raw `git merge` on the stg branch:
+merging into the stack's HEAD corrupts the stack (see the "Merge
+commits and repair" pitfall). The branches to combine may be
+local or fetched first -- `git fetch <remote>` brings refs only
+and does not move HEAD.
+
+```bash
+base=$(stg id {base})              # current stack base
+c=$base
+for b in <ref1> <ref2> <ref3>; do  # branches/tags to combine
+    t=$(git merge-tree --write-tree "$c" "$b") || {
+        echo "conflict merging $b; build it on an integration"
+        echo "branch instead (see below) -- merge-tree leaves"
+        echo "no worktree to resolve in"; c=; break; }
+    c=$(git commit-tree "$t" -p "$c" -p "$(git rev-parse "$b")" \
+            -m "merge $b into base")
+done
+[ -n "$c" ] && stg rebase "$c"     # replay only a complete merge
+```
+
+`git merge-tree --write-tree` (git >= 2.38) performs a 3-way
+merge writing only tree and blob objects; `git commit-tree`
+records the merge commit. Neither moves HEAD or updates a ref, so
+the stg guard hook permits both. Do not confuse this constructed
+commit with `git merge-base`, which only reports a common ancestor
+and writes nothing.
+
+The loop builds a chain of two-parent merge commits, normally what
+you want. To record a single octopus commit instead -- one commit
+with every branch as a parent -- reuse the combined tree the loop
+leaves in `$t` and pass all parents to one
+`git commit-tree "$t" -p "$base" -p <sha1> -p <sha2> ...`. Feeding
+three refs to a single `git merge-tree` does not work; each call
+merges exactly two commits.
+
+Until `stg rebase` records it as the new base, the merge commit is
+referenced only by the `$c` shell variable -- no ref, no reflog
+entry -- so it is eligible for garbage collection. Do not run
+`git gc` or start a fresh shell between building the commit and the
+rebase.
+
+An integration branch in another repository is the fallback for
+two cases: a `merge-tree` conflict, which needs a real worktree to
+resolve, and a merge that must be published rather than kept local.
+Build the merge there, fetch it, and `stg rebase <fetched-ref>` --
+the same final step with a different origin for the base commit.
+
 ## Pitfalls
 
 **`stg diff` without `-r`**: `stg diff <patch-name>` treats
@@ -139,9 +213,14 @@ reordering, not the patches. To navigate without reordering
 use `stg goto <name>`, or `stg push -n N` / `stg push -a` for
 forward steps. See [references/commands.md](references/commands.md).
 
-**Merge commits and repair**: `stg repair` cannot convert
-merge commits into patches. Use `stg undo` to remove an
-accidental merge before running `stg repair`.
+**Merge commits and repair**: Raw `git merge` on an stg branch
+commits the merge to the stack's HEAD, leaving the patches below
+the merge commit; `stg repair` then reports them "hidden below
+the merge commit" and marks them unapplied. `stg repair` cannot
+convert a merge commit into a patch. Use `stg undo` to remove an
+accidental merge before running `stg repair`. To combine branches
+deliberately, build the merge below the stack base instead of on
+its HEAD -- see "Combining branches: there is no stg merge".
 
 **`git add` before `stg refresh`**: `stg refresh` picks up
 all changes to tracked files automatically. Do not run

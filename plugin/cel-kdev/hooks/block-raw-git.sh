@@ -14,8 +14,18 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 # argument (e.g. stg edit -m "...git commit...") is not matched.
 STRIPPED=$(echo "$COMMAND" | sed -e 's/"[^"]*"//g' -e "s/'[^']*'//g")
 
+# Plumbing forms (git merge-tree/commit-tree/merge-base/merge-file)
+# only write objects or read history; none move HEAD or update a ref,
+# so none can desync stg metadata. Rewrite them to a neutral token so
+# the broad branch/commit/merge patterns below do not catch the
+# hyphenated subcommand on its word boundary. Stripping the token --
+# rather than allowing the whole command -- still blocks a real
+# prohibited subcommand chained on the same line (e.g.
+# "git merge-base x y; git merge z").
+STRIPPED=$(echo "$STRIPPED" | sed -E 's/\bgit[[:space:]]+(commit-tree|merge-tree|merge-base|merge-file)\b/git PLUMBING/g')
+
 # Only check commands that match prohibited git operations
-if ! echo "$STRIPPED" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pick|checkout|switch|worktree)\b'; then
+if ! echo "$STRIPPED" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pick|checkout|switch|worktree|merge)\b'; then
     exit 0
 fi
 
@@ -61,4 +71,6 @@ echo "  git reset --hard -> stg reset --hard (restore to last stg state)" >&2
 echo "  git cherry-pick  -> stg pick" >&2
 echo "  git checkout/switch <branch> -> stg branch <branch>" >&2
 echo "  git worktree add -> unsupported on stg branches" >&2
+echo "  git merge        -> no stg merge; build a base merge commit, then stg rebase onto it" >&2
+echo "                      (git merge-tree/commit-tree plumbing is allowed)" >&2
 exit 2

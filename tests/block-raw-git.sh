@@ -70,10 +70,24 @@ expect_blocked "git branch -d topic"
 expect_blocked "git switch topic"
 expect_blocked "git checkout topic"
 expect_blocked "git worktree add ../topic topic"
+expect_blocked "git merge topic"
+expect_blocked "git merge --no-ff b1 b2 b3"
+
+# A plumbing word must not whitelist a real prohibited subcommand
+# chained on the same line.
+expect_blocked "git merge-base master topic; git merge topic"
+expect_blocked "git merge-tree --write-tree base topic && git merge topic"
 
 expect_allowed "git branch"
 expect_allowed "git branch --show-current"
 expect_allowed "stg edit -m 'mention git commit in text'"
+expect_allowed "git merge-tree --write-tree base topic"
+expect_allowed "git merge-base master topic"
+expect_allowed "git merge-file ours.txt base.txt theirs.txt"
+expect_allowed 'git commit-tree "$t" -p "$c" -p "$p" -m "merge"'
+
+# The full base-merge recipe must pass as a single command.
+expect_allowed 'base=$(stg id {base}); c=$base; t=$(git merge-tree --write-tree "$c" topic); c=$(git commit-tree "$t" -p "$c" -p "$(git rev-parse topic)" -m "merge topic"); [ -n "$c" ] && stg rebase "$c"'
 
 setup_repo "$TMPDIR/inactive" no
 expect_allowed "git commit -m update"
