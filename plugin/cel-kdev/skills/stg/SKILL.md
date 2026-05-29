@@ -40,6 +40,7 @@ HEAD behind stg's back, corrupting the stack metadata.**
 | `git rebase -i` (squash) | `stg squash` |
 | `git worktree add` | (not supported with stg) |
 | `git checkout <branch>` / `git switch <branch>` | `stg branch <branch>` |
+| `git checkout`/`git restore` (pathspec, any form) | prohibited; leave worktree dirty + scope `stg refresh <pathspec>` (see prose) |
 | `git merge` | No stg merge; build a base merge commit and `stg rebase` onto it (see "Combining branches: there is no stg merge") |
 
 This applies to all agents and subagents.
@@ -47,9 +48,24 @@ This applies to all agents and subagents.
 `stg branch <name>` both creates and switches branches; it
 is the canonical stg interface for branch operations. The
 runtime hook's `git branch -> stg branch` line refers to
-this. A raw `git checkout` between two stg branches does
-not always corrupt the stack, but it bypasses the stg
-metadata bookkeeping and is not the supported interface.
+this.
+
+`git checkout` is not used on an stg branch in any form,
+period. This covers every surface: the branch forms
+`git checkout <branch>`, `git checkout -b`, and
+`git switch`; and the pathspec forms `git checkout <file>`,
+`git checkout .`, `git checkout <commit> -- <file>`, and
+`git restore [--staged] <file>`. The branch-switching form
+bypasses stg's metadata bookkeeping. The pathspec form does
+not move HEAD, but it is equally prohibited: it conflates
+"discard this from the worktree" with "keep this out of the
+patch." Reverting a file in the worktree does not remove an
+already-refreshed change from the patch commit -- the stale
+diff stays baked in, and a later `stg refresh` cannot undo
+it, so the patch must be deleted and recreated. When only
+some worktree changes belong in the next patch, scope the
+refresh with `stg refresh <pathspec>` and leave the rest of
+the worktree modified (see Pitfalls).
 
 **`git worktree`** creates a new checkout that shares refs
 with the main working tree. Stg tracks its stack state in
@@ -244,6 +260,46 @@ refuses with "the index is dirty." Two flags override this:
 - `--force` (`-F`): fold in all changes from both the index
   and the worktree, bypassing the dirty-index check.
 
+**Unintended files in `stg refresh`**: bare `stg refresh`
+captures *all* modified tracked files, not just the ones
+edited for the current patch. If the worktree has unrelated
+dirty files (generated artifacts, uncommitted work from a
+prior step), they silently enter the patch. When only
+specific files belong in the patch, pass them as pathspec
+arguments:
+
+```bash
+stg refresh path/to/file1 path/to/file2
+```
+
+Do not run bare `stg refresh` after `stg new` when the
+worktree contains other modifications. Check `git status`
+first if uncertain.
+
+**Never `git checkout`/`git restore` to drop worktree
+noise**: when some worktree modifications belong in the
+patch and others do not, scope the refresh -- `stg refresh
+<pathspec>` folds in only the named paths and leaves the
+rest dirty. Do not reach for `git checkout -- <file>` or
+`git restore <file>` to discard the unwanted changes first.
+On an stg branch this is prohibited outright: if the
+unwanted change was already folded into the patch, restoring
+the worktree leaves the stale diff in the patch commit, and
+`stg refresh` cannot remove it. Leave unwanted modifications
+dirty in the worktree and deal with them after the patch is
+complete: `git stash` (and later `git stash pop`) only
+touches the worktree and the stash ref, never HEAD or stack
+metadata, so it is safe on an stg branch; or fold them into
+a later patch.
+
+To actually back out a change that is *already folded into*
+the patch, edit the file in the worktree to the content you
+want and `stg refresh` to fold the correction in -- or, if
+the refresh was the last operation, `stg undo` to reverse
+it. When the patch is beyond repair, `stg delete <patch>`
+and recreate it. Never use `git checkout`/`git restore` to
+undo a refreshed change.
+
 **`stgit.autosign` trailer**: When `stgit.autosign` is set
 in git config (e.g., to `Signed-off-by`), `stg new` and
 `stg import` append that trailer automatically, including
@@ -280,6 +336,16 @@ operation succeeded.  Check the exit code instead.  Only
 read patch content when the next step actually requires it
 (e.g., editing the commit message or reviewing the diff at
 the user's request).
+
+Exception for pathspec-scoped refresh: `stg refresh
+<pathspec>` exits 0 even when the pathspec matches no
+modified file, folding in nothing.  Exit code alone cannot
+tell "captured the change" from "matched nothing."  Confirm
+the path is correct relative to the current working
+directory, or pass a repo-absolute path, and check with
+`git status --short` that the path is no longer dirty.  This
+one cheap check is warranted for pathspec-scoped refreshes,
+even though verification is otherwise discouraged.
 
 **Use `git status` for working tree state.** `git status`
 is the cheapest way to check whether there are modified

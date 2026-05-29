@@ -25,7 +25,7 @@ STRIPPED=$(echo "$COMMAND" | sed -e 's/"[^"]*"//g' -e "s/'[^']*'//g")
 STRIPPED=$(echo "$STRIPPED" | sed -E 's/\bgit[[:space:]]+(commit-tree|merge-tree|merge-base|merge-file)\b/git PLUMBING/g')
 
 # Only check commands that match prohibited git operations
-if ! echo "$STRIPPED" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pick|checkout|switch|worktree|merge)\b'; then
+if ! echo "$STRIPPED" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pick|checkout|switch|restore|worktree|merge)\b'; then
     exit 0
 fi
 
@@ -54,11 +54,14 @@ if echo "$STRIPPED" | grep -qE '\bgit\s+worktree\b'; then
     fi
 fi
 
-# Path checkout does not switch branches. Branch checkout and all
-# git-switch forms bypass stg branch bookkeeping and remain blocked.
-if echo "$STRIPPED" | grep -qE '\bgit\s+checkout\s+--\s+'; then
-    exit 0
-fi
+# git checkout/switch/restore are blocked in every form. The branch
+# forms bypass stg's metadata bookkeeping. The pathspec forms
+# (git checkout -- <file>, git restore <file>) do not move HEAD, but
+# they conflate "discard this from the worktree" with "keep this out
+# of the patch": once a change is folded in, restoring the worktree
+# leaves the stale diff baked into the patch commit where stg refresh
+# cannot reach it. Scope the next refresh with a pathspec, or git
+# stash the unwanted change, instead of discarding it.
 
 echo "BLOCKED: stg is active on this branch. Use stg commands instead:" >&2
 echo "  git branch       -> stg branch (manages stg metadata alongside branches)" >&2
@@ -70,6 +73,7 @@ echo "  git reset HEAD~N -> stg pop (unapply patches)" >&2
 echo "  git reset --hard -> stg reset --hard (restore to last stg state)" >&2
 echo "  git cherry-pick  -> stg pick" >&2
 echo "  git checkout/switch <branch> -> stg branch <branch>" >&2
+echo "  git checkout/restore <file> -> scope 'stg refresh <pathspec>' or git stash; never discard a refreshed change this way" >&2
 echo "  git worktree add -> unsupported on stg branches" >&2
 echo "  git merge        -> no stg merge; build a base merge commit, then stg rebase onto it" >&2
 echo "                      (git merge-tree/commit-tree plumbing is allowed)" >&2
