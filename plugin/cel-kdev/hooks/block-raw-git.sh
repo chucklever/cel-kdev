@@ -68,7 +68,8 @@ echo "  git branch       -> stg branch (manages stg metadata alongside branches)
 echo "  git commit       -> stg new + stg refresh" >&2
 echo "  git commit --amend -> stg edit / stg refresh" >&2
 echo "  git rebase <base> -> stg rebase <base> (move stack onto new base)" >&2
-echo "  git rebase -i    -> stg reorder / stg squash / stg edit / stg delete" >&2
+echo "  git rebase -i    -> stg sink / stg float / stg edit / stg delete" >&2
+echo "                      (no stg squash; see \"Combining patches\" in the stg skill)" >&2
 echo "  git reset HEAD~N -> stg pop (unapply patches)" >&2
 echo "  git reset --hard -> stg reset --hard (restore to last stg state)" >&2
 echo "  git cherry-pick  -> stg pick" >&2

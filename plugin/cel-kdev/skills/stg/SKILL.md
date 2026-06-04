@@ -37,7 +37,7 @@ HEAD behind stg's back, corrupting the stack metadata.**
 | `git reset` | `stg pop`, `stg undo` |
 | `git cherry-pick` | `stg pick` or `stg import` |
 | `git rebase -i` (reorder) | `stg sink`, `stg float` |
-| `git rebase -i` (squash) | `stg squash` |
+| `git rebase -i` (squash) | fold workflow (see "Combining patches: avoid stg squash") |
 | `git worktree add` | (not supported with stg) |
 | `git checkout <branch>` / `git switch <branch>` | `stg branch <branch>` |
 | `git checkout`/`git restore` (pathspec, any form) | prohibited; leave worktree dirty + scope `stg refresh <pathspec>` (see prose) |
@@ -253,6 +253,42 @@ resolve, and a merge that must be published rather than kept local.
 Build the merge there, fetch it, and `stg rebase <fetched-ref>` --
 the same final step with a different origin for the base commit.
 
+## Combining patches: avoid stg squash
+
+`stg squash` deletes all of its input patches and creates a
+new patch whose `stg log` history begins at the squash; the
+change history of every input patch is discarded. Do not use
+it to fold a fix patch into the patch it corrects. Fold the
+patch by hand instead -- the fold appears as ordinary refresh
+and edit entries in the surviving patch's history.
+
+To fold patch B into the patch A beneath it:
+
+```bash
+stg export -d <dir> B        # writes <dir>/B: B's message + diff
+stg pop B
+stg goto A                   # make A top (stg fold applies to the
+                             # top patch); no-op when B sat
+                             # directly above A
+stg fold <dir>/B             # apply B's diff to the worktree
+stg refresh                  # fold the change into A
+stg edit --file <msg-file> A # combined message, if needed
+stg delete B
+stg push -a                  # reapply patches popped by goto;
+                             # no-op when goto popped nothing
+```
+
+`<dir>/B` is a full patch file (message plus diff), not a
+commit message. When A's message needs text from B's, write
+the combined message to a temp file and pass that file as
+`<msg-file>` -- do not pass `<dir>/B`. Include A's
+`Signed-off-by` in the message; `stg edit --file` does not
+autosign. After the fold the worktree holds only B's diff,
+so a bare `stg refresh` is correct; scope it with a pathspec
+only when the worktree was already dirty before the fold.
+A content change may invalidate existing Reviewed-by tags
+on A.
+
 ## Pitfalls
 
 **`stg diff` without `-r`**: `stg diff <patch-name>` treats
@@ -263,7 +299,7 @@ Use `stg diff -r <patch-name>~..<patch-name>` for a patch diff.
 top patch only. Use `stg goto` first to position the stack.
 
 **Options vs patch names**: Commands accepting `[patch]...`
-arguments (`squash`, `float`, `sink`, `push`, `pop`) consume
+arguments (`float`, `sink`, `push`, `pop`) consume
 everything after the first patch name as patch names. Place
 all options before patch names.
 
@@ -368,7 +404,7 @@ Trailer flags below).
 
 **File-edit cache stale after stack ops**: Any stg command that
 moves HEAD or rewrites a patch's tree (`push`, `pop`, `goto`,
-`refresh`, `squash`, `fold`, `sink`, `float`, `pick`, `import`,
+`refresh`, `fold`, `sink`, `float`, `pick`, `import`,
 `rebase`, `undo`, `redo`, `edit --set-tree`) rewrites tracked
 files on disk. Per-file freshness snapshots held by editing
 tools can go stale; the next edit may fail with "File has
@@ -427,8 +463,9 @@ are needed.
 ## Avoiding interactive editors
 
 Always provide `-m` to `stg new` and `--file <path>` to
-`stg edit`. Write multi-line messages to a temp file and
-pass `-f /tmp/msg.txt` to `stg squash`.
+`stg edit`. For multi-line messages, write the text to a
+temp file and pass it with `--file`; both commands accept
+it.
 
 ### Trailer flags
 

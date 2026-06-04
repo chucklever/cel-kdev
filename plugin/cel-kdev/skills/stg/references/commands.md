@@ -18,12 +18,11 @@
 automatically. `stg add` is needed only to place a new file
 under version control for the first time.
 
-## Squashing
+## Combining patches
 
-| Task | Command |
-| ---- | ------- |
-| Squash with message file | `stg squash -n <name> -f <path> <patch1> <patch2>` |
-| Squash with inline message | `stg squash -n <name> -m "message" <patch1> <patch2>` |
+Do not use `stg squash`: it deletes its input patches and
+discards their `stg log` history. Fold the patch instead --
+see "Combining patches: avoid stg squash" in SKILL.md.
 
 ## Navigation
 
