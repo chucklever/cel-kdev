@@ -167,9 +167,10 @@ series. Follow with `stg clean` to remove empty patches.
 
 | Task | Command |
 | ---- | ------- |
-| Import from mbox | `stg import -m <file.mbx>` |
+| Import from mbox | `stg import -M <file.mbx>` |
+| Import single mail file | `stg import -m <file.eml>` |
 | Import single patch | `stg import <file.patch>` |
-| Import from stdin | `stg import -m` |
+| Import mbox from stdin | `stg import -M` |
 
 ## Picking and folding
 

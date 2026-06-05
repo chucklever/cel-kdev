@@ -16,7 +16,7 @@ when stg is active on the branch.**
 
 | Prohibited | Why | Replacement |
 | ---------- | --- | ----------- |
-| `b4 am <msgid>` | Runs `git am`, which moves HEAD behind stg's back | `b4 am -o /tmp/series.mbx <msgid>` then `stg import -m /tmp/series.mbx` |
+| `b4 am <msgid>` | Runs `git am`, which moves HEAD behind stg's back | `b4 am -o /tmp/series.mbx <msgid>` then `stg import -M /tmp/series.mbx` |
 | `b4 trailers -u` | Rebases commits to insert collected tags, breaking stg metadata | Avoid; run `stg repair` immediately after if unavoidable |
 
 Check whether stg is active before choosing a command path.
@@ -48,7 +48,7 @@ before running `b4 send` or `b4 prep --format-patch`.
 | ---- | ------- |
 | Apply a series by message-id | `b4 am <msgid>` |
 | Apply a series, write mbox only | `b4 am -o <dir> <msgid>` |
-| Apply as stg patches | `b4 am -o /tmp/series.mbx <msgid>` then `stg import -m /tmp/series.mbx` |
+| Apply as stg patches | `b4 am -o /tmp/series.mbx <msgid>` then `stg import -M /tmp/series.mbx` |
 | Cherry-pick specific patches (1-indexed, comma-separated, ranges ok) | `b4 am -P 1-2,4 <msgid>` |
 | Show series diff between versions | `b4 diff <msgid>` |
 | Retrieve thread as mbox | `b4 mbox <msgid>` |
@@ -193,7 +193,7 @@ that authorization violates the harness signing policy.
 arbitrary patch files. The branch must be enrolled with
 `b4 prep --enroll` first.
 
-**`stg import -m` conflicts**: If `stg import -m` hits
+**`stg import -M` conflicts**: If `stg import -M` hits
 conflicts, resolve with `stg undo` or fix the conflicts
 in the working tree and run `stg refresh`.
 

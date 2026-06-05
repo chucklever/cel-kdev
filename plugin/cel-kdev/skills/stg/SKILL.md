@@ -151,7 +151,9 @@ Split on intent:
     (e.g. a release tag).
   - `stg pick -B <branch> <commit>` / `stg pick <sha>` -- absorb
     individual commits from another branch as new patches.
-  - `stg import -m <mbox>` -- pull a series in as patches.
+  - `stg import -M <mbox>` -- pull a series in as patches
+    (`-M`/`--mbox` reads an mbox series; `-m`/`--mail` reads a
+    single mail file).
 - **True merge** (combine branch histories, keep a merge commit
   as the base): construct the merge commit, then rebase onto it.
 
@@ -386,10 +388,12 @@ undo a refreshed change.
 **`stgit.autosign` trailer**: When `stgit.autosign` is set
 in git config (e.g., to `Signed-off-by`), `stg new` and
 `stg import` append that trailer automatically, including
-the non-interactive `-m`/`--file` paths; do not also write
-it into those messages by hand. The `-m` flag on
-`stg import` selects mail/mbox input format and has no
-effect on trailer behavior.
+the non-interactive message paths (`stg new -m`/`--file`);
+do not also write it into those messages by hand. On
+`stg import`,
+`-m`/`--mail` selects single-mail input and `-M`/`--mbox`
+selects mbox-series input; neither flag affects trailer
+behavior.
 
 `stg edit` is the exception: it autosigns only when it
 opens the interactive editor. The `stg edit -m` and
