@@ -193,9 +193,18 @@ that authorization violates the harness signing policy.
 arbitrary patch files. The branch must be enrolled with
 `b4 prep --enroll` first.
 
-**`stg import -M` conflicts**: If `stg import -M` hits
-conflicts, resolve with `stg undo` or fix the conflicts
-in the working tree and run `stg refresh`.
+**`stg import -M` conflicts**: A plain `stg import -M`
+that does not apply aborts with a clean worktree and
+creates no patch. Re-run with `stg import -M -3` for a
+3-way merge that leaves resolvable conflict markers,
+then follow the stg skill's "Conflicting `stg import`
+creates no patch" pitfall: mark resolved
+(`stg resolved <file>`), recreate the patch
+(`stg new <name> --file ...`, recovering author and
+message from the mbox), then `stg refresh`. A bare
+`stg refresh` would fold the change into the current
+top patch instead. To abandon the import outright,
+`stg undo`.
 
 ## Troubleshooting
 

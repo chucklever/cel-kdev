@@ -323,6 +323,43 @@ accidental merge before running `stg repair`. To combine branches
 deliberately, build the merge below the stack base instead of on
 its HEAD -- see "Combining branches: there is no stg merge".
 
+**Conflicting `stg import` creates no patch**: when `stg import`
+cannot apply a patch it aborts patch creation -- no new patch
+lands on the stack. A plain `stg import` leaves the worktree
+clean: `git apply` is atomic, so a failed apply rolls back with
+nothing to refresh; re-run with `-3` (see below) to get
+resolvable markers. Only `stg import --3way` leaves the diff,
+conflict markers and all, loose in the worktree, because the
+3-way apply writes them before failing. Once those markers are
+marked resolved, a bare `stg refresh` folds the imported change
+into whatever patch is currently top, not into a patch of its
+own. To abandon the import outright, `stg undo` reverses it. To
+keep it, resolve the markers, mark them resolved with `stg
+resolved <file>` -- otherwise `stg new` and `stg refresh` both
+abort with "resolve outstanding conflicts first" -- then
+recreate the patch explicitly: `stg new <name> --file <msg>`,
+recovering the commit log from the mbox into `<msg>` (a
+multi-line changelog needs `--file`, not `-m`) and the author
+from the mbox header via `--authname`/`--authemail`/`--authdate`.
+Then `stg refresh`. When `stgit.autosign` is set, `stg new`
+appends the committer's `Signed-off-by`; drop that line from
+`<msg>` if the recovered log already carries it (you authored
+the patch) to avoid a duplicate trailer.
+
+To tell whether a stray `stg refresh` already folded the change
+in, `stg show` the top patch and look for the imported diff you
+did not author. If it is there, `stg undo` splits it back out
+into stg's internal `refresh-temp` patch, which can be renamed
+(`stg rename`) and re-messaged (`stg edit --file`; that form
+does not autosign, so include the `Signed-off-by` line in the
+message or stamp it with `-s`).
+
+When an import without 3-way merge fails outright because
+context diverged by an unrelated change (e.g. an upstream rename
+landed in the stack base), escalate to `stg import --3way`
+(`-3`): it runs a 3-way merge and converts the apply failure
+into resolvable conflict markers rather than refusing the patch.
+
 **`git add` before `stg refresh`**: `stg refresh` picks up
 all changes to tracked files automatically. Do not run
 `git add <file> && stg refresh` or `stg add <file> &&
@@ -381,9 +418,12 @@ To actually back out a change that is *already folded into*
 the patch, edit the file in the worktree to the content you
 want and `stg refresh` to fold the correction in -- or, if
 the refresh was the last operation, `stg undo` to reverse
-it. When the patch is beyond repair, `stg delete <patch>`
-and recreate it. Never use `git checkout`/`git restore` to
-undo a refreshed change.
+it. `stg undo` un-folds the change into an applied
+`refresh-temp` patch rather than back to the worktree (see
+"Conflicting `stg import` creates no patch"); `stg delete
+refresh-temp` then discards it. When the patch is beyond
+repair, `stg delete <patch>` and recreate it. Never use
+`git checkout`/`git restore` to undo a refreshed change.
 
 **`stgit.autosign` trailer**: When `stgit.autosign` is set
 in git config (e.g., to `Signed-off-by`), `stg new` and
