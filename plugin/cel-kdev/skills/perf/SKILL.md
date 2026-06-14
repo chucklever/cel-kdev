@@ -8,7 +8,8 @@ description: >-
   Covers flamegraph generation, symbol resolution (kallsyms,
   DSO attribution, garbled module symbols), overhead analysis,
   hot path identification, and common profiling pitfalls.
-  Handles AMD and Intel platform events.
+  Retrieves capture bundles shared as anonymous OneDrive/1drv.ms
+  links. Handles AMD and Intel platform events.
 ---
 
 # perf profiling
@@ -23,6 +24,16 @@ landing in a normal text file. `awk`, `grep`, `head`,
 and similar shell tools are the correct way to extract
 fields and summaries from this data; any general preference
 for dedicated file-reading tools does not apply here.
+
+## Retrieving shared capture bundles
+
+Testers often share a capture bundle as an anonymous OneDrive
+`1drv.ms` link, which serves a single-page-app shell rather than
+the files. See [references/remote-bundles.md](references/remote-bundles.md)
+for the SharePoint personal-content retrieval path: a badger
+token, the base64url-encoded share id, and the item-id
+navigation that the legacy OneDrive API no longer supports for
+migrated personal accounts.
 
 ## Key defaults
 
@@ -262,6 +273,8 @@ for automated comparison (see references/subcommands.md).
 
 ## Reference files
 
+- [references/remote-bundles.md](references/remote-bundles.md) --
+  retrieving shared capture bundles from OneDrive/1drv.ms links
 - [references/recording.md](references/recording.md) --
   recording options, ring buffer sizing, sudo/permissions
 - [references/reporting.md](references/reporting.md) --
