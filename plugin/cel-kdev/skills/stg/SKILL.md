@@ -283,9 +283,12 @@ stg push -a                  # reapply patches popped by goto;
 `<dir>/B` is a full patch file (message plus diff), not a
 commit message. When A's message needs text from B's, write
 the combined message to a temp file and pass that file as
-`<msg-file>` -- do not pass `<dir>/B`. Include A's
-`Signed-off-by` in the message; `stg edit --file` does not
-autosign. After the fold the worktree holds only B's diff,
+`<msg-file>` -- do not pass `<dir>/B`. When A carries a
+`Signed-off-by`, re-include that line in the combined message
+to preserve it; `stg edit --file` does not autosign, so an
+omitted trailer drops the one A had. A patch created while
+`stgit.autosign` was unset carries none; do not add one.
+After the fold the worktree holds only B's diff,
 so a bare `stg refresh` is correct; scope it with a pathspec
 only when the worktree was already dirty before the fold.
 A content change may invalidate existing Reviewed-by tags
@@ -351,8 +354,9 @@ in, `stg show` the top patch and look for the imported diff you
 did not author. If it is there, `stg undo` splits it back out
 into stg's internal `refresh-temp` patch, which can be renamed
 (`stg rename`) and re-messaged (`stg edit --file`; that form
-does not autosign, so include the `Signed-off-by` line in the
-message or stamp it with `-s`).
+does not autosign, so re-include the `Signed-off-by` line the
+mbox carried, or restore it with `-s`, to preserve the trailer
+rather than add one).
 
 When an import without 3-way merge fails outright because
 context diverged by an unrelated change (e.g. an upstream rename
@@ -457,16 +461,29 @@ do not also write it into those messages by hand. On
 selects mbox-series input; neither flag affects trailer
 behavior.
 
+When `stgit.autosign` is unset, the absence is the signal that
+no sign-off is wanted: on a newly created patch, do not add a
+`Signed-off-by` at all -- neither in the message text nor via
+`-s`/`--signoff` -- unless the user explicitly asks for one.
+Preserving a sign-off the patch already carries through an
+edit or fold is not adding one; see the `stg edit` exception
+below. Treat unset autosign as "no sign-off by default"; it
+is not a cue to supply the trailer by hand. Read the setting
+with `git config --get stgit.autosign`; a non-zero exit means
+unset.
+
 `stg edit` is the exception: it autosigns only when it
 opens the interactive editor. The `stg edit -m` and
 `stg edit --file` forms this skill mandates do NOT
 autosign, so a `Signed-off-by` line omitted from the
-message leaves the patch with none. Default: include the
-`Signed-off-by` line in the `stg edit` message text. These
-paths do not autosign, so exactly one trailer results
-regardless of stg version. Alternatively, omit it from the
-message and stamp it with the `-s`/`--signoff` flag (see
-Trailer flags below).
+message drops one the patch already carried. When the
+patch carries a sign-off, re-include that line in the
+`stg edit` message text to preserve it; these paths do not
+autosign, so exactly one trailer results regardless of stg
+version. Alternatively, preserve it by omitting it from the
+message and restoring it with the `-s`/`--signoff` flag (see
+Trailer flags below). A patch created while `stgit.autosign`
+was unset carries none; do not add one here.
 
 **File-edit cache stale after stack ops**: Any stg command that
 moves HEAD or rewrites a patch's tree (`push`, `pop`, `goto`,
@@ -549,6 +566,12 @@ verbatim. The `=` is mandatory when supplying a value --
 <email>"` fails because stg consumes the next token as a
 patch name. Each flag may be repeated to add multiple
 trailers of the same type in one invocation.
+
+Reach for `-s`/`--signoff` only when a sign-off is actually
+wanted -- `stgit.autosign` is set, or the user asked for one.
+When autosign is unset, omit the trailer entirely (see the
+`stgit.autosign` pitfall); `-s` is not a default to apply by
+hand.
 
 Compose with a `stg series --noprefix` loop to stamp a
 trailer across the whole stack:

@@ -18,6 +18,11 @@
 automatically. `stg add` is needed only to place a new file
 under version control for the first time.
 
+The `-s` form adds a `Signed-off-by` only when a sign-off is
+actually wanted; it is not a default to apply by hand. When
+`stgit.autosign` is unset, omit it unless the user explicitly
+asks for one (see the `stgit.autosign` pitfall in SKILL.md).
+
 ## Combining patches
 
 Do not use `stg squash`: it deletes its input patches and
