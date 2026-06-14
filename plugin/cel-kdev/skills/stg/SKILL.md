@@ -360,6 +360,28 @@ landed in the stack base), escalate to `stg import --3way`
 (`-3`): it runs a 3-way merge and converts the apply failure
 into resolvable conflict markers rather than refusing the patch.
 
+**`stg import --3way` fails with "repository lacks the necessary
+blob"**: the plain apply failed on context drift, and the 3-way
+fallback needs the pre-image blobs named in the patch's `index`
+lines -- which are absent when the patch was exported from a tree
+state since rewritten or pruned (`git cat-file -e <blob>`
+confirms). Two recoveries:
+
+- Fetch the objects from the repository the patch was exported
+  from (`git fetch <remote>` brings objects without touching HEAD
+  or stack metadata), then retry the import.
+- Hand-rebase the patch: create it with `stg new --file <msg>`
+  plus `--authname`/`--authemail`/`--authdate` from the patch
+  header, then apply with `git apply --reject` (safe on an stg
+  branch; never moves HEAD). Resolve the `.rej` hunks against
+  current code; when the patch moves a code block between files,
+  diff the moved block against its current in-tree state and
+  port any drift into the destination here, or the patch
+  silently reverts later changes. Delete the `.rej` files and
+  confirm none remain with `git status` before refreshing.
+  `stg add` any new files, then `stg refresh` -- or
+  `stg refresh --force` when `stg add` left the index dirty.
+
 **`git add` before `stg refresh`**: `stg refresh` picks up
 all changes to tracked files automatically. Do not run
 `git add <file> && stg refresh` or `stg add <file> &&
