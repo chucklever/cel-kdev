@@ -558,13 +558,26 @@ When `stg push` or `stg rebase` produces conflicts:
 3. For semantic conflicts, recover the three-way view
    (`git show :1:`, `:2:`, `:3:` for base/ours/theirs)
    and read both sides' commit messages before editing.
-4. `stg resolved <file>` (not `git add`) after each file.
-5. `stg refresh` to finalize.
+4. Before marking any file resolved, run `stg top`.  It MUST
+   name the conflicting patch.  `stg refresh` folds the
+   resolution into whatever patch is top, so if `stg top`
+   names a different patch -- the in-flight patch is
+   unapplied with the merged content loose in the worktree --
+   do NOT `stg resolved` and do NOT refresh.  Recover first:
+   confirm with `stg log` that the last recorded operation is
+   the conflict to reverse, then `stg undo --hard`
+   (`git stash` unrelated edits first; it discards the
+   worktree) and `stg goto <patch>` to re-derive on the
+   correct top.  See the reference for when undo is unsafe.
+5. `stg resolved <file>` (not `git add`) after each file.
+6. `stg refresh` to finalize.
 
 If intent cannot be determined, leave conflict markers in
 place and report what is ambiguous rather than guessing.
 
-To abort: `stg undo` reverts the failed operation.
+To abort: `stg undo` reverts the failed operation.  In the
+unapplied-in-flight case (step 4), use `stg undo --hard` to
+also clear the merged content left loose in the worktree.
 
 See [references/conflict-resolution.md](references/conflict-resolution.md)
 for the full context-gathering strategy, classification

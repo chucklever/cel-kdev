@@ -120,8 +120,69 @@ dangerous failure mode.
 
 ## Step 5: Resolve and finalize
 
+Before `stg resolved` or `stg refresh`, confirm the
+conflicting patch is the current top:
+
 ```bash
-# After editing each conflicted file:
+stg top      # must name the patch whose push hit the conflict
+```
+
+`stg refresh` folds the resolution into whatever patch is
+top, so the top patch must be the in-flight patch before a
+refresh.
+
+- If `stg top` names the conflicting patch: this is a real
+  `stg push`/`stg rebase`/`stg float`/`stg sink` conflict,
+  which leaves the in-flight patch APPLIED as top.  Proceed
+  to `stg resolved` and `stg refresh` below.
+- If `stg top` names a different patch: the in-flight patch
+  is unapplied while its merged content sits loose in the
+  worktree, from an interrupted or rolled-back operation or
+  a conflict constructed by external tooling.  Do NOT
+  refresh and do NOT `stg resolved` -- a refresh folds the
+  resolution into the wrong (current top) patch.  Recover as
+  below before re-deriving the conflict.
+
+### Recovering an unapplied-in-flight state
+
+`stg undo` resets the stack to the state before the last
+operation recorded in stg's stack log -- it reads that log,
+not the worktree -- and `--hard` additionally discards the
+index and worktree.  So `stg undo --hard` recovers cleanly
+only when that last recorded operation is what left this
+state: a real `stg push`/`stg rebase`/`stg goto` conflict
+(the recovery StGit's own push-conflict message recommends),
+possibly already half-rolled-back.  Confirm with `stg log`
+before undoing.
+
+If `stg log` shows the last operation is something else --
+the state came from raw git, or from tooling that dirtied
+the worktree without a stack transaction -- `stg undo` would
+reverse an unrelated earlier operation.  Do not undo; stop
+and report the stack state rather than guessing.
+
+When undo is appropriate:
+
+```bash
+git stash         # save unrelated edits first
+stg undo --hard   # discards ALL worktree and index changes
+stg goto <patch>  # re-derive the conflict on the correct top
+```
+
+Do not skip the undo and instead position the in-flight
+patch as top with `stg goto` while the merged content is
+still loose in the worktree: `stg goto` either refuses the
+dirty worktree or re-derives the conflict on top of it.
+Clear the worktree with `stg undo --hard` first; `stg goto
+<patch>` then applies patches in series order, re-deriving
+on the correct top without reordering the stack.
+
+`stg resolved` clears the unmerged-index guard that
+otherwise blocks a premature `stg refresh`, so run the
+top-patch check above before `stg resolved`.
+
+```bash
+# Top patch confirmed; after editing each conflicted file:
 stg resolved <file>
 
 # Once all conflicts are resolved:
