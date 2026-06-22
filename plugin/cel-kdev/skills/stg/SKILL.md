@@ -24,6 +24,18 @@ means it is not. Do not combine these into a single shell
 command: pipes, `$()`, and `xargs` are harder for hooks and
 approval rules to inspect and can trigger prompts.
 
+The `block-raw-git.sh` guard hook checks stg-activity against
+the repo the command targets: a leading `git -C <dir>` retargets
+the check at `<dir>` when `<dir>` resolves to a directory,
+otherwise it falls back to the hook's cwd -- the session's
+primary branch -- keeping the guard fail-closed. The hook cannot see a `cd <repo> &&`
+prefix; the harness resets cwd between calls. So when an stg
+session also touches a second, non-stg repo, drive that repo
+with `git -C <repo> <subcommand>` rather than a `cd`. The guard
+then resolves `<repo>`, and once it confirms `<repo>` carries no
+stg stack it permits raw git there. This is not a license to
+bypass the guard on an actual stg branch.
+
 ## CRITICAL: Prohibited git commands
 
 **NEVER use these git commands when stg is active. They move

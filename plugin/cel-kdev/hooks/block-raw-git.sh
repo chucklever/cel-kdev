@@ -24,16 +24,65 @@ STRIPPED=$(echo "$COMMAND" | sed -e 's/"[^"]*"//g' -e "s/'[^']*'//g")
 # "git merge-base x y; git merge z").
 STRIPPED=$(echo "$STRIPPED" | sed -E 's/\bgit[[:space:]]+(commit-tree|merge-tree|merge-base|merge-file)\b/git PLUMBING/g')
 
+# Each "git -C <dir>" invocation targets <dir>; a bare "git
+# <subcommand>" (no -C) targets the hook's cwd -- the session's primary
+# branch. The guard must test stg-activity on the repo each subcommand
+# actually mutates, so collect every -C target rather than only the
+# first: a benign "git -C <plain> ..." must not vouch for a prohibited
+# "git -C <stg> ..." chained on the same line.
+mapfile -t GIT_C_DIRS < <(echo "$STRIPPED" |
+    grep -oE '\bgit[[:space:]]+-C[[:space:]]+[^[:space:]]+' |
+    sed -E 's/.*-C[[:space:]]+//')
+
+# A bare prohibited git (the subcommand immediately follows "git")
+# targets the cwd. Detect it before folding the -C prefixes away, while
+# bare and -C forms are still distinguishable.
+BARE_PRESENT=no
+if echo "$STRIPPED" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pick|checkout|switch|restore|worktree|merge)\b'; then
+    BARE_PRESENT=yes
+fi
+
+# Fold "git -C <dir>" down to a bare "git" so the prohibited-subcommand
+# patterns still see the subcommand on git's word boundary; without
+# this, "git -C <dir> commit" slips past the regex entirely.
+STRIPPED=$(echo "$STRIPPED" | sed -E 's/\bgit[[:space:]]+-C[[:space:]]+[^[:space:]]+/git/g')
+
 # Only check commands that match prohibited git operations
 if ! echo "$STRIPPED" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pick|checkout|switch|restore|worktree|merge)\b'; then
     exit 0
 fi
 
-# Allow if stg is not active on this branch
-BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null) || exit 0
-if ! git show-ref --verify "refs/stacks/$BRANCH" >/dev/null 2>&1; then
-    exit 0
+# stg_active <dir>: succeed when the branch checked out in <dir> (the
+# cwd when <dir> is empty) carries an stg stack ref.
+stg_active() {
+    local dir=$1 branch
+    local -a g=(git)
+    [ -n "$dir" ] && g=(git -C "$dir")
+    branch=$("${g[@]}" symbolic-ref --short HEAD 2>/dev/null) || return 1
+    "${g[@]}" show-ref --verify "refs/stacks/$branch" >/dev/null 2>&1
+}
+
+# Block when any repo the command addresses carries an stg stack. A
+# resolvable -C target is checked directly; an unresolvable one (e.g. a
+# quoted shell variable stripped above) falls back to the cwd check,
+# keeping the guard fail-closed. The cwd is checked when a bare git
+# addresses it, or when an unresolvable -C falls back to it.
+check_cwd=$BARE_PRESENT
+addressed_stg=no
+for dir in "${GIT_C_DIRS[@]}"; do
+    if [ -d "$dir" ]; then
+        if stg_active "$dir"; then
+            addressed_stg=yes
+            break
+        fi
+    else
+        check_cwd=yes
+    fi
+done
+if [ "$addressed_stg" = no ] && [ "$check_cwd" = yes ] && stg_active ""; then
+    addressed_stg=yes
 fi
+[ "$addressed_stg" = no ] && exit 0
 
 # Allow read-only forms of git branch and config-only changes
 # (--set-upstream-to, --unset-upstream, --edit-description), which

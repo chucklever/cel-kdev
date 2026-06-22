@@ -98,6 +98,35 @@ setup_repo "$TMPDIR/inactive" no
 expect_allowed "git commit -m update"
 expect_allowed "git switch topic"
 
+# A leading -C <dir> retargets the activity check at that repo, not
+# the hook's cwd. From a non-stg cwd, -C into the stg repo blocks;
+# from the stg cwd, -C into a non-stg repo is allowed (the reported
+# false-block).
+cd "$TMPDIR/inactive" || exit 1
+expect_blocked "git -C $TMPDIR/active commit -m update"
+expect_allowed "git -C $TMPDIR/inactive commit -m update"
+cd "$TMPDIR/active" || exit 1
+expect_allowed "git -C $TMPDIR/inactive commit -m update"
+expect_blocked "git -C $TMPDIR/active commit -m update"
+
+# Every -C target is checked, not just the first: a benign command
+# aimed at a non-stg repo must not vouch for a prohibited one aimed at
+# an stg repo chained on the same line, in either order.
+cd "$TMPDIR/inactive" || exit 1
+expect_blocked "git -C $TMPDIR/inactive status; git -C $TMPDIR/active commit -m update"
+expect_blocked "git -C $TMPDIR/active commit -m update && git -C $TMPDIR/inactive status"
+
+# A bare git mutating the stg cwd is caught even when a -C aimed at a
+# non-stg repo appears first on the line.
+cd "$TMPDIR/active" || exit 1
+expect_blocked "git -C $TMPDIR/inactive status; git commit -m update"
+
+# An unresolvable -C target falls back to the cwd check: fail-closed
+# from an stg cwd, permitted from a non-stg cwd.
+expect_blocked "git -C $TMPDIR/does-not-exist commit -m update"
+cd "$TMPDIR/inactive" || exit 1
+expect_allowed "git -C $TMPDIR/does-not-exist commit -m update"
+
 if [ "$failures" -ne 0 ]; then
     exit 1
 fi
