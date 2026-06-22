@@ -86,7 +86,13 @@ a query parameter.
       "inline_review": "<git-style quoted-diff with interleaved reviewer text>",
       "model": "...", "tokens_in": ..., "tokens_out": ... },
     ...
-  ]
+  ],
+  "status": <patchset-level: "Incomplete"|"Pending"|"In Review"|
+             "Reviewed"|"Failed"|"Failed To Apply"|"Cancelled"|
+             "Skipped">,
+  "failed_reason": <string when status is a failure state, else null>,
+  "baseline_logs": <string: the baselines tried, when apply failed; else null>,
+  "baseline": <baseline ref applied onto, or null>
 }
 ```
 
@@ -110,9 +116,22 @@ import json, sys, collections
 d = json.load(sys.stdin)
 parts = {p["id"]: p for p in d.get("patches", [])}
 reviews = d.get("reviews", [])
-if not reviews:
+pstatus = d.get("status")
+if pstatus in ("Failed", "Failed To Apply"):
+    print(f"ingested, {pstatus!r}, not clean")
+    print("failed_reason:", d.get("failed_reason"))
+    print("baseline_logs:", d.get("baseline_logs"))
+    if not reviews:
+        sys.exit(0)
+    print(f"NOTE: {len(reviews)} partial review(s) present despite {pstatus!r}:")
+    # fall through to print the partial reviews below
+elif pstatus in ("Cancelled", "Skipped"):
+    print(f"terminal: patchset status {pstatus!r}; no review will be produced")
+    sys.exit(0)
+elif not reviews:
     statuses = collections.Counter(p.get("status") for p in parts.values())
-    print(f"no reviews yet; patch status counts: {dict(statuses)}")
+    print(f"patchset status {pstatus!r}; no reviews yet; "
+          f"patch status counts: {dict(statuses)}")
     sys.exit(0)
 for r in sorted(reviews, key=lambda r: parts.get(r["patch_id"], {}).get("part_index", 0)):
     p = parts.get(r["patch_id"], {})
@@ -166,6 +185,17 @@ b4 prep --show-info | grep -E '^(change-id|revision|series-v)'
 The `series-v<N>:` line gives `<range> <msgid>`, where
 `<msgid>` is the patch-0 cover Message-ID to pass as
 `?id=<msgid>`.
+
+When the series was imported into the working tree rather than
+managed on a prep branch (e.g. `b4 am` piped into `stg import`),
+`b4 am` and `stg import` commonly drop the `Link:` trailer, so an
+absent commit trailer is not evidence the patch is local-only.
+The cover Message-ID is in the `Message-Id:` header of the
+b4-left `*.cover` file. Any per-part `*.mbx` id yields the cover
+id by replacing the part-number field -- the `-<n>-` immediately
+before the trailing hash token -- with `-0-` (e.g.
+`...-v1-3-<hash>@...` -> `...-v1-0-<hash>@...`); an id already
+ending `-0-<hash>@...` is itself the cover id.
 
 ## Local sashiko-cli
 
@@ -254,6 +284,27 @@ Per-part `status` transitions: `null` -> `"In Review"` ->
 `"Reviewed"`.  For a freshly sent series it is normal for
 most parts to remain `"In Review"` for hours.  Poll
 `/api/patchset?id=<msgid>` rather than the web UI.
+
+A patchset-level `status` of `"Failed To Apply"` means sashiko
+ingested the series but could not construct a baseline to apply
+it onto: `reviews[]` is empty and no findings exist. This state
+is distinct from not-ingested (404), pending (`Pending` or
+`In Review`), and clean -- where "clean" means `status`
+`"Reviewed"` with a populated `reviews[]` carrying zero flagged
+issues. Read `failed_reason` for the cause and `baseline_logs`
+for the baselines tried (often the `Fixes:` commit, then
+`cel/HEAD`, `linux-next/HEAD`, `HEAD`); it is typical for a fix
+that depends on an unmerged series whose base is not a public
+ref. Report it as "ingested, failed to apply, no findings" --
+never "clean." The sibling status `"Failed"` (the review errored
+out) is likewise not "clean": report the status and its
+`failed_reason`. Unlike `"Failed To Apply"`, a `"Failed"` run can
+still carry partial `reviews[]` from parts that completed before
+the error, so surface those findings rather than discarding them.
+The terminal statuses `"Cancelled"` (review cancelled) and
+`"Skipped"` (sashiko declined the series) likewise never become
+clean: they produce no further findings, so report the status
+rather than advising a re-poll.
 
 ## Privacy
 
