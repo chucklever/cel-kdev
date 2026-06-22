@@ -53,6 +53,36 @@ inspect and can bypass edit policies.
    sudo drgn -k /tmp/drgn-script.py
    ```
 
+### Symbols from debuginfod under sudo
+
+When kernel symbols come from debuginfod rather than a local
+kernel-debuginfo package (e.g. Fedora caching under
+`~/.cache/debuginfod_client`), plain `sudo drgn -k` can fail
+with "missing debugging symbols" followed by an
+`ObjectNotFoundError` for a core symbol such as `super_blocks`.
+This is not a script bug: sudo's `env_reset` strips
+`DEBUGINFOD_URLS`, so drgn's debuginfod client never fetches
+vmlinux. Forward the variable:
+
+```bash
+sudo DEBUGINFOD_URLS="$DEBUGINFOD_URLS" drgn -k /tmp/drgn-script.py
+```
+
+The expansion uses the invoking shell's value, so an empty
+`$DEBUGINFOD_URLS` there yields `DEBUGINFOD_URLS=""` and
+reproduces the failure. Confirm `echo $DEBUGINFOD_URLS` is
+non-empty before forwarding; set it (Fedora's value appears
+below) when it is not.
+
+`sudo -E`, or a root login whose environment already sets
+`DEBUGINFOD_URLS`, works as well. The value is
+distribution-specific -- `https://debuginfod.fedoraproject.org/`
+on Fedora -- so forward the existing one rather than hardcoding
+a URL. The root client resolves its own cache path; no
+`DEBUGINFOD_CACHE_PATH` is needed. Before concluding the symbols
+are unavailable, confirm `DEBUGINFOD_URLS` survived into the
+sudo environment.
+
 ## Core API patterns
 
 ### Creating typed objects
@@ -222,6 +252,10 @@ Every drgn invocation, `/sys/kernel/slab/` read, and
 `/proc/kcore` access requires root. Do not attempt
 unprivileged access first -- it wastes a round-trip.
 
+When symbols come from debuginfod, sudo's `env_reset` drops
+`DEBUGINFOD_URLS` and breaks symbol fetch; see "Symbols from
+debuginfod under sudo" under Invocation.
+
 ### Filter early inside scripts
 
 When iterating tasks or slab objects, filter inside the
@@ -261,6 +295,7 @@ print(folio)
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | `NameError: vmlinux` | `-e vmlinux` parsed as Python | Use `drgn -k` |
+| `ObjectNotFoundError` under sudo | debuginfod env stripped | Forward `DEBUGINFOD_URLS` or `sudo -E` |
 | `AttributeError: ring_pages` | Field renamed | Introspect members first |
 | `TypeError: prog.object(value=)` | Wrong API | Use `Object(prog, type, address=)` |
 | `FaultError` on cast | Embedded struct | Use `container_of()` |
