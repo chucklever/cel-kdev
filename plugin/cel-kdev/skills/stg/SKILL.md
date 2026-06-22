@@ -279,17 +279,20 @@ and edit entries in the surviving patch's history.
 To fold patch B into the patch A beneath it:
 
 ```bash
+orig_top=$(stg top)          # topmost applied patch, to restore at the end
 stg export -d <dir> B        # writes <dir>/B: B's message + diff
 stg pop B
 stg goto A                   # make A top (stg fold applies to the
-                             # top patch); no-op when B sat
-                             # directly above A
+                             # top patch); no-op only when B was the
+                             # top patch directly above A
 stg fold <dir>/B             # apply B's diff to the worktree
 stg refresh                  # fold the change into A
 stg edit --file <msg-file> A # combined message, if needed
 stg delete B
-stg push -a                  # reapply patches popped by goto;
-                             # no-op when goto popped nothing
+[ "$orig_top" = B ] && orig_top=A  # if B itself was the top patch, the
+                                   # fold deleted it; goto A instead
+stg goto "$orig_top"         # restore the prior applied set; never
+                             # 'stg push -a' here (see Pitfalls).
 ```
 
 `<dir>/B` is a full patch file (message plus diff), not a
@@ -328,6 +331,18 @@ context-shift conflicts whose root cause is the silent
 reordering, not the patches. To navigate without reordering
 use `stg goto <name>`, or `stg push -n N` / `stg push -a` for
 forward steps. See [references/commands.md](references/commands.md).
+
+**`stg push -a` overshoots the prior state**: after a
+goto-based edit (fold, message edit, reorder), reapply by
+returning to the patch that was top before the goto --
+`stg goto <original-top>` -- not `stg push -a`. Patches left
+unapplied before the edit are usually unapplied on purpose
+(not recently rebased, likely to conflict); `push -a` applies
+them too, overshooting the prior applied set and often hitting
+stale-context conflicts in a patch unrelated to the edit.
+Record the original top with `stg top` before the goto. Use
+`push -a` only when the intent is genuinely to apply the whole
+stack.
 
 **Merge commits and repair**: Raw `git merge` on an stg branch
 commits the merge to the stack's HEAD, leaving the patches below
