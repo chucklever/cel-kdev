@@ -174,7 +174,8 @@ Split on intent:
   - `stg rebase <new-base>` -- replay the stack on a new base
     (e.g. a release tag).
   - `stg pick -B <branch> <commit>` / `stg pick <sha>` -- absorb
-    individual commits from another branch as new patches.
+    individual commits from another branch as new patches (no
+    sign-off added; see the `stgit.autosign` pitfall).
   - `stg import -M <mbox>` -- pull a series in as patches
     (`-M`/`--mbox` reads an mbox series; `-m`/`--mail` reads a
     single mail file).
@@ -584,6 +585,22 @@ version. Alternatively, preserve it by omitting it from the
 message and restoring it with the `-s`/`--signoff` flag (see
 Trailer flags below). A patch created while `stgit.autosign`
 was unset carries none; do not add one here.
+
+`stg pick` also does NOT autosign: it copies the picked
+commit's message and trailers verbatim, adding no
+`Signed-off-by` even when `stgit.autosign` is set. This
+verbatim mirror is the reversible default -- prefer it;
+`stg pick` alone is correct for a backport meant to match the
+upstream commit. Add a backporter sign-off only when one is
+actually wanted: the user asked, or recent picks on this
+branch carry one. To add it, run `stg edit` with
+`-s`/`--signoff` (or `stg refresh --signoff` on the
+just-picked top patch) afterward -- it appends the trailer
+without opening the editor (see Trailer flags below). That
+trailer takes `user.email`, so confirm the identity first
+(see the identity check above). If autosign is set and you
+still cannot tell whether this branch wants the sign-off, ask
+the user rather than guessing.
 
 **File-edit cache stale after stack ops**: Any stg command that
 moves HEAD or rewrites a patch's tree (`push`, `pop`, `goto`,
