@@ -488,6 +488,38 @@ do not also write it into those messages by hand. On
 selects mbox-series input; neither flag affects trailer
 behavior.
 
+Autosign takes the sign-off address from git's effective
+`user.email`, which falls back to global config when the repo
+has no local identity set. On a project whose sign-off
+identity differs from your global default, this silently bakes
+the wrong address into the trailer. Whenever `stgit.autosign`
+is set and you have not already confirmed this repo's sign-off
+identity, check before the first `stg new` or `stg import`:
+
+```bash
+git config --get user.email   # the address autosign will stamp
+```
+
+Confirm it matches the address you sign off as *on this
+project*. If you do not know which address that is, ask the
+user -- do not infer it from history. Recent sign-offs can be
+listed as a rough hint, but in a shared repo the most common
+one is often another contributor's address, not yours, so
+never copy it into your own identity:
+
+```bash
+git log -20 --format='%(trailers:key=Signed-off-by,valueonly)' \
+    | grep . | sort | uniq -c | sort -rn
+```
+
+If `user.email` is wrong for this project, set a repo-local
+identity: `git config --local user.email <your-addr>`. Once a
+patch is stamped with the wrong address a plain `stg refresh`
+does not correct it; the message must be re-edited (`stg edit
+--file`; note that form does not autosign, so include the
+corrected trailer in the message text -- see the `stg edit`
+exception below).
+
 When `stgit.autosign` is unset, the absence is the signal that
 no sign-off is wanted: on a newly created patch, do not add a
 `Signed-off-by` at all -- neither in the message text nor via
