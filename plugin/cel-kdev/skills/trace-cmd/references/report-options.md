@@ -48,6 +48,49 @@ Numeric operators: `==`, `!=`, `<`, `<=`, `>`, `>=`,
 String operators: `==`, `!=`, `~` (glob with `*`, `?`,
 `[]`).
 
+### Bit-mask and flag-field filters
+
+Comparing a bare field to a literal works; comparing a *masked*
+expression to a literal does not. Both `field & MASK == 0` and
+`(field & MASK) == 0` raise `parse_error: Field not found`, and
+this applies to any comparison operator, not just `== 0`
+(`field & MASK != 0` fails the same way). Write bit tests as the
+truthy or negated-truthy form:
+
+- any masked bit set:    `field & 0x4`
+- masked bits all clear: `!(field & 0x4)`
+- whole field zero:      `field == 0`
+
+`field & MASK` is true when the field has *any* of `MASK`'s bits
+set, so a multi-bit mask tests "any of these bits," not "all." There is no
+single-predicate "all bits set" test: `(field & MASK) == MASK`
+hits the masked-comparison failure above. Test each bit with a
+separate `&&` term, e.g. `field & 0x2 && field & 0x4`.
+
+`MASK` must be a numeric literal (decimal or `0x` hex). The parser
+does not resolve C macro or enum names; a symbolic mask such as
+`field & RQ_SECURE` is not matched, because `RQ_SECURE` is treated
+as a field name rather than the intended bit value. Look up the
+numeric value from its `#define`/enum in the kernel source.
+
+When source is unavailable, the value often appears at runtime in
+the event's `format` file
+(`/sys/kernel/tracing/events/<subsys>/<event>/format`): the
+`print fmt:` line decodes flag fields with `__print_flags()`,
+listing each bit as a `{ value, "NAME" }` pair. For example
+`nfsd_file_acquire` lists `may_flags` bits as `{ 0x004, "READ" }`
+and `nf_flags` bits as `{ 1 << (2), "REFERENCED" }` -- values
+appear in literal-hex or shift form, so evaluate a shift
+(`1 << 2` = `0x4`) before using it. Only fields the tracepoint
+decodes symbolically appear this way.
+
+```bash
+# nfsd_file_acquire events where the REFERENCED bit
+# (nf_flags & 0x4) is clear
+trace-cmd report -i <file> \
+  -F 'nfsd_file_acquire: !(nf_flags & 0x4)'
+```
+
 ## .function modifier
 
 The `.function` postfix converts a `long` field to a
