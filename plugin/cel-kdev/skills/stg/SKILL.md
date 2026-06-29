@@ -121,6 +121,18 @@ but not ancestors of HEAD. They do not appear in `git log`.
 Use `stg show` with patch names from `stg series --unapplied`
 to examine them -- not `HEAD~N`.
 
+**stg patch names are not git revisions.** `git show
+<patch-name>`, `git diff <patch-name>`, and `git log
+<patch-name>` all fail with `fatal: ambiguous argument
+'<patch-name>': unknown revision or path not in the working
+tree`. To inspect any patch, applied or unapplied, use
+`stg show <patch>` (optionally `stg show <patch> -- <path>`).
+For a patch-range diff, prefer the native `stg diff -r
+<first>~..<last>` over composing raw git. Reach for `stg id`
+only when a git command genuinely needs a revision stg
+cannot supply -- e.g. `git log $(stg id <patch>)` or
+`git show $(stg id <patch>):<path>`.
+
 ## Finding the stack base
 
 The stack base is the commit each applied patch sits above.
