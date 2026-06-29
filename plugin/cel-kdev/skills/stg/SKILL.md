@@ -43,7 +43,7 @@ HEAD behind stg's back, corrupting the stack metadata.**
 
 | Prohibited | Replacement |
 | ---------- | ----------- |
-| `git commit` | `stg new <name> -m "msg"` + `stg refresh` |
+| `git commit` | `stg new <name> -m "msg"` + `stg refresh` (on a partial stack, check applied state first -- see the `stg new` pitfall) |
 | `git commit --amend` | `stg refresh` or `stg edit --file <path>` |
 | `git rebase` | `stg rebase`, `stg sink`, `stg float` |
 | `git reset` | `stg pop`, `stg undo` |
@@ -332,6 +332,32 @@ reordering, not the patches. To navigate without reordering
 use `stg goto <name>`, or `stg push -n N` / `stg push -a` for
 forward steps. See [references/commands.md](references/commands.md).
 
+**`stg new` inserts above the current top, not at the series
+end**: `stg new` places the new patch immediately above the
+current top (`>`). On a partially-applied stack -- top is a
+mid-series patch with `-` unapplied patches below it -- a patch
+meant for the END of the series lands between the applied set
+and those unapplied patches, mid-series. Before `stg new`,
+check `stg series`: any `-` line means the stack is partial
+(unapplied patches always sit below the top). No `-` lines
+means the top is already the series end and `stg new` appends
+correctly -- no action needed. Run `stg series` now if you
+have not oriented this session.
+To append at the true end, `stg push -a` first so the top
+becomes the last patch, then `stg new`. Do this only when
+applying the whole stack is genuinely intended: `push -a`
+applies every unapplied patch and leaves the stack fully
+applied -- a state change beyond just adding a patch -- and any
+patch unapplied on purpose may raise the stale-context
+conflicts the "`stg push -a` overshoots" pitfall describes.
+If you cannot tell whether the new patch belongs at the end
+rather than above the current top, or whether the unapplied
+patches should be applied at all, do NOT `push -a`: create the
+patch above the current top and report its position, or ask
+the user. This is the one case where `push -a` is wanted -- it
+still applies the whole stack as that pitfall warns, but here
+that is the goal.
+
 **`stg push -a` overshoots the prior state**: after a
 goto-based edit (fold, message edit, reorder), reapply by
 returning to the patch that was top before the goto --
@@ -342,7 +368,10 @@ them too, overshooting the prior applied set and often hitting
 stale-context conflicts in a patch unrelated to the edit.
 Record the original top with `stg top` before the goto. Use
 `push -a` only when the intent is genuinely to apply the whole
-stack.
+stack. One such case is appending a patch at the true
+series end on a partial stack, which requires the whole stack
+applied first (see the `stg new` pitfall above) -- but only
+when that full application is itself intended.
 
 **Merge commits and repair**: Raw `git merge` on an stg branch
 commits the merge to the stack's HEAD, leaving the patches below
@@ -607,7 +636,8 @@ are needed.
 Always provide `-m` to `stg new` and `--file <path>` to
 `stg edit`. For multi-line messages, write the text to a
 temp file and pass it with `--file`; both commands accept
-it.
+it. On a partially-applied stack, check the applied state
+before `stg new` -- see the `stg new` pitfall in Pitfalls.
 
 ### Trailer flags
 
