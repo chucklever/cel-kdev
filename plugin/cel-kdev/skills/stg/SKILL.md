@@ -623,7 +623,15 @@ There is no generic `--trailer` / `-t` flag on `stg edit`;
 
 When `stg push` or `stg rebase` produces conflicts:
 
-1. `git status` — identify every conflicted file.
+1. `git status` — identify every conflicted file.  For the
+   in-flight patch's *full* file set (e.g. to drive a
+   per-file mechanical loop), use `git status --short` (it
+   lists the merge-staged files as well as the conflicted
+   ones), not `stg files <patch>`: until the finalizing
+   `stg refresh` `stg files` can return empty for the
+   in-flight patch, and a loop driven off it fails open --
+   no error, no files, patch silently skipped.  See the
+   reference for the mechanism.
 2. Classify each conflict (take-ours, take-theirs,
    concatenate, or semantic).  Resolve trivial cases
    directly.

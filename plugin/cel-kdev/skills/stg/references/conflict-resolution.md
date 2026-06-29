@@ -17,6 +17,26 @@ the full scope is known -- conflicts in separate files may
 be coupled (one side renamed a function that the other side
 calls).
 
+`git status` lists the conflicted files, but to enumerate the
+in-flight patch's *full* file set -- for example to drive a
+per-file mechanical step across the patch -- use `git status
+--short`.  It lists every file the merge touched: the cleanly
+merged files the 3-way merge auto-staged, the conflicted ones,
+and any already cleared with `stg resolved`.  This equals the
+patch's file set only when the worktree carries no unrelated
+edits, so stash those first.  Prefer it over a bare
+`git diff --name-only`, which shows only unstaged changes and
+so omits the staged merge results -- exactly the files an
+enumeration must not miss.  Do not read that set from
+`stg files <patch>`: it reports the patch's *recorded* commit,
+so between `stg resolved` and `stg refresh` it omits the
+still-loose merge content and can return empty for the
+in-flight top patch.  `stg files` becomes reliable again only
+after the finalizing `stg refresh` (step 5).  A stack-walking
+script that drives a per-patch step off `stg files`
+mid-conflict fails open -- no error, no files -- and silently
+skips the patch.
+
 ## Step 2: Classify each conflict
 
 Most conflicts fall into one of a small number of categories.
