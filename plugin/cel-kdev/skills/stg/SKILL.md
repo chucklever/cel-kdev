@@ -303,64 +303,17 @@ deliberately, build the merge below the stack base instead of on
 its HEAD -- see "Combining branches: there is no stg merge".
 
 **Conflicting `stg import` creates no patch**: when `stg import`
-cannot apply a patch it aborts patch creation -- no new patch
-lands on the stack. A plain `stg import` leaves the worktree
-clean: `git apply` is atomic, so a failed apply rolls back with
-nothing to refresh; re-run with `-3` (see below) to get
-resolvable markers. Only `stg import --3way` leaves the diff,
-conflict markers and all, loose in the worktree, because the
-3-way apply writes them before failing. Once those markers are
-marked resolved, a bare `stg refresh` folds the imported change
-into whatever patch is currently top, not into a patch of its
-own. To abandon the import outright, `stg undo` reverses it. To
-keep it, resolve the markers, mark them resolved with `stg
-resolved <file>` -- otherwise `stg new` and `stg refresh` both
-abort with "resolve outstanding conflicts first" -- then
-recreate the patch explicitly: `stg new <name> --file <msg>`,
-recovering the commit log from the mbox into `<msg>` (a
-multi-line changelog needs `--file`, not `-m`) and the author
-from the mbox header via `--authname`/`--authemail`/`--authdate`.
-Then `stg refresh`. When `stgit.autosign` is set, `stg new`
-appends the committer's `Signed-off-by`; drop that line from
-`<msg>` if the recovered log already carries it (you authored
-the patch) to avoid a duplicate trailer.
-
-To tell whether a stray `stg refresh` already folded the change
-in, `stg show` the top patch and look for the imported diff you
-did not author. If it is there, `stg undo` splits it back out
-into stg's internal `refresh-temp` patch, which can be renamed
-(`stg rename`) and re-messaged (`stg edit --file`; that form
-does not autosign, so re-include the `Signed-off-by` line the
-mbox carried, or restore it with `-s`, to preserve the trailer
-rather than add one).
-
-When an import without 3-way merge fails outright because
-context diverged by an unrelated change (e.g. an upstream rename
-landed in the stack base), escalate to `stg import --3way`
-(`-3`): it runs a 3-way merge and converts the apply failure
-into resolvable conflict markers rather than refusing the patch.
-
-**`stg import --3way` fails with "repository lacks the necessary
-blob"**: the plain apply failed on context drift, and the 3-way
-fallback needs the pre-image blobs named in the patch's `index`
-lines -- which are absent when the patch was exported from a tree
-state since rewritten or pruned (`git cat-file -e <blob>`
-confirms). Two recoveries:
-
-- Fetch the objects from the repository the patch was exported
-  from (`git fetch <remote>` brings objects without touching HEAD
-  or stack metadata), then retry the import.
-- Hand-rebase the patch: create it with `stg new --file <msg>`
-  plus `--authname`/`--authemail`/`--authdate` from the patch
-  header, then apply with `git apply --reject` (safe on an stg
-  branch; never moves HEAD). Resolve the `.rej` hunks against
-  current code; when the patch moves a code block between files,
-  diff the moved block against its current in-tree state and
-  port any drift into the destination here, or the patch
-  silently reverts later changes. Delete the `.rej` files and
-  confirm none remain with `git status` before refreshing.
-  `stg add` any new files, then `stg refresh` -- or
-  `stg refresh --force` when `stg add` left the index dirty.
+cannot apply a patch it aborts atomically -- no patch lands, and
+a plain import leaves the worktree clean, so there is nothing to
+refresh. Re-run with `-3`/`--3way` to get resolvable markers;
+only `--3way` leaves the diff loose in the worktree. After
+resolving and `stg resolved`, a bare `stg refresh` folds the
+change into whatever patch is top, not a patch of its own. Full
+recovery -- recreating the patch, mbox author recovery, detecting
+a stray refresh, the `git apply --reject` hand-rebase, and the
+missing-blob (`--3way` "repository lacks the necessary blob")
+fetch -- is in
+[references/conflict-resolution.md](references/conflict-resolution.md).
 
 **`git add` before `stg refresh`**: `stg refresh` picks up
 all changes to tracked files automatically. Do not run

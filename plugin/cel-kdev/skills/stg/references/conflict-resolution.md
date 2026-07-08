@@ -249,3 +249,69 @@ git show <merge-commit> -- <file>
 Past resolutions in the same repository are the strongest
 signal for project-specific conventions (ordering, naming,
 error handling style) that a generic resolution would miss.
+
+## Recovering from a failed `stg import`
+
+When `stg import` cannot apply a patch it aborts patch creation
+-- no new patch lands on the stack (see the "Conflicting `stg
+import` creates no patch" pitfall in SKILL.md for the trap). A
+plain `stg import` rolls back atomically and leaves the worktree
+clean; only `stg import --3way` (`-3`) leaves the diff and
+conflict markers loose in the worktree, because the 3-way apply
+writes them before failing. Escalate a plain apply failure to
+`-3` when context diverged by an unrelated change (e.g. an
+upstream rename landed in the stack base): it runs a 3-way merge
+and converts the refusal into resolvable markers.
+
+### Rebuilding the patch after a --3way import
+
+Resolve the markers and mark them with `stg resolved <file>` --
+otherwise `stg new` and `stg refresh` both abort with "resolve
+outstanding conflicts first." A bare `stg refresh` then folds the
+imported change into whatever patch is currently top, not into a
+patch of its own. To abandon the import outright, `stg undo`
+reverses it. To keep it as its own patch, recreate it explicitly:
+
+```bash
+stg new <name> --file <msg> \
+    --authname <name> --authemail <addr> --authdate <date>
+stg refresh
+```
+
+Recover the commit log from the mbox into `<msg>` (a multi-line
+changelog needs `--file`, not `-m`) and the author fields from
+the mbox header. When `stgit.autosign` is set, `stg new` appends
+the committer's `Signed-off-by`; drop that line from `<msg>` if
+the recovered log already carries it (you authored the patch) to
+avoid a duplicate.
+
+To tell whether a stray `stg refresh` already folded the change
+in, `stg show` the top patch and look for the imported diff you
+did not author. If it is there, `stg undo` splits it back out
+into stg's internal `refresh-temp` patch, which can be renamed
+(`stg rename`) and re-messaged (`stg edit --file`; that form does
+not autosign, so re-include the `Signed-off-by` the mbox carried,
+or restore it with `-s`, rather than adding a new one).
+
+### --3way fails with "repository lacks the necessary blob"
+
+The plain apply failed on context drift, and the 3-way fallback
+needs the pre-image blobs named in the patch's `index` lines --
+absent when the patch was exported from a tree state since
+rewritten or pruned (`git cat-file -e <blob>` confirms). Two
+recoveries:
+
+- Fetch the objects from the repository the patch was exported
+  from (`git fetch <remote>` brings objects without touching HEAD
+  or stack metadata), then retry the import.
+- Hand-rebase the patch: create it with `stg new --file <msg>`
+  plus `--authname`/`--authemail`/`--authdate` from the patch
+  header, then apply with `git apply --reject` (safe on an stg
+  branch; never moves HEAD). Resolve the `.rej` hunks against
+  current code; when the patch moves a code block between files,
+  diff the moved block against its current in-tree state and port
+  any drift into the destination here, or the patch silently
+  reverts later changes. Delete the `.rej` files and confirm none
+  remain with `git status` before refreshing. `stg add` any new
+  files, then `stg refresh` -- or `stg refresh --force` when
+  `stg add` left the index dirty.
