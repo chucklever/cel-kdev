@@ -626,84 +626,24 @@ table, and prior-resolution retrieval.
 ## Tracing patch evolution with stg log
 
 `stg log [<patch>]` prints the history of stack operations
-for a patch (or the whole stack). Each line has the form:
+for a patch (or the whole stack), one line per operation:
 
 ```
 <meta-sha>   <date>   <description>
 ```
 
 **The `<meta-sha>` is an stg metadata commit, not the
-patch's code commit.** It records a snapshot of the stack
-state (which patches are applied, their order, and their
-content). Do not pass it to `git show` or `git diff`
-expecting code -- it contains stg internal files
-(`stack.json`, `patches/<name>`, etc.).
+patch's code commit.** It snapshots stack state (which patches
+are applied, their order, their content). Do not pass it to
+`git show` or `git diff` expecting code -- it holds stg internal
+files (`stack.json`, `patches/<name>`, etc.). `stg log` accepts
+no `--format` or `--oneline`; output is its default, `--full`
+(full git-log format), or `--diff` (stack-state diffs).
 
-`stg log` accepts no `--format` or `--oneline`; output is
-limited to its default, `--full` (full git-log format), or
-`--diff` (stack-state diffs).
-
-### Branch reflog vs stg log
-
-`git reflog <branch>` (an alias for
-`git log -g --abbrev-commit --pretty=oneline <branch>`)
-and `stg log` show overlapping but different histories:
-
-| View                   | What entries record                              | SHA points at      | Best for                                                  |
-| ---------------------- | ------------------------------------------------ | ------------------ | --------------------------------------------------------- |
-| `git reflog <branch>`  | stg ops that moved HEAD on the active branch     | The code commit    | "What did the top patch look like N refreshes ago?"       |
-| `stg log [<patch>]`    | Every stack-state change, incl. unapplied moves  | An stg meta commit | "When did patch X enter the stack? Was it ever popped?"   |
-
-Reflog and `stg log` entries for the same op carry the
-same message string, so the two views can be aligned by
-matching on that description.
-
-Recipe for the reflog case -- walk HEAD snapshots and
-inspect the file at each one. Do not pair `-- <path>`
-with a reflog walk (`git reflog` or `git log -g`):
-pathspec filtering treats reflog entries as linear
-ancestors, which they are not in a shuffled stg history.
-The filter silently elides relevant entries -- often
-every entry -- because each step's commit is diffed
-against its git-parent rather than the prior reflog step.
-
-```bash
-git reflog <branch>
-git show <sha>:<path>
-git diff <old-sha> <new-sha> -- <path>
-```
-
-The branch reflog records only HEAD movements on the
-active branch. Metadata-only operations (those that do
-not move HEAD) and edits to a patch made while it is
-unapplied appear only in `stg log`. HEAD-moving ops
-performed while some patch is unapplied (e.g., `stg pop`,
-`stg push <patch>`, `stg goto`) still appear in the
-reflog.
-
-### Extracting a patch diff at a historical point
-
-Each metadata commit stores per-patch content as tree
-OIDs in `patches/<name>`:
-
-```
-Bottom: <tree-oid-before>
-Top:    <tree-oid-after>
-```
-
-To reconstruct the patch diff at a given `stg log` entry:
-
-```bash
-# Read the Top and Bottom tree OIDs
-git show <meta-sha>:patches/<patch-name>
-
-# Diff the two trees to see the patch content
-git diff <bottom-tree> <top-tree> -- <file>
-```
-
-For bisecting when a change entered a patch or inspecting
-the cumulative HEAD across patches, see
-[references/stg-log.md](references/stg-log.md).
+To align `stg log` with the branch reflog, walk HEAD snapshots
+of a file, reconstruct a patch's diff at a historical entry from
+its stored tree OIDs, or bisect when a change entered a patch,
+see [references/stg-log.md](references/stg-log.md).
 
 ## Command reference
 
