@@ -602,6 +602,46 @@ trailer takes `user.email`, so confirm the identity first
 still cannot tell whether this branch wants the sign-off, ask
 the user rather than guessing.
 
+**Position before editing**: `stg goto`, `stg push`, and
+`stg pop` refuse to run when any tracked file is dirty
+(`worktree not clean`). The error offers `refresh` or
+`reset --hard` -- the latter is `stg reset --hard` (stg's
+own suggestion, not the prohibited `git reset`), which
+**discards your uncommitted worktree changes**. It is not in
+the prohibited table and the guard hook permits it, so
+nothing stops you; never take it to escape this error.
+
+General rule: to route a change into a specific patch,
+`stg goto <patch>` FIRST, then edit and refresh. A
+`stg refresh` on the wrong top does not warn -- it silently
+folds the change into whatever patch is top -- so confirm
+`stg top` names the target before every refresh. If a stray
+refresh was the last operation, `stg undo` reverses it,
+un-folding the change into a `refresh-temp` patch rather than
+the worktree (see "Conflicting `stg import` creates no
+patch").
+
+When the worktree is already dirty and you need to route
+the change, recover thus. Note `stg refresh` itself is exempt
+from the clean-worktree check -- unlike goto/push/pop, it runs
+with a dirty worktree, which is why the first case needs no
+move:
+- Target patch is already top -> just `stg refresh` (no move
+  needed). If the worktree also holds changes that do *not*
+  belong in this patch, scope it -- `stg refresh <pathspec>`
+  (see "Unintended files in `stg refresh`") -- so they are not
+  folded in.
+- A *different* patch is the target -> move while keeping
+  the dirty changes, then confirm `stg top` before
+  `stg refresh`. Either `stg goto -k <patch>` (native;
+  aborts without moving if the local changes will not apply
+  at the destination, leaving the stack untouched), or
+  `git stash` / goto /
+  `git stash pop` (safe on an stg branch; see "Never
+  `git checkout`/`git restore` to drop worktree noise" -- the
+  pop may conflict against the new position, so resolve it
+  first).
+
 **File-edit cache stale after stack ops**: Any stg command that
 moves HEAD or rewrites a patch's tree (`push`, `pop`, `goto`,
 `refresh`, `fold`, `sink`, `float`, `pick`, `import`,
