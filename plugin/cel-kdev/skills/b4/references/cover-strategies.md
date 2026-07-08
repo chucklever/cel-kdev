@@ -51,12 +51,26 @@ b4 prep --show-info change-id
 
 Edit these files directly -- no `$EDITOR` trick needed.
 
+The changelog goes in the separate `changelog` file, never
+inlined into `cover`. b4 adds the `---` separator itself at
+send time (when a changelog exists), so the `changelog` file
+holds bare entries -- never begin it with `---`.
+
+This is the opposite of `branch-description`, where cover and
+changelog share one text field and the changelog *is* inlined
+under a `---` (as in the `branch-description` example above).
+The strategy decides whether the changelog is separate (`file`)
+or inlined (`branch-description`); getting this backwards is the
+most common mistake.
+
 ## Changelog format
 
-Each version is a block starting with `Changes since vN:`
+Each version is a block starting with `Changes in vN:`
 followed by bullet points. After `b4 send` or
-`b4 prep --manual-reroll`, b4 appends a new placeholder
-section at the bottom (after a `---` separator) with
-`Changes in vN+1:` and `EDITME` lines. Add the real
-changelog for the new version at the top of the file and
-clean up the placeholder.
+`b4 prep --manual-reroll`, b4 adds a new `Changes in vN+1:`
+placeholder with `EDITME` lines: prepended directly above the
+existing entries on later rerolls (v2->v3 onward), or appended
+at the bottom (after a `---` separator) on the first reroll
+(v1->v2). Replace the
+`EDITME` lines in that placeholder with the real changelog for
+the new version.
