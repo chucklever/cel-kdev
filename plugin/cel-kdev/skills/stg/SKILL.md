@@ -428,86 +428,55 @@ repair, `stg delete <patch>` and recreate it. Never use
 `git checkout`/`git restore` to undo a refreshed change.
 
 **`stgit.autosign` trailer**: When `stgit.autosign` is set
-in git config (e.g., to `Signed-off-by`), `stg new` and
-`stg import` append that trailer automatically, including
-the non-interactive message paths (`stg new -m`/`--file`);
-do not also write it into those messages by hand. On
-`stg import`,
-`-m`/`--mail` selects single-mail input and `-M`/`--mbox`
-selects mbox-series input; neither flag affects trailer
-behavior.
+(e.g., to `Signed-off-by`), `stg new` and `stg import` append
+that trailer automatically, including the non-interactive
+paths (`stg new -m`/`--file`); do not also write it in by
+hand. On `stg import`, `-m`/`--mail` and `-M`/`--mbox` only
+select the input format; neither affects trailer behavior.
 
-Autosign takes the sign-off address from git's effective
-`user.email`, which falls back to global config when the repo
-has no local identity set. On a project whose sign-off
-identity differs from your global default, this silently bakes
-the wrong address into the trailer. Whenever `stgit.autosign`
-is set and you have not already confirmed this repo's sign-off
-identity, check before the first `stg new` or `stg import`:
-
-```bash
-git config --get user.email   # the address autosign will stamp
-```
-
-Confirm it matches the address you sign off as *on this
-project*. If you do not know which address that is, ask the
-user -- do not infer it from history. Recent sign-offs can be
-listed as a rough hint, but in a shared repo the most common
-one is often another contributor's address, not yours, so
-never copy it into your own identity:
-
-```bash
-git log -20 --format='%(trailers:key=Signed-off-by,valueonly)' \
-    | grep . | sort | uniq -c | sort -rn
-```
-
-If `user.email` is wrong for this project, set a repo-local
-identity: `git config --local user.email <your-addr>`. Once a
-patch is stamped with the wrong address a plain `stg refresh`
-does not correct it; the message must be re-edited (`stg edit
---file`; note that form does not autosign, so include the
-corrected trailer in the message text -- see the `stg edit`
-exception below).
+Autosign stamps the address from git's effective `user.email`,
+which falls back to global config when the repo has no local
+identity. On a project whose sign-off identity differs from
+your global default this silently bakes the wrong address in.
+Whenever autosign is set and you have not confirmed this repo's
+sign-off identity, check `git config --get user.email` before
+the first `stg new`/`stg import` and confirm it matches how you
+sign off *on this project*; once stamped, a wrong address is
+not fixed by a plain `stg refresh`. See
+[references/signoff.md](references/signoff.md) for confirming
+the right identity and correcting a patch stamped wrong.
 
 When `stgit.autosign` is unset, the absence is the signal that
-no sign-off is wanted: on a newly created patch, do not add a
-`Signed-off-by` at all -- neither in the message text nor via
-`-s`/`--signoff` -- unless the user explicitly asks for one.
-Preserving a sign-off the patch already carries through an
-edit or fold is not adding one; see the `stg edit` exception
-below. Treat unset autosign as "no sign-off by default"; it
-is not a cue to supply the trailer by hand. Read the setting
-with `git config --get stgit.autosign`; a non-zero exit means
-unset.
+no sign-off is wanted: on a newly created patch add no
+`Signed-off-by` -- neither in the message text nor via
+`-s`/`--signoff` -- unless the user explicitly asks. Preserving
+a sign-off the patch already carries through an edit or fold is
+not adding one (see the `stg edit` exception below). Read the
+setting with `git config --get stgit.autosign`; a non-zero
+exit means unset.
 
-`stg edit` is the exception: it autosigns only when it
-opens the interactive editor. The `stg edit -m` and
-`stg edit --file` forms this skill mandates do NOT
-autosign, so a `Signed-off-by` line omitted from the
-message drops one the patch already carried. When the
-patch carries a sign-off, re-include that line in the
-`stg edit` message text to preserve it; these paths do not
-autosign, so exactly one trailer results regardless of stg
-version. Alternatively, preserve it by omitting it from the
-message and restoring it with the `-s`/`--signoff` flag (see
-Trailer flags below). A patch created while `stgit.autosign`
-was unset carries none; do not add one here.
+`stg edit`, `stg refresh`, and `stg pick` do NOT autosign
+(`stg edit` autosigns only when it opens the interactive
+editor, which the `-m`/`--file` forms this skill mandates do
+not). Two consequences:
 
-`stg pick` also does NOT autosign: it copies the picked
-commit's message and trailers verbatim, adding no
-`Signed-off-by` even when `stgit.autosign` is set. This
-verbatim mirror is the reversible default -- prefer it;
-`stg pick` alone is correct for a backport meant to match the
-upstream commit. Add a backporter sign-off only when one is
-actually wanted: the user asked, or recent picks on this
-branch carry one. To add it, run `stg edit` with
-`-s`/`--signoff` (or `stg refresh --signoff` on the
-just-picked top patch) afterward -- it appends the trailer
-without opening the editor (see Trailer flags below). That
-trailer takes `user.email`, so confirm the identity first
-(see the identity check above). If autosign is set and you
-still cannot tell whether this branch wants the sign-off, ask
-the user rather than guessing.
+- `stg edit -m`/`--file`: a `Signed-off-by` omitted from the
+  message drops one the patch carried. To preserve it,
+  re-include the line in the message text -- recent stg
+  de-duplicates an identical trailer, so no duplicate results
+  -- or restore it with `-s`/`--signoff`. A patch created while
+  autosign was unset carries none; do not add one here.
+- `stg pick`: it copies the picked commit's message and
+  trailers verbatim, adding no `Signed-off-by` even when
+  autosign is set. This verbatim mirror is the reversible
+  default -- correct for a backport meant to match the upstream
+  commit. Add a backporter sign-off only when actually wanted
+  (the user asked, or recent picks on this branch carry one):
+  `stg edit -s`/`--signoff`, or `stg refresh --signoff` on the
+  just-picked top patch, appends it without opening the editor.
+  That trailer takes `user.email`, so confirm the identity
+  first. If autosign is set and you still cannot tell whether
+  this branch wants the sign-off, ask the user.
 
 **Position before editing**: `stg goto`, `stg push`, and
 `stg pop` refuse to run when any tracked file is dirty
