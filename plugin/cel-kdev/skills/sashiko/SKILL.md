@@ -230,6 +230,33 @@ with open("/tmp/sashiko.json") as f:
 PY
 ```
 
+### Pitfall: an empty lore_search is not proof a patch is unposted
+
+The CRITICAL block above ("Do not run lore_search for sashiko
+output") concerns searching for the bot's **output**.  The
+inverse -- searching lore for the **patch itself**, e.g. to
+recover a cover Message-ID -- is fine; the trap is only in how
+you read an empty result.  The local semcode lore archive
+mirrors only the lists pulled into it; many subsystem lists
+(linux-mm among them) are absent, and `lore_search` queries
+only that local archive.  So when a patch-search comes back
+empty, that reflects which lists the archive carries, not
+whether the patch was ever posted.
+
+Never turn an empty result into any claim about posting status
+-- not "not posted," not "lore has no copy," not "local-only."
+Phrase it as "not found in the local lore archive, which may
+not mirror this subsystem's list," and leave a Message-ID hunt
+at "could not locate a Message-ID" rather than escalating it
+into a claim about whether the patch was posted.
+
+There is no live fallback the agent can use: lore.kernel.org
+blocks the web-fetch path, and pulling a list's public-inbox
+git archive to chase one Message-ID is not worth it.  Treat an
+empty local result as the end of the road for posting status --
+stop there.  To recover a cover Message-ID, use the method
+below.
+
 ### Finding the cover-letter Message-ID for the current series
 
 When the user is working on a b4 prep branch:
