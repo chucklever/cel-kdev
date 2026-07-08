@@ -48,13 +48,22 @@ before running `b4 send` or `b4 prep --format-patch`.
 | ---- | ------- |
 | Apply a series by message-id | `b4 am <msgid>` |
 | Apply a series, write mbox only | `b4 am -o <dir> <msgid>` |
-| Apply as stg patches | `b4 am -o /tmp/series.mbx <msgid>` then `stg import -M /tmp/series.mbx` |
+| Apply as stg patches | `b4 am -l -o /tmp/series.mbx <msgid>` then `stg import -M /tmp/series.mbx` |
 | Cherry-pick specific patches (1-indexed, comma-separated, ranges ok) | `b4 am -P 1-2,4 <msgid>` |
 | Show series diff between versions | `b4 diff <msgid>` |
 | Retrieve thread as mbox | `b4 mbox <msgid>` |
 
 `<msgid>` can be a Message-Id, a lore URL, or a lore
 search query.
+
+`-l` (`--add-link`) is a `b4 am` flag that stamps a
+`Link: https://patch.msgid.link/<msgid>` trailer into each
+patch before the mbox is written, independent of `stg import`.
+It composes with `-o`, so always pass `-l` on the stg-import
+path above. The Link trailer turns a later "match this applied
+commit back to its patchwork patch" step into a direct msgid
+lookup instead of fuzzy subject matching. b4 has no config key
+to enable it by default.
 
 ## Sending patch series
 
