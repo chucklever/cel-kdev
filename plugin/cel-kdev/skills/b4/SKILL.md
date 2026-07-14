@@ -67,11 +67,6 @@ to enable it by default.
 
 ## Sending patch series
 
-`series-send` is a local wrapper around `b4 prep` and
-`b4 send` with stg-aware defaults. Prefer it over raw
-b4 commands when available. See `series-send --help` or
-local project documentation for the full command set.
-
 ### Series metadata files
 
 Check `git config b4.prep-cover-strategy` first. When the
