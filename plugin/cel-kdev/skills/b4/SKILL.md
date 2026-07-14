@@ -20,7 +20,7 @@ when stg is active on the branch.**
 
 | Prohibited | Why | Replacement |
 | ---------- | --- | ----------- |
-| `b4 am <msgid>` | Runs `git am`, which moves HEAD behind stg's back | `b4 am -o /tmp/series.mbx <msgid>` then `stg import -M /tmp/series.mbx` |
+| `b4 am <msgid>` | Runs `git am`, which moves HEAD behind stg's back | `b4 am -l -o /tmp/series.mbx <msgid>` then `stg import -M /tmp/series.mbx` |
 | `b4 trailers -u` | Rebases commits to insert collected tags, breaking stg metadata | Avoid; run `stg repair` immediately after if unavoidable |
 
 Check whether stg is active before choosing a command path.
