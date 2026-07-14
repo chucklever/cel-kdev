@@ -102,11 +102,21 @@ recipients) in `.git/config` without inserting tracking
 commits.
 
 ```bash
-b4 prep --enroll -f <fork-point>
+b4 prep --enroll <base>   # base = tag, branch, or commit;
+                          # omit to use the branch's configured upstream
 ```
 
-(`-f` is `--fork-point`; `-F` is `--from-thread`, a
-different option.)
+`--enroll` (`-e`) takes the base as its own optional value.
+b4 records that base as the branch's `base-branch`; the
+"fork-point" wording below and in `--show-info` names this
+same value -- distinct from the `-f`/`--fork-point` flag
+warned against next.
+
+**Never** `b4 prep --enroll -f <base>`: `-f`/`--fork-point`
+belongs to `b4 prep --new`, not the enroll path, and is
+silently ignored here. It enrolls against the branch's
+configured upstream instead of `<base>` (or fails outright
+when the branch has no upstream).
 
 Verify with `b4 prep --show-info` that the fork-point
 and series-range are correct.
@@ -161,9 +171,9 @@ unavailable in non-interactive agent shells.
 **Fork-point goes stale after rebase**: After `stg rebase`
 onto a new base, the fork-point b4 recorded at enrollment
 time no longer matches. b4 has no CLI command to update
-`base-branch` on an already-enrolled branch (`-f` only
-applies during initial enrollment). Update the tracking
-JSON directly:
+`base-branch` on an already-enrolled branch (`-f` is a
+`b4 prep --new` option, not an enrollment one; see Setup).
+Update the tracking JSON directly:
 
 The tracking value is a JSON object like:
 ```
