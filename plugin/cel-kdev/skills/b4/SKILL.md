@@ -88,6 +88,22 @@ files: the cover and changelog live in
 `.git/config`. See [references/cover-strategies.md](references/cover-strategies.md)
 for that strategy and the changelog format.
 
+### Single-patch series
+
+Edit the `changelog` (and `cover`) file exactly as for a
+multi-patch series -- b4 chooses placement automatically by
+patch count. A one-patch series has no `0/1` cover: b4
+detects the count and, via `mixin_cover`, appends the cover
+body and changelog *below* the patch's `---` line (the
+under-the-cut area `git am` strips) rather than emitting a
+separate cover. `b4 send --force-cover-letter` overrides
+this to send a standalone cover for the lone patch.
+
+Put durable design rationale for a lone patch in the commit
+message, not the cover body -- prose below `---` is
+discarded by `git am`, so nothing in the cover body reaches
+the applied commit.
+
 ### Setup
 
 b4 prep and stg coexist on the same branch when b4 uses
