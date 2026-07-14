@@ -50,6 +50,14 @@ bypass the guard on an actual stg branch.
 **NEVER use these git commands when stg is active. They move
 HEAD behind stg's back, corrupting the stack metadata.**
 
+The table is the common denylist, not the whole rule: *any*
+raw git that moves HEAD or rewrites a stacked commit corrupts
+the stack the same way, including commands not listed here
+(`git am`, `git revert`, `git update-ref` on HEAD,
+`git filter-branch`). When you need an operation the table
+does not name, route it through the stg equivalent or ask --
+absence from the table is not permission to reach for raw git.
+
 | Prohibited | Replacement |
 | ---------- | ----------- |
 | `git commit` | `stg new <name> -m "msg"` + `stg refresh` (on a partial stack, check applied state first -- see the `stg new` pitfall) |
