@@ -1,10 +1,14 @@
 ---
 name: b4
 description: >-
-  b4 patch workflow for kernel development. Covers applying
-  patches from lore with b4 am, and the b4 prep workflow for
-  sending multi-revision patch series. Includes stg interaction
-  rules to prevent stack corruption.
+  Use when working with b4 for kernel patches: applying a
+  series from lore (b4 am, optionally as stg patches via
+  stg import), or preparing and sending your own series
+  (b4 prep / b4 send) -- enrolling a branch, editing the
+  cover letter and changelog, populating To/Cc from
+  MAINTAINERS, and dry-running or sending. Covers single-
+  and multi-patch series and the stg interaction rules that
+  prevent patch stack corruption.
 ---
 
 # b4 for kernel patch workflows
