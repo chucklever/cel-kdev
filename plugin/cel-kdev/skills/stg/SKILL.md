@@ -24,6 +24,15 @@ means it is not. Do not combine these into a single shell
 command: pipes, `$()`, and `xargs` are harder for hooks and
 approval rules to inspect and can trigger prompts.
 
+Once stg is active, orient before your first mutating
+command (`new`, `refresh`, `goto`, `push`, `pop`, `float`,
+`sink`): run `stg series -d` once to see the applied set --
+the current top (`>`) and whether any `-` unapplied patches
+sit below it. Many rules below turn on this state: where
+`stg new` lands, whether `stg push -a` overshoots, and which
+patch a bare `stg refresh` folds into. Orient once per
+session, not before every command (see "Token efficiency").
+
 The `block-raw-git.sh` guard hook checks stg-activity against
 the repo the command targets: a leading `git -C <dir>` retargets
 the check at `<dir>` when `<dir>` resolves to a directory,
