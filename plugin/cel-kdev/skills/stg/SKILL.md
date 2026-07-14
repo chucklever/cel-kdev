@@ -325,6 +325,30 @@ series end on a partial stack, which requires the whole stack
 applied first (see the `stg new` pitfall above) -- but only
 when that full application is itself intended.
 
+**Editing a non-top patch cascades conflicts on re-push.**
+When a fix belongs in a lower patch, `stg goto` positions it
+correctly -- but re-pushing the stack afterward re-runs a
+3-way merge for every intervening patch. If the edited line
+sits adjacent to lines those patches also add or remove (a
+shared prototype/declaration list, an enum, a struct-member
+block), each patch conflicts in turn: a one-line change can
+fan out to N trivial "both deleted adjacent lines" conflicts,
+and on a large file each conflict re-injects the whole file
+into context.
+
+Before such an edit, check whether the intervening patches
+touch the same region -- `stg diff -r <target>..<top> --
+<file>` shows exactly what they change there (note the range
+takes no `~`: it excludes target's own diff, showing only
+what the patches above it touch). For a quick scan, `git log
+-S<symbol> -- <file>`. If they do, tell the
+user the re-push cost up front and confirm, rather than
+discovering it mid-cascade. The resolution is usually
+mechanical (drop both adjacent deletions), so the value is
+the a-priori warning, not the fix. If you cannot cheaply tell
+whether the region overlaps, say so and let the user decide
+rather than guessing.
+
 **Merge commits and repair**: Raw `git merge` on an stg branch
 commits the merge to the stack's HEAD, leaving the patches below
 the merge commit; `stg repair` then reports them "hidden below
