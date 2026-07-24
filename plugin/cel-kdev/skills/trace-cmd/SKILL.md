@@ -3,10 +3,10 @@ name: trace-cmd
 description: >-
   Analyze trace-cmd captures (.dat files) from kernel tracing
   sessions. Covers latency measurement, throughput analysis,
-  event pairing, filter expressions, histogram triggers, and
-  dynamic kprobe/fprobe events. Supports nfsd, sunrpc, svcrdma,
-  xprtrdma, rpcgss, workqueue, rdma, tcp, handshake, and sched
-  subsystems.
+  event pairing, filter expressions, histogram triggers,
+  snapshot buffer captures, and dynamic kprobe/fprobe events.
+  Supports nfsd, sunrpc, svcrdma, xprtrdma, rpcgss, workqueue,
+  rdma, tcp, handshake, and sched subsystems.
 ---
 
 # Trace analysis
@@ -111,6 +111,12 @@ Determine what is available before analyzing:
 trace-cmd report -i <file> --stat
 ```
 
+Record:
+- Total event count
+- Time span of the capture
+- Event types present
+- CPUs and processes involved
+
 ### Buffer stats
 
 Always check for data loss and report findings before
@@ -190,11 +196,56 @@ Exception: `bprint` and `bputs` events (from
 `trace_printk()`) have no format block. See
 [references/subsystems/trace-printk.md](references/subsystems/trace-printk.md).
 
-Record:
-- Total event count
-- Time span of the capture
-- Event types present
-- CPUs and processes involved
+### Snapshot captures
+
+A capture whose window is a rare event rather than a whole
+run often comes from the snapshot buffer.
+`trace-cmd extract -s -o <file>.dat` dumps the `snapshot`
+buffer rather than the main trace buffer, and works only on
+a kernel built with `CONFIG_TRACER_SNAPSHOT`. The pattern is
+to leave tracing running with a snapshot trigger armed, then
+extract once the condition fires, which captures the window
+around the event without recording the run-up to it. When
+that window is not needed, a plain
+`trace-cmd record -e <subsystem> ...` is the simpler capture.
+
+To arm the trigger and collect the result:
+
+```bash
+# Fire one snapshot the first time the condition matches
+echo 'snapshot:1 if <field> == <value>' > \
+  /sys/kernel/tracing/events/<subsystem>/<event>/trigger
+
+# After it has fired, write the snapshot buffer to a .dat file
+trace-cmd extract -s -o <file>.dat
+
+# Remove the trigger -- the filter must repeat what was armed
+echo '!snapshot:1 if <field> == <value>' > \
+  /sys/kernel/tracing/events/<subsystem>/<event>/trigger
+```
+
+Which tool produced a capture is checkable:
+
+```bash
+trace-cmd dump -i <file> --summary | grep 'Events format'
+```
+
+`record` stores formats only for the events it enabled, so
+the system count tracks what was traced. `extract` attaches
+to a session it did not start and stores every system the
+host has, so a file listing all of them came from `extract`.
+A `record -a` capture enables everything and reads the same
+way, so the signal separates the two only when the recording
+was selective. Which buffer an extract read is recorded
+nowhere: `--stat` and the saved options are identical for
+`extract -s` and a plain `extract`. Confirm the snapshot with
+whoever produced the capture.
+
+Field names in the `if` filter must match the format
+definition, with the same caveat as `-F` filters above. See
+[references/snapshot-capture.md](references/snapshot-capture.md)
+for the manual `trace-cmd snapshot` path, per-CPU and
+per-instance snapshots, and freeing the buffer afterward.
 
 ## Phase 2: Event-specific analysis
 
@@ -292,8 +343,9 @@ Focus on metrics relevant to the patch being tested.
 ## Scope limits
 
 - Does not set up trace-cmd recording sessions, but may
-  set up histogram triggers or dynamic probes as part of
-  targeted analysis
+  set up histogram triggers, snapshot triggers, or dynamic
+  probes, and may extract a snapshot buffer
+  (`trace-cmd extract -s`), as part of targeted analysis
 - Does not modify kernel code
 - Does not interpret application-level semantics beyond
   what the trace events encode
@@ -306,6 +358,8 @@ Focus on metrics relevant to the patch being tested.
   full awk recipe set, flag extraction, large-trace techniques
 - [references/histogram-triggers.md](references/histogram-triggers.md) --
   in-kernel histogram aggregation setup
+- [references/snapshot-capture.md](references/snapshot-capture.md) --
+  snapshot triggers, manual snapshots, and buffer cleanup
 - [references/dynamic-events.md](references/dynamic-events.md) --
   kprobe and fprobe instrumentation
 - [references/subsystems/](references/subsystems/) --
