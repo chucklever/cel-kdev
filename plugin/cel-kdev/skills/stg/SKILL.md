@@ -371,6 +371,30 @@ the a-priori warning, not the fix. If you cannot cheaply tell
 whether the region overlaps, say so and let the user decide
 rather than guessing.
 
+**A `stg pick` conflict means a skipped prerequisite, not a
+bad patch.** This is not the cascade above: there the context
+shifts because an intervening patch on the destination stack
+edits the same region, whereas a pick conflicts because the
+destination never received the commit the picked patch was
+built on, so the context its hunks expect is missing. Do not
+resolve the markers in place: folding the missing fix into the
+dependent patch loses that fix's standalone commit along with
+the `Fixes:` and `Cc: stable` trailers it carries. The
+conflicted patch is left APPLIED as top, so `stg top` names it
+and the generic resolution flow below reads it as an ordinary
+push conflict to resolve. It is not one.
+
+Back the pick out instead: `stg undo --hard` after a plain
+pick, or a bare `stg reset --hard` after `stg pick --fold` or
+`--update`, which create no patch and so leave nothing to undo.
+Both discard the index and worktree, and `stg pick` refuses to
+start unless both are clean, so the only content dropped is the
+failed merge. Then identify the prerequisite and land it
+upstream before re-picking. For the diagnosis, the reason
+`git stash` cannot substitute for `stg reset --hard` here, and
+the upstream-first repair, see
+[references/conflict-resolution.md](references/conflict-resolution.md).
+
 **Merge commits and repair**: Raw `git merge` on an stg branch
 commits the merge to the stack's HEAD, leaving the patches below
 the merge commit; `stg repair` then reports them "hidden below
@@ -783,6 +807,11 @@ There is no generic `--trailer` / `-t` flag on `stg edit`;
 `git commit --trailer`.
 
 ## Merge conflict resolution
+
+A `stg pick` conflict is NOT resolved this way -- it signals a
+prerequisite the destination never received, and resolving it
+in place folds the missing commit into the dependent patch.
+See the pick-conflict pitfall in Pitfalls before proceeding.
 
 When `stg push` or `stg rebase` produces conflicts:
 

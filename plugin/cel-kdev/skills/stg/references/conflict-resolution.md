@@ -6,6 +6,10 @@ markers and guessing at the right resolution misses available
 context that substantially improves accuracy.  The strategy
 below gathers that context before any editing begins.
 
+A `stg pick` conflict is not resolved at all; it signals a
+prerequisite the destination never received.  Skip to "Pick
+conflicts: back out, do not resolve".
+
 ## Step 1: Survey the conflicts
 
 ```bash
@@ -154,7 +158,11 @@ refresh.
 - If `stg top` names the conflicting patch: this is a real
   `stg push`/`stg rebase`/`stg float`/`stg sink` conflict,
   which leaves the in-flight patch APPLIED as top.  Proceed
-  to `stg resolved` and `stg refresh` below.
+  to `stg resolved` and `stg refresh` below.  A `stg pick`
+  conflict also lands here but must NOT be resolved: it means
+  the destination is missing a prerequisite commit, so back
+  the pick out instead (see "Pick conflicts: back out, do not
+  resolve" below).
 - If `stg top` names a different patch: the in-flight patch
   is unapplied while its merged content sits loose in the
   worktree, from an interrupted or rolled-back operation or
@@ -221,6 +229,68 @@ that fixes the conflicting hunk but leaves a stale reference
 # Quick check: does the resolved file compile?
 # (language-dependent; adapt to the project's build system)
 ```
+
+## Pick conflicts: back out, do not resolve
+
+Steps 1 through 6 do not apply to a `stg pick` conflict.  A
+pick applies cleanly only when the picked patch's hunk context
+already exists on the destination stack.  When the pick set
+skips an intermediate commit the picked patch was built on,
+that context is missing and the three-way merge -- whose base
+is the picked commit's parent, or the `--parent` argument when
+given -- conflicts.  Resolving the markers folds the missing
+fix into the dependent patch, discarding that fix's standalone
+commit and its `Fixes:` and `Cc: stable` trailers.
+
+StGit's halt message offers two ways forward, "resolve
+conflicts manually then refresh or undo the operation with
+`stg undo --hard`".  Only the second applies here; the first is
+the fold above.  `--hard` discards the index and worktree, but
+`stg pick` refuses to start unless both are clean, so the only
+content it drops is the merge result.
+
+`stg pick --fold` and `--update` differ.  They apply the diff
+with `git apply --index --3way` and create no patch, so a
+conflict leaves the stack untouched and `stg undo` would
+reverse an unrelated earlier operation.  Clear the failed fold
+with a bare `stg reset --hard`, which resets only the index and
+worktree.  Not `git stash`: the failed apply records unmerged
+index entries, and stash refuses to write an index that needs
+merge.  This is the one case where `stg reset --hard` is the
+right answer; the SKILL.md warning against it covers the
+goto/push/pop refusal, where the dirty worktree holds work
+worth keeping.
+
+### Finding the missing prerequisite
+
+List every commit that touched the conflicting symbol on the
+source branch below the picked commit.  Oldest first, the
+competing edit comes up and the prerequisite that produced the
+expected base context follows it.  Bound the range with the
+picked commit and the upstream the destination tracks, not with
+`{base}`: `{base}` names the destination stack's base, which is
+the wrong end of the source branch's history.
+
+```bash
+git log --reverse -S nfsd_file_put --oneline \
+        <upstream>..<picked> -- fs/nfsd/filecache.c
+```
+
+Check whether that commit is still unmerged upstream:
+
+```bash
+git cherry -v <upstream> <source-branch>
+```
+
+`git cherry` compares by patch-id rather than by SHA (`+`
+unmerged, `-` an equivalent patch is already upstream).  A
+picked copy carries a different SHA than its original, so a
+SHA search finds nothing.
+
+The repair is upstream-first: land the prerequisite, replay the
+stack onto a base containing it with `stg rebase <new-base>`
+(see "Combining branches: there is no stg merge" in SKILL.md),
+then re-pick.
 
 ## Failure policy
 
