@@ -20,7 +20,7 @@ when stg is active on the branch.**
 
 | Prohibited | Why | Replacement |
 | ---------- | --- | ----------- |
-| `b4 am <msgid>` | Runs `git am`, which moves HEAD behind stg's back | `b4 am -l -o /tmp/series.mbx <msgid>` then `stg import -M /tmp/series.mbx` |
+| `b4 am <msgid>` | Runs `git am`, which moves HEAD behind stg's back | `b4 am -l -o /tmp/series.mbx <msgid>` then `stg import -M /tmp/series.mbx`; a maintainer intake adds a step between the two (see "Applying patches from lore") |
 | `b4 trailers -u` | Rebases commits to insert collected tags, breaking stg metadata | Avoid; run `stg repair` immediately after if unavoidable |
 
 Check whether stg is active before choosing a command path.
@@ -57,6 +57,10 @@ before running `b4 send` or `b4 prep --format-patch`.
 | Show series diff between versions | `b4 diff <msgid>` |
 | Retrieve thread as mbox | `b4 mbox <msgid>` |
 
+The stg-import row is two steps, but a maintainer intake
+interposes a third between them. Read "The maintainer intake
+edit" below before importing.
+
 `<msgid>` can be a Message-Id, a lore URL, or a lore
 search query.
 
@@ -67,7 +71,53 @@ It composes with `-o`, so always pass `-l` on the stg-import
 path above. The Link trailer turns a later "match this applied
 commit back to its patchwork patch" step into a direct msgid
 lookup instead of fuzzy subject matching. b4 has no config key
-to enable it by default.
+to enable it by default. The trailer also survives the intake
+edit below into the applied commit, so an imported series can
+be traced back to the patch as posted. It is not a safety net
+for the edit itself: the trailer sits in the same
+commit-message span the edit rewrites, so an over-broad
+pattern takes it too, and recovery then depends on still
+holding the msgid.
+
+Keep the mbox as a file rather than piping `b4 am` straight
+into `stg import`. An import that conflicts has to be retried
+as `stg import -M -3 /tmp/series.mbx` (see the
+`stg import -M` conflicts pitfall below), and a pipeline has
+already consumed the mbox by then. The intake edit below
+needs a file to rewrite in place for the same reason.
+
+### The maintainer intake edit
+
+When the series is one you will carry in your own tree, a
+third step goes between `b4 am` and `stg import`: an in-place
+edit of the mbox that removes `Cc: stable@vger.kernel.org`
+from the commit-message region only -- the span between the
+RFC822 headers and the `---` diff separator -- leaving the
+mbox `Cc:` delivery header and the diff untouched. The
+maintainer's backport judgment replaces the submitter's after
+review and list discussion. Restoring the trailer is a later,
+per-patch decision and is not part of this intake; the
+`kernel-stable` skill covers that decision.
+
+The command that performs the edit is local to the
+maintainer's setup and is not part of this plugin, so it is
+not named here. Do not substitute an ad-hoc `sed` rewrite: an
+over-broad pattern also takes the delivery header or a `Cc:`
+the submitter meant to keep, and the resulting import looks
+clean. Ask which command to run, and do not `stg import`
+until the edit has been made.
+
+Copy the mbox before the edit and `diff` the two afterward.
+An over-broad pattern leaves an mbox that still imports
+cleanly, so no later step catches it; the diff is the check.
+Every removed line should be a `Cc: stable@vger.kernel.org`
+from a commit-message region. A removed delivery header, a
+dropped `Link:` trailer, or any change inside a diff hunk
+means the edit was wrong: discard the mbox and re-run
+`b4 am`.
+
+A series you are applying only to read or test needs no such
+edit. Import the mbox as written.
 
 ## Sending patch series
 
