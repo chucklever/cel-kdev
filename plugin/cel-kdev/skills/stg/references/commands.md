@@ -158,6 +158,41 @@ stg repair
 Reconciles stack metadata with git state after an
 accidental raw git operation.
 
+After a reset onto a far-advanced upstream, repair converts
+the commits between the old base and the new HEAD into
+applied patches and unapplies the local patches HEAD can no
+longer reach. That intermediate state is expected; finish
+the recovery:
+
+```bash
+stg series -d    # applied set must be upstream commits only
+stg commit -a    # fold the upstream commits into the base
+stg push -a      # replay the local patches on top
+```
+
+The conversion is not guaranteed to be complete. Repair
+walks first parents down from the new HEAD and stops at the
+first merge commit, so it reaches the old base -- and
+patchifies everything in between -- only when that path is
+merge-free. A mainline reset target rarely is: the walk
+stops early, creates no patches at all, and leaves every
+local patch unapplied with the new HEAD as the base. That
+outcome needs no `stg commit -a`; push the local patches
+back on and the recovery is done.
+
+Check the series before committing. Repair keeps a patch
+applied when its commit is still reachable from the new
+HEAD, which happens when the reset target already carries
+some of your patches -- a topic branch you pushed, or a
+maintainer tree that took your commits verbatim. `stg commit
+-a` then finalizes those patches into the base and drops
+them from the series, so when an applied entry is a local
+patch, commit the upstream commits by count (`stg commit -n
+<N>`) instead.
+
+See "Recovering a stack detached by a raw reset" in
+SKILL.md.
+
 ## Rebasing
 
 ```bash
