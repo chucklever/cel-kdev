@@ -1,18 +1,23 @@
 ---
 name: drgn
 description: >-
-  Live kernel debugging with drgn. Guides inspection of
-  /proc/kcore, per-cpu variables, stack traces, slab caches,
-  and data structure traversal. Covers correct API patterns,
-  type introspection, container_of usage, and common pitfalls
-  for SUNRPC, NFS, and AIO subsystems.
+  Kernel debugging with drgn, live or from a crash dump.
+  Guides inspection of /proc/kcore, per-cpu variables, stack
+  traces, slab caches, and data structure traversal. Covers
+  correct API patterns, type introspection, container_of
+  usage, and common pitfalls for SUNRPC, NFS, and AIO
+  subsystems. Also covers opening kernel crash dumps
+  (vmcore): why a dump captured with virsh dump --format
+  kdump-zlib fails with KDUMP_ATTR_ARCH_NAME or NoDataError,
+  and which capture format drgn reads natively.
 ---
 
-# drgn live kernel debugger
+# drgn kernel debugger
 
-Inspect running kernel state through `/proc/kcore`. Use for
-diagnosing hangs, verifying data structure contents, tracing
-reference counts, and examining queue states.
+Inspect running kernel state through `/proc/kcore`, or a crash
+dump captured in a format drgn can read. Use for diagnosing
+hangs, verifying data structure contents, tracing reference
+counts, and examining queue states.
 
 ## Invocation
 
@@ -82,6 +87,46 @@ a URL. The root client resolves its own cache path; no
 `DEBUGINFOD_CACHE_PATH` is needed. Before concluding the symbols
 are unavailable, confirm `DEBUGINFOD_URLS` survived into the
 sudo environment.
+
+### Core dumps
+
+The `-k` paths above target a live kernel. When the target is
+a crash dump instead, the capture format decides whether drgn
+can open it at all. drgn 0.2.0 cannot read a dump written by
+`virsh dump --memory-only --format kdump-zlib`: `set_core_dump`
+fails with `KDUMP_ATTR_ARCH_NAME: Key has no value`, and
+`vmcoreinfo_raw()` and every `KVADDR` read then raise
+`NoDataError`.
+
+Do not conclude from this that the dump is corrupt or the
+libvirt XML is wrong. The VMCOREINFO note is present in the
+file:
+
+```bash
+strings -a <dump> | \
+  grep -E '^(OSRELEASE|KERNELOFFSET|SYMBOL|OFFSET|NUMBER)'
+```
+
+The failure is in the reader. libkdumpfile 0.5.6, drgn's
+backend for this format, opens the file as
+`file.format=diskdump`, expects `arch.name` to be supplied by
+hand, and still does not retrieve the note.
+
+Two paths work:
+
+- Capture with `virsh dump --memory-only --format elf`. drgn
+  parses the ELF `PT_NOTE` VMCOREINFO natively, with no
+  libkdumpfile involved. Verify with
+  `readelf -n <dump> | grep VMCOREINFO`.
+- Read an existing kdump-zlib dump with `crash` and a DWARF
+  vmlinux; crash reads QEMU diskdump vmcoreinfo where
+  libkdumpfile 0.5.6 does not.
+
+Do not wait for a libkdumpfile fix. 0.5.6 (2025-11-05) is the
+newest release, and the upstream report of this symptom
+(GitHub issue 36) was closed unfixed when that repository was
+archived in August 2025. Development has since moved to
+codeberg.org/ptesarik/libkdumpfile.
 
 ## Core API patterns
 
