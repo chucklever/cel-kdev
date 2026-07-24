@@ -119,6 +119,11 @@ subagents.** All stg operations on a given branch must run
 in a single sequential session. Parallelism is safe only
 for read-only work (research, building, testing).
 
+A pipe interrupts a mutating command the same way: a consumer
+that stops reading early aborts it mid-run, which can strand
+a partial `import`. See "Never pipe a mutating stg command"
+in Pitfalls.
+
 ## Stack model
 
 ```
@@ -553,6 +558,42 @@ tools can go stale; the next edit may fail with "File has
 been modified since read." Re-read the file before the next
 edit.
 
+**Never pipe a mutating stg command**: pipe only the
+read-only commands -- `series`, `show`, `log`, `diff`,
+`files`, `id`, `top`, `export`. Every other stg command can
+change stack state, and streams per-patch progress to stdout
+while it works. A consumer that stops reading early --
+`head -N`, `grep -q` -- closes the read end. Rust ignores
+SIGPIPE, so stg does not die on the signal; its next write
+fails with EPIPE and stg aborts mid-operation. Do not reason
+about which consumers read to EOF; the redirect below always
+works.
+
+What the abort leaves behind varies. `push` and `sink` roll
+the stack back, though not always cleanly -- an aborted
+`sink` can leave an unresolved conflict (`UU`) in the
+worktree, and later stg commands then refuse with "resolve
+outstanding conflicts first" -- clear it per "Merge conflict
+resolution" above before re-running. `import` is worse: it
+commits each patch as its own transaction, so piping a
+five-patch mbox into `head -1` applies the first patch and
+strands the rest.
+
+The exit status hides it. stg prints `error: Broken pipe (os
+error 32)` on stderr and exits 2 (stg 2.5), but `$?` on a
+pipeline carries the consumer's status, so a bare check reads
+as success, and `2>&1 |` hides the message as well. Check
+`${PIPESTATUS[0]}`. This is the one case that overrides "Do
+not verify after refresh" and "Limit stg series calls" below:
+confirm with `stg series -d` that the stack moved, then
+re-run without the pipe.
+
+To trim noisy progress, redirect to a file outside the repo
+-- the session scratchpad, when the harness provides one; a
+log inside the repo is untracked noise in the `git status`
+checks this skill relies on -- and read the file:
+`stg sink -t <patch> > <scratchpad>/stg-sink.log 2>&1; echo $?`.
+
 ## Token efficiency
 
 **Do not verify after refresh.** After `stg refresh`, do not
@@ -592,6 +633,11 @@ avoid walking the stack one `stg show` at a time.  Prefer:
   range of patches.
 - `stg show -O --stat <patch>` — summary only, when the
   full diff is not needed.
+
+Trim output with `-O --stat`, `--noprefix`, or a redirect to
+a file, never by piping a *mutating* command into `head` --
+that aborts the command; see "Never pipe a mutating stg
+command" in Pitfalls. Read-only commands pipe safely.
 
 **Limit stg series calls.** Run `stg series` (or
 `stg series -d`) once for orientation at the start of a
