@@ -6,7 +6,8 @@
 set -e
 
 ZERO=0000000000000000000000000000000000000000
-MARKETPLACE=.claude-plugin/marketplace.json
+PLUGIN=plugin/cel-kdev/.claude-plugin/plugin.json
+ROOT_PLUGIN=.claude-plugin/plugin.json
 CODEX=plugin/cel-kdev/.codex-plugin/plugin.json
 
 fail() {
@@ -18,11 +19,12 @@ if ! command -v jq >/dev/null 2>&1; then
     fail "jq is required but not installed"
 fi
 
-local_market=$(jq -r '.plugins[0].version' "$MARKETPLACE")
+local_plugin=$(jq -r '.version' "$PLUGIN")
+local_root=$(jq -r '.version' "$ROOT_PLUGIN")
 local_codex=$(jq -r '.version' "$CODEX")
 
-if [ "$local_market" != "$local_codex" ]; then
-    fail "manifest version mismatch ($MARKETPLACE=$local_market, $CODEX=$local_codex); run scripts/bump-version.sh"
+if [ "$local_plugin" != "$local_codex" ] || [ "$local_plugin" != "$local_root" ]; then
+    fail "manifest version mismatch ($PLUGIN=$local_plugin, $ROOT_PLUGIN=$local_root, $CODEX=$local_codex); run scripts/bump-version.sh"
 fi
 
 while read -r _ local_sha _ remote_sha; do
@@ -33,13 +35,13 @@ while read -r _ local_sha _ remote_sha; do
         continue
     fi
 
-    old_market=$(git show "$remote_sha:$MARKETPLACE" 2>/dev/null | jq -r '.plugins[0].version' 2>/dev/null || true)
-    if [ -z "$old_market" ] || [ "$old_market" = "null" ]; then
+    old_plugin=$(git show "$remote_sha:$PLUGIN" 2>/dev/null | jq -r '.version' 2>/dev/null || true)
+    if [ -z "$old_plugin" ] || [ "$old_plugin" = "null" ]; then
         continue
     fi
 
-    if [ "$old_market" = "$local_market" ]; then
-        fail "plugin contents changed but version is still $local_market; run scripts/bump-version.sh <new>"
+    if [ "$old_plugin" = "$local_plugin" ]; then
+        fail "plugin contents changed but version is still $local_plugin; run scripts/bump-version.sh <new>"
     fi
 done
 

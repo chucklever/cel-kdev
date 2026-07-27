@@ -23,7 +23,8 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
-MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
+PLUGIN="$REPO_ROOT/plugin/cel-kdev/.claude-plugin/plugin.json"
+ROOT_PLUGIN="$REPO_ROOT/.claude-plugin/plugin.json"
 CODEX="$REPO_ROOT/plugin/cel-kdev/.codex-plugin/plugin.json"
 
 rewrite() {
@@ -35,9 +36,11 @@ rewrite() {
     mv "$tmp" "$file"
 }
 
-rewrite "$MARKETPLACE" '.plugins[0].version = $v'
+rewrite "$PLUGIN"      '.version = $v'
+rewrite "$ROOT_PLUGIN" '.version = $v'
 rewrite "$CODEX"       '.version = $v'
 
 echo "Bumped plugin version to $NEW_VERSION in:"
-echo "  ${MARKETPLACE#"$REPO_ROOT"/}"
+echo "  ${PLUGIN#"$REPO_ROOT"/}"
+echo "  ${ROOT_PLUGIN#"$REPO_ROOT"/}"
 echo "  ${CODEX#"$REPO_ROOT"/}"

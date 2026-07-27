@@ -198,11 +198,11 @@ Bump it with:
 scripts/bump-version.sh 2.4.2
 ```
 
-Both manifests are rewritten in place. Commit the bump as its
-own patch, separate from the content change it accompanies:
+All three manifests are rewritten in place. Commit the bump as
+its own patch, separate from the content change it accompanies:
 
 ```
-git add .claude-plugin/marketplace.json plugin/cel-kdev/.codex-plugin/plugin.json
+git add plugin/cel-kdev/.claude-plugin/plugin.json .claude-plugin/plugin.json plugin/cel-kdev/.codex-plugin/plugin.json
 git commit -m "cel-kdev: Bump plugin version to 2.4.2"
 ```
 
@@ -215,7 +215,7 @@ stg refresh
 
 A `pre-push` hook under `scripts/git-hooks/` enforces the bump
 on every push that touches `.agents/plugins/`, `.claude-plugin/`,
-or `plugin/`, and also fails when the two manifests disagree.
+or `plugin/`, and also fails when the manifests disagree.
 Activate it once after cloning:
 
 ```
