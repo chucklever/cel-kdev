@@ -739,10 +739,20 @@ avoid walking the stack one `stg show` at a time.  Prefer:
 - `stg series -d` — names and descriptions in one call.
 - `stg diff -r <first>~..<last>` — combined diff across a
   range of patches.
-- `stg show -O --stat <patch>` — summary only, when the
+- `stg show --stat <patch>` — summary only, when the
   full diff is not needed.
 
-Trim output with `-O --stat`, `--noprefix`, or a redirect to
+**Prefer stg's own flag over `-O`.** `--stat` is native to
+both `stg show` and `stg diff`, and it replaces the diff, so
+a range summary is `stg diff -r <first>~..<last> --stat`. Do
+not reach the stat through `-O`: `-O` forwards an option to
+`git diff` on top of the patch stg already asks for, so
+`stg show -O --stat` prints the diffstat *and* the full
+diff -- more output than a bare `stg show`, not less. `-O`
+is right for a git-diff option stg does not wrap, such as
+`-O --no-patch`.
+
+Trim output with `--stat`, `-O --no-prefix`, or a redirect to
 a file, never by piping a *mutating* command into `head` --
 that aborts the command; see "Never pipe a mutating stg
 command" in Pitfalls. Read-only commands pipe safely.
