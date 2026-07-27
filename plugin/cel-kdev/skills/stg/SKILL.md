@@ -739,8 +739,22 @@ avoid walking the stack one `stg show` at a time.  Prefer:
 - `stg series -d` — names and descriptions in one call.
 - `stg diff -r <first>~..<last>` — combined diff across a
   range of patches.
-- `stg show --stat <patch>` — summary only, when the
-  full diff is not needed.
+- `stg show --stat <patch>` — summary first; see "Cap the
+  full diff" for when to widen.
+
+**Cap the full diff.** A whole-patch `stg show` is the single
+largest source of stg output, and most of that volume is one
+patch opened whole to find one hunk. For any patch not
+already in context, read the stat first: it names the files
+and their line counts, which is what the widen decision
+needs. When the stat names more than two files or more than
+200 changed lines (insertions plus deletions), do not widen
+-- read the files that matter with `stg show <patch> --
+<path>`, which takes several paths in one call. Widen to the
+whole diff when the stat is under that bound, or when the
+task genuinely requires every file the patch touches --
+reviewing the patch as a patch. A lookup within the patch is
+not such a task, even when it arises during a review.
 
 **Prefer stg's own flag over `-O`.** `--stat` is native to
 both `stg show` and `stg diff`, and it replaces the diff, so
