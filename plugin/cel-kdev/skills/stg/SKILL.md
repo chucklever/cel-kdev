@@ -28,10 +28,13 @@ Once stg is active, orient before your first mutating
 command (`new`, `refresh`, `goto`, `push`, `pop`, `float`,
 `sink`): run `stg series -d` once to see the applied set --
 the current top (`>`) and whether any `-` unapplied patches
-sit below it. Many rules below turn on this state: where
-`stg new` lands, whether `stg push -a` overshoots, and which
-patch a bare `stg refresh` folds into. Orient once per
-session, not before every command (see "Token efficiency").
+sit below it. On a deep stack, probe the depth and scope
+that call -- see "Scope orientation on a deep stack". Many
+rules below turn on this state: where `stg new` lands,
+whether `stg push -a` overshoots, and which patch a bare
+`stg refresh` folds into.
+Orient once per session, not before every command (see
+"Token efficiency").
 
 The `block-raw-git.sh` guard hook checks stg-activity against
 the repo the command targets: a leading `git -C <dir>` retargets
@@ -779,6 +782,34 @@ output — do not re-run `stg series` to confirm it.  Prefer
 `stg series -d` over a plain `stg series` followed by
 individual `stg show` calls when both names and descriptions
 are needed.
+
+**Scope orientation on a deep stack.** The once-per-session
+rule holds the call count down, but `stg series -d` prints a
+line per patch in the stack, so a deep stack spends 3-4k
+chars before any work starts. Probe first: `stg series -c`
+prints the patch count and nothing else. The window below
+spans 11 patches, so at or under that take the full
+`stg series -d` -- there is nothing to save. Above it, when
+the work sits in one region, window the call:
+`stg series -d --short=5` prints five patches either side of
+the current top. The `=` is mandatory -- `-s 5` consumes the
+`5` as a patch name and stg exits 1 -- and `--short` takes
+no patch arguments.
+
+The window elides with no marker, and two cases turn that
+into a wrong reading. At most five `-` lines appear below
+the top however many are unapplied, so when the count from
+`-c` exceeds the window, do not read the last `-` line as
+the end of the unapplied set; the `stg new` and `push -a`
+pitfalls both turn on the full set, so take the unwindowed
+call before acting on either. And with nothing applied there
+is no `>` to center on: `--short=5` then prints the first
+five patches of the series rather than a window, so a fully
+popped stack needs the full call.
+
+Prefer the window over the `<first>..<last>` range form for
+orientation: a range ending at the top hides the `-` lines
+outright.
 
 ## Avoiding interactive editors
 
