@@ -17,6 +17,17 @@
       "source": "./plugin/cel-kdev",
       "category": "development",
       "homepage": "https://github.com/chucklever/cel-kdev"
+    },
+    {
+      "name": "cel-prose",
+      "description": "Voice rules for prose written for other developers: code comments, commit messages, and cover letters",
+      "author": {
+        "name": "Chuck Lever",
+        "email": "cel@kernel.org"
+      },
+      "source": "./plugin/cel-prose",
+      "category": "development",
+      "homepage": "https://github.com/chucklever/cel-kdev"
     }
   ]
 }

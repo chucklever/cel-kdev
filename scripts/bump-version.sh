@@ -26,6 +26,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 PLUGIN="$REPO_ROOT/plugin/cel-kdev/.claude-plugin/plugin.json"
 ROOT_PLUGIN="$REPO_ROOT/.claude-plugin/plugin.json"
 CODEX="$REPO_ROOT/plugin/cel-kdev/.codex-plugin/plugin.json"
+PROSE="$REPO_ROOT/plugin/cel-prose/.claude-plugin/plugin.json"
 
 rewrite() {
     local file=$1
@@ -39,8 +40,10 @@ rewrite() {
 rewrite "$PLUGIN"      '.version = $v'
 rewrite "$ROOT_PLUGIN" '.version = $v'
 rewrite "$CODEX"       '.version = $v'
+rewrite "$PROSE"       '.version = $v'
 
 echo "Bumped plugin version to $NEW_VERSION in:"
 echo "  ${PLUGIN#"$REPO_ROOT"/}"
 echo "  ${ROOT_PLUGIN#"$REPO_ROOT"/}"
 echo "  ${CODEX#"$REPO_ROOT"/}"
+echo "  ${PROSE#"$REPO_ROOT"/}"

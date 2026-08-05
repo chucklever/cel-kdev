@@ -62,6 +62,15 @@ the email delivery policy, review-status transitions, and
 the false-positive rate that governs how review output
 should be treated.
 
+## cel-prose
+
+A second plugin in this marketplace, installed separately. It
+carries the `prose-voice` skill: the voice rules shared by code
+comments, commit messages, and cover letters. See
+[plugin/cel-prose/README.md](plugin/cel-prose/README.md) for what
+it covers and for the `~/.claude/CLAUDE.md` pointer that loads it
+outside the skills that already defer to it.
+
 ## Layout
 
 ```
@@ -85,6 +94,12 @@ plugin/cel-kdev/
     perf/SKILL.md
     sashiko/SKILL.md
     trace-cmd/SKILL.md
+plugin/cel-prose/
+  .claude-plugin/
+    plugin.json      # plugin manifest
+  README.md
+  skills/
+    prose-voice/SKILL.md
 ```
 
 ## Requirements
@@ -107,7 +122,10 @@ than failing open.
 ```
 claude plugin marketplace add chucklever/cel-kdev
 claude plugin install cel-kdev
+claude plugin install cel-prose
 ```
+
+`cel-prose` is independent of `cel-kdev`; install either alone.
 
 ## Install for Codex
 

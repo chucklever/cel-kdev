@@ -9,6 +9,7 @@ ZERO=0000000000000000000000000000000000000000
 PLUGIN=plugin/cel-kdev/.claude-plugin/plugin.json
 ROOT_PLUGIN=.claude-plugin/plugin.json
 CODEX=plugin/cel-kdev/.codex-plugin/plugin.json
+PROSE=plugin/cel-prose/.claude-plugin/plugin.json
 
 fail() {
     echo "pre-push: $*" >&2
@@ -22,9 +23,11 @@ fi
 local_plugin=$(jq -r '.version' "$PLUGIN")
 local_root=$(jq -r '.version' "$ROOT_PLUGIN")
 local_codex=$(jq -r '.version' "$CODEX")
+local_prose=$(jq -r '.version' "$PROSE")
 
-if [ "$local_plugin" != "$local_codex" ] || [ "$local_plugin" != "$local_root" ]; then
-    fail "manifest version mismatch ($PLUGIN=$local_plugin, $ROOT_PLUGIN=$local_root, $CODEX=$local_codex); run scripts/bump-version.sh"
+if [ "$local_plugin" != "$local_codex" ] || [ "$local_plugin" != "$local_root" ] ||
+   [ "$local_plugin" != "$local_prose" ]; then
+    fail "manifest version mismatch ($PLUGIN=$local_plugin, $ROOT_PLUGIN=$local_root, $CODEX=$local_codex, $PROSE=$local_prose); run scripts/bump-version.sh"
 fi
 
 while read -r _ local_sha _ remote_sha; do
