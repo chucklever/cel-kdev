@@ -69,7 +69,8 @@ that documentation is ordinary prose and does follow them.
   before a true list, commas around a tight appositive. An
   occasional "--" aside is fine. Density is the tell.
 - Kernel maintainers increasingly distrust prose that reads as
-  LLM-generated. For the full catalog of tells to avoid -- em-dash
-  overuse, rule-of-three cadence, inflated symbolism, negative
-  parallelism ("not X, but Y"), and the rest -- see the humanizer
-  skill (/humanizer), which carries the Wikipedia-derived list.
+  LLM-generated. For the full catalog of tells to avoid --
+  em-dash overuse, rule-of-three cadence, inflated symbolism,
+  negative parallelism ("not X, but Y"), and the rest -- see
+  Wikipedia's "Signs of AI writing", or a third-party skill that
+  packages it, such as /humanizer.
