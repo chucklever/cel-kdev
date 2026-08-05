@@ -216,11 +216,12 @@ Bump it with:
 scripts/bump-version.sh 2.4.2
 ```
 
-All three manifests are rewritten in place. Commit the bump as
-its own patch, separate from the content change it accompanies:
+All four manifests are rewritten in place, cel-prose's included:
+one version covers both plugins. Commit the bump as its own
+patch, separate from the content change it accompanies:
 
 ```
-git add plugin/cel-kdev/.claude-plugin/plugin.json .claude-plugin/plugin.json plugin/cel-kdev/.codex-plugin/plugin.json
+git add plugin/cel-kdev/.claude-plugin/plugin.json .claude-plugin/plugin.json plugin/cel-kdev/.codex-plugin/plugin.json plugin/cel-prose/.claude-plugin/plugin.json
 git commit -m "cel-kdev: Bump plugin version to 2.4.2"
 ```
 
