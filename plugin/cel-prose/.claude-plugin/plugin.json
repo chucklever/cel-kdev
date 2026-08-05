@@ -1,6 +1,6 @@
 {
   "name": "cel-prose",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Voice rules for prose written for other developers: kernel code comments, commit messages, and cover letters",
   "author": {
     "name": "Chuck Lever",
