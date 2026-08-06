@@ -65,11 +65,12 @@ should be treated.
 ## cel-prose
 
 A second plugin in this marketplace, installed separately. It
-carries the `prose-voice` skill: the voice rules shared by code
-comments, commit messages, and cover letters. See
-[plugin/cel-prose/README.md](plugin/cel-prose/README.md) for what
-it covers and for the `~/.claude/CLAUDE.md` pointer that loads it
-outside the skills that already defer to it.
+carries the prose skills: `prose-voice` for the voice shared by
+all developer-facing prose, and `code-comments`, `commit-message`,
+and `cover-letter` for the per-artifact specifics that defer to
+it. See [plugin/cel-prose/README.md](plugin/cel-prose/README.md)
+for what each covers and for the `~/.claude/CLAUDE.md` pointer
+that loads the voice outside the skills that already defer to it.
 
 ## Layout
 
@@ -99,6 +100,9 @@ plugin/cel-prose/
     plugin.json      # plugin manifest
   README.md
   skills/
+    code-comments/SKILL.md
+    commit-message/SKILL.md
+    cover-letter/SKILL.md
     prose-voice/SKILL.md
 ```
 
