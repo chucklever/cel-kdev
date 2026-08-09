@@ -122,6 +122,14 @@ git strips at apply time. Series bookkeeping -- "a follow-up patch
 retires that path" -- is cover-letter material too. The log reads as
 though the current code were written that way from the start.
 
+Saying that a change exists to support work that comes later is not
+bookkeeping. When a patch looks unmotivated on its own -- a helper
+with one caller, a field nothing yet reads -- name what it prepares
+for, because that is the why. Name the purpose the change serves,
+never the patch that will serve it: "so a later caller can retry
+without dropping the lock" is the why, "patch 5 retires the old
+path" is the bookkeeping.
+
 The check on a reroll is that the message is no longer than the one
 before it unless the code itself grew more subtle.
 
