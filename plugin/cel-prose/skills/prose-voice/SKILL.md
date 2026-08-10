@@ -23,8 +23,13 @@ documentation is ordinary prose and does follow them.
   "serialize," not "recognise"/"behaviour"/"serialise"). Single
   blank between sentences. Text quoted from RFCs or upstream
   sources keeps its original spelling.
-- Preserve domain-specific terms: "quiesce" is not "stop,"
-  "elide" is not "skip."
+- Preserve domain-specific terms. "Quiesce" is not "stop": it
+  means refuse new work and wait for in-flight work to drain.
+  "Elide" is not "skip": it means omit something that would
+  otherwise be emitted. The mechanism picks the word, not the
+  register. Do not flatten a precise term to its everyday
+  neighbor, and do not reach for the rarer one when the plain
+  word is accurate.
 - Use the words the subsystem uses: identifiers out of the code,
   and the vocabulary of its own list traffic. Do not coin an
   abstraction to sound precise. "The cap supplies the return
@@ -53,6 +58,10 @@ documentation is ordinary prose and does follow them.
   upshot," "to be honest," "honest synthesis." Honesty is
   assumed; labeling a point honest adds noise and implies the
   rest might not be. State the point directly.
+- Do not stack more than three nouns in a row. "RPC transport
+  reconnect completion handler" makes the reader guess which
+  noun modifies which. Break the stack with a preposition or a
+  verb: "the completion handler for a transport reconnect."
 - Short declarative sentences. A causal chain stays connected:
   "the record delivers no payload, so the loop never exits."
   One link per sentence, though. Spend "so" or "because" once,
