@@ -27,14 +27,21 @@ order, then a `Context:` section recording execution context, sleeping
 behavior, and locks taken, released, or required, and finally the
 return value. `Return:` goes last.
 
+Every parameter is mandatory and they appear in signature order. A
+missing or misnamed one is a `scripts/kernel-doc` warning under
+`make W=1`, so never drop a parameter to shorten the block -- SKILL.md's
+length budget, redundancy gate, and banned-openings list do not reach
+inside it.
+
 Required for `EXPORT_SYMBOL*` and module-facing symbols; discretionary
 for file-static ones. Some subsystems, KVM among them, deliberately
 forbid kernel-doc on internal functions -- check the subsystem before
 adding one.
 
-Judge a kernel-doc block by completeness, not by the deletion test.
-Over-commenting still applies: do not restate what the signature
-already says.
+Judge a kernel-doc block by completeness. Over-commenting applies to
+what each line *says*, not to which lines exist: give every parameter a
+line, and make the line carry units, ownership, lifetime, or valid
+range rather than restating the name and type.
 
 ## The always-comment floor
 
