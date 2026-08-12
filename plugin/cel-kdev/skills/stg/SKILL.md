@@ -214,6 +214,52 @@ that *does* resolve but points at a same-named branch on the
 push remote passes silently. `stg id {base}` stays
 authoritative for the base commit.
 
+## Retiring patches upstream has taken
+
+After a remote takes a patch -- a maintainer merging part of
+a series, or a plain `git push` to a repo you own -- clear it
+from the stack by re-deriving from upstream rather than
+folding it in locally:
+
+```bash
+git fetch <remote>
+stg rebase -m <upstream-ref>   # patches already upstream go empty
+stg clean                      # drop the emptied patches
+```
+
+`<upstream-ref>` is the ref that now carries the patches, not
+an assumed `origin/master`. Usually that is the base's
+upstream, derived in "Finding the stack base" above; when the
+push remote differs from the base remote (the WARN case
+there), it is the ref you actually pushed to.
+
+Prefer this over `stg commit <patch>`. Both end with the
+patch folded into the base, but `stg commit` never consults
+the remote: a push that failed, or landed as something other
+than what you sent, leaves the stack asserting work the
+remote never received. The rebase checks -- a patch upstream
+did not take comes back non-empty and survives the
+`stg clean`. Read a survivor before concluding the push
+failed, though: a patch the remote took in modified form also
+comes back non-empty, because the check compares content, not
+intent, and keeping that one re-sends work upstream already
+has.
+
+`-m` tests only the applied patches. `stg rebase` pops the
+applied set and pushes back that same set, so an unapplied
+patch is never re-derived: one upstream took stays non-empty,
+`stg clean` leaves it in the stack, and it conflicts or
+duplicates on its next push. Check `stg series -d` for `-`
+lines first. To bring a pushed one into reach use `stg goto
+<patch>`, which applies the intervening patches in series
+order -- not `stg push <patch>`, which reorders the series
+(see that pitfall).
+
+The `stg commit -a` in the raw-reset recovery (see Pitfalls)
+is a separate case: what it absorbs is upstream history that
+`stg repair` turned into patches, not a patch of yours a
+remote took.
+
 ## Combining branches: there is no stg merge
 
 StGit has no `stg merge`: the stack is a linear sequence of
@@ -620,14 +666,17 @@ not). Two consequences:
   first. If autosign is set and you still cannot tell whether
   this branch wants the sign-off, ask the user.
 
-**Position before editing**: `stg goto`, `stg push`, and
-`stg pop` refuse to run when any tracked file is dirty
-(`worktree not clean`). The error offers `refresh` or
-`reset --hard` -- the latter is `stg reset --hard` (stg's
-own suggestion, not the prohibited `git reset`), which
-**discards your uncommitted worktree changes**. It is not in
-the prohibited table and the guard hook permits it, so
-nothing stops you; never take it to escape this error.
+**Position before editing**: `stg goto`, `stg push`,
+`stg pop`, and `stg rebase` refuse to run when any tracked
+file is dirty (`worktree not clean`). The error offers
+`refresh` or `reset --hard` -- the latter is
+`stg reset --hard` (stg's own suggestion, not the prohibited
+`git reset`), which **discards your uncommitted worktree
+changes**. It is not in the prohibited table and the guard
+hook permits it, so nothing stops you; never take it to
+escape this error. `stg rebase` is the one with a safe
+escape: `--autostash` stashes the dirty worktree and restores
+it after (`stgit.autostash` makes that the default).
 
 General rule: to route a change into a specific patch,
 `stg goto <patch>` FIRST, then edit and refresh. A

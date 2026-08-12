@@ -141,6 +141,11 @@ column is variable width during operations.
 | Convert all applied patches | `stg commit -a` |
 | Turn N git commits into patches | `stg uncommit -n <N>` |
 
+`stg commit` finalizes patches into the base without
+consulting any remote, so it is not how you retire a patch a
+remote has taken -- see "Retiring patches upstream has taken"
+in SKILL.md for that.
+
 ## Undo and redo
 
 | Task | Command |
@@ -200,8 +205,13 @@ stg rebase <new-base>
 stg rebase --merged <new-base>   # when upstream has your patches
 ```
 
-Use `--merged` after a maintainer merges part of the
-series. Follow with `stg clean` to remove empty patches.
+Use `--merged` whenever the new base may already carry your
+patches: a maintainer merged part of the series, or -- the
+more frequent case outside kernel work -- you pushed to your
+own remote and are catching the stack up. Those patches go
+empty instead of conflicting; follow with `stg clean` to
+remove them. See "Retiring patches upstream has taken" in
+SKILL.md.
 
 ## Importing
 
@@ -272,3 +282,8 @@ Run `stg refresh` after `stg fold`.
 stg clean      # remove empty patches
 stg spill      # reset current patch to empty, keep changes in worktree
 ```
+
+Patches go empty on their own after `stg rebase --merged`
+picks up the work upstream took; `stg clean` is the step that
+drops them. See "Retiring patches upstream has taken" in
+SKILL.md.
