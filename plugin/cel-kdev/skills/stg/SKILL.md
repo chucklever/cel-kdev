@@ -154,9 +154,13 @@ tree`. To inspect any patch, applied or unapplied, use
 `stg show <patch>` (optionally `stg show <patch> -- <path>`).
 For a patch-range diff, prefer the native `stg diff -r
 <first>~..<last>` over composing raw git. Reach for `stg id`
-only when a git command genuinely needs a revision stg
-cannot supply -- e.g. `git log $(stg id <patch>)` or
-`git show $(stg id <patch>):<path>`.
+only when a git command or an external tool genuinely needs
+a commit stg cannot supply -- e.g. `git log $(stg id
+<patch>)`, `git show $(stg id <patch>):<path>`, or
+`./scripts/checkpatch.pl --strict -g $(stg id)`. With no
+argument `stg id` resolves HEAD, which is the top patch
+whenever any patch is applied, so `$(stg id)` is the patch
+just refreshed.
 
 ## Finding the stack base
 
@@ -822,6 +826,22 @@ Trim output with `--stat`, `-O --no-prefix`, or a redirect to
 a file, never by piping a *mutating* command into `head` --
 that aborts the command; see "Never pipe a mutating stg
 command" in Pitfalls. Read-only commands pipe safely.
+
+**Checking a patch with checkpatch or another patch-parsing
+tool.** Piping `stg show` is safe; its format is the
+problem. It emits git-log format, which indents the commit
+message four spaces, and a tool that parses the message
+reads that indent as text -- checkpatch reports a spurious
+"Do not use whitespace before Signed-off-by:" on every
+patch. Point the tool at the commit instead, where the
+message is unindented: `./scripts/checkpatch.pl --strict -g
+$(stg id)` checks the patch just refreshed, and `-g $(stg id
+{base})..` the whole applied stack. Bare `stg id` is HEAD
+(see "Stack model"), so with the stack popped it names the
+base -- checkpatch would check an upstream commit as if it
+were yours. For a tool that wants a file, `stg export`
+writes a patch (`get_maintainer.pl` reads one); `stg email
+format` writes the mbox that `stg export` does not.
 
 **Limit stg series calls.** Run `stg series` (or
 `stg series -d`) once for orientation at the start of a
