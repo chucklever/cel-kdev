@@ -20,7 +20,7 @@
     },
     {
       "name": "cel-prose",
-      "description": "Skills for prose written for other developers: the shared voice, code comments, commit messages, and cover letters",
+      "description": "Skills for prose written for other developers: the shared voice, code comments, commit messages, cover letters, and version changelogs",
       "author": {
         "name": "Chuck Lever",
         "email": "cel@kernel.org"

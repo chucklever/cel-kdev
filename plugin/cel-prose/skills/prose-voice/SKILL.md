@@ -1,16 +1,17 @@
 ---
 name: prose-voice
-description: Use when drafting or editing prose written for other developers -- a code comment in any codebase, a commit message in any repository, or a patch series cover letter, pull request description, or merge commit message. Carries the voice rules the cel-prose:code-comments, cel-prose:commit-message, and cel-prose:cover-letter skills defer to: mechanism-first description, ASCII and US English, short declarative sentences, and dash discipline. Load it before drafting any of those, and whenever one of those skills points here. Does not govern LLM-facing text such as skill documentation.
+description: Use when drafting or editing prose written for other developers -- a code comment in any codebase, a commit message in any repository, or a patch series cover letter, version changelog, pull request description, or merge commit message. Carries the voice rules the cel-prose:code-comments, cel-prose:commit-message, cel-prose:cover-letter, and cel-prose:version-changelog skills defer to: mechanism-first description, ASCII and US English, short declarative sentences, and dash discipline. Load it before drafting any of those, and whenever one of those skills points here. Does not govern LLM-facing text such as skill documentation.
 ---
 
 # Prose voice
 
 Voice rules shared by the prose written for other developers --
 kernel code comments, commit messages in any repository, and
-cover letters. The cel-prose:code-comments,
-cel-prose:commit-message, and cel-prose:cover-letter skills own
-the per-artifact specifics (line widths, structure, worked
-examples) and defer here for the voice common to all three.
+cover letters with their changelogs. The cel-prose:code-comments,
+cel-prose:commit-message, cel-prose:cover-letter, and
+cel-prose:version-changelog skills own the per-artifact specifics
+(line widths, structure, worked examples) and defer here for the
+voice common to all four.
 These rules do not apply to LLM-facing text such as skill
 documentation; a commit message describing a change to that
 documentation is ordinary prose and does follow them.

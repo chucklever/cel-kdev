@@ -116,11 +116,14 @@ then as a property of the design ("an iteration count cannot bound
 how long a thread is held"), never as a report of what was tried.
 
 What review produces belongs elsewhere: what changed between
-versions goes in the changelog (see cel-prose:cover-letter), and
-commentary meant only for this posting goes below the `---`, which
-git strips at apply time. Series bookkeeping -- "a follow-up patch
-retires that path" -- is cover-letter material too. The log reads as
-though the current code were written that way from the start.
+versions goes in the changelog (see cel-prose:version-changelog),
+and commentary meant only for this posting goes below the `---`,
+which git strips at apply time. A single-patch reroll puts the
+changelog in that same commentary, one `---` away from the message
+and still out of git history. Series bookkeeping -- "a follow-up
+patch retires that path" -- is cover-letter material too. The log
+reads as though the current code were written that way from the
+start.
 
 Saying that a change exists to support work that comes later is not
 bookkeeping. When a patch looks unmotivated on its own -- a helper

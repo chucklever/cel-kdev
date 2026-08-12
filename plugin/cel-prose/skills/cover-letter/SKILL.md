@@ -1,21 +1,21 @@
 ---
 name: cover-letter
-description: Use when composing, editing, or reworking the *content* of a document that introduces a set of changes to the people who will review them -- a Linux kernel patch series cover letter (the [PATCH 0/N] blurb) and its per-version "Changes in vN" changelog, a GitHub pull request description, or a merge commit message taking a topic branch. Load this whenever you decide what such a document should say -- "write the cover", "rework the cover letter to match the series", "draft the changelog", "summarize the series for submission", "write the PR description" -- even when the request does not name one. Governs prose and content only; for where the cover/changelog files live and how a kernel series is sent, use the series-send and cel-kdev:b4 skills, and for a single patch's commit message use the cel-prose:commit-message skill. Not for a [GIT PULL] request to Linus, which is release notes for already-reviewed work.
+description: Use when composing, editing, or reworking the *content* of a document that introduces a set of changes to the people who will review them -- a Linux kernel patch series cover letter (the [PATCH 0/N] blurb), a GitHub pull request description, or a merge commit message taking a topic branch. Load this whenever you decide what such a document should say -- "write the cover", "rework the cover letter to match the series", "summarize the series for submission", "write the PR description" -- even when the request does not name one. Governs prose and content only; for where the cover file lives and how a kernel series is sent, use the series-send and cel-kdev:b4 skills, for a reroll's "Changes in vN" changelog the cel-prose:version-changelog skill, and for a single patch's commit message the cel-prose:commit-message skill. Not for a [GIT PULL] request to Linus, which is release notes for already-reviewed work.
 ---
 
 # cover-letter
 
 How to write the *content* of a document that introduces a set of
 changes to the people who will review them, in Chuck's voice. The
-Linux kernel patch series cover letter and its per-version changelog
-are the main case, and the rules below are written against it. A
-GitHub pull request description and a merge commit message do the
-same job and take the same rules; "Other surfaces" at the end covers
-where they differ. Where the cover and changelog files live and how a
-kernel series is sent (b4/series-send) belong to the series-send and
-cel-kdev:b4 skills; a single patch's commit message belongs to the
-cel-prose:commit-message skill. Load those for the workflow, this for
-the prose.
+Linux kernel patch series cover letter is the main case, and the
+rules below are written against it. A GitHub pull request description
+and a merge commit message do the same job and take the same rules;
+"Other surfaces" at the end covers where they differ. Where the cover
+file lives and how a kernel series is sent (b4/series-send) belong to
+the series-send and cel-kdev:b4 skills; a reroll's changelog belongs
+to the cel-prose:version-changelog skill, and a single patch's commit
+message to the cel-prose:commit-message skill. Load those for the
+workflow, this for the prose.
 
 ## What a cover letter is for
 
@@ -164,42 +164,11 @@ tool adds those. See cel-prose:commit-message for subject-line form.
 
 ## The changelog (v2 and later)
 
-A reroll carries a changelog: what changed since the previous
-posting, newest revision first, as terse bullets. Each bullet is a
-single line of at most 72 columns. When a bullet runs long, tighten
-the wording or split it into two bullets -- do not let it wrap onto
-a second line. A line may exceed 72 columns only for an unbreakable
-token it must carry, such as a URL or a pathname (the "Link to" line
-is the usual case). Content rules:
-
-- Ground every bullet in an actual diff of the prior version against
-  the current series, not in memory of what you meant to change.
-  Reconstruct the real delta -- a renamed method, an added patch, a
-  dropped approach -- and list that.
-- Credit a reviewer only when the change actually traces to their
-  feedback. A self-driven change dressed as a reviewer's request
-  misleads, and it sends that reviewer looking for their fix in a diff
-  that does not contain it. When a concern was addressed elsewhere --
-  a separate series, a prerequisite that has since landed -- the
-  honest changelog omits it here rather than implying this series
-  answered it.
-- Include a "Link to v(N-1):" pointing at the prior posting so a
-  reviewer can diff against it.
-
-The changelog is a separate file the send tool prepends to the cover
-at send time; where it lives is a series-send/b4 concern, not this
-skill's.
-
-A single-patch reroll has no cover letter. The send tool folds this
-same changelog into the lone patch's commentary, below the "---"
-divider -- git strips it at apply time, so it is reviewer-facing only.
-The content rules above are unchanged, and the "Link to v(N-1):"
-matters more here, since no cover carries context. Design rationale
-for the patch belongs in its commit message (see
-cel-prose:commit-message), not in that commentary. Which surface the
-changelog lands on -- cover or
-lone patch -- is chosen automatically by patch count, a series-send/b4
-concern rather than this skill's.
+A reroll carries a changelog of what changed since the previous
+posting, which the send tool appends below the cover's `---` at send
+time. Its content rules -- and the single-patch case, where there is
+no cover to carry it -- belong to the cel-prose:version-changelog
+skill. Load that to write one.
 
 ## Other surfaces: PR descriptions and merge commits
 
@@ -231,8 +200,8 @@ forbids is the substance of that document.
 
 ## Voice
 
-The cover and changelog follow the voice rules in the
-cel-prose:prose-voice skill; load it before drafting.
+The cover follows the voice rules in the cel-prose:prose-voice
+skill; load it before drafting.
 
 ## Example: recasting a patch roll-call
 
@@ -261,20 +230,3 @@ of this same passage read "The no-data cap is a prerequisite, not a
 stand-alone fix -- without it, control records reaching read_sock
 could pin the socket lock," and the posted cover built on it drew
 "incomprehensible slop" from the maintainer.
-
-## Example: a changelog entry
-
-  Changes in v3:
-  - Cap no-data records in tls_sw_read_sock() (per Jane's review).
-  - Split the svcsock conversion so old and new paths coexist.
-  - Link to v2: https://lore.kernel.org/r/20250601-tls-cap@kernel.org
-
-  Changes in v2:
-  - Add a read_sock_rectype proto_ops method for the record type.
-  - Link to v1: https://lore.kernel.org/r/20250515-tls-cap@kernel.org
-
-The cap bullet credits Jane because the change traces to her
-review; the svcsock split carries no name because it was
-self-driven -- crediting it would send a reviewer looking for a
-fix she never asked for. Each bullet names a real delta and stays
-on one line, and the newest revision leads, so v3 sits above v2.

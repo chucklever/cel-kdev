@@ -67,8 +67,8 @@ should be treated.
 A second plugin in this marketplace, installed separately. It
 carries the prose skills: `prose-voice` for the voice shared by
 all developer-facing prose, and `code-comments`, `commit-message`,
-and `cover-letter` for the per-artifact specifics that defer to
-it. See [plugin/cel-prose/README.md](plugin/cel-prose/README.md)
+`cover-letter`, and `version-changelog` for the per-artifact
+specifics that defer to it. See [plugin/cel-prose/README.md](plugin/cel-prose/README.md)
 for what each covers and for the `~/.claude/CLAUDE.md` pointer
 that loads the voice outside the skills that already defer to it.
 
@@ -104,6 +104,7 @@ plugin/cel-prose/
     commit-message/SKILL.md
     cover-letter/SKILL.md
     prose-voice/SKILL.md
+    version-changelog/SKILL.md
 ```
 
 ## Requirements

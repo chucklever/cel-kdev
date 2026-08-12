@@ -2,9 +2,10 @@
 
 Read alongside SKILL.md when the commit targets a Linux kernel tree.
 The rules in SKILL.md hold; this file states where the kernel departs
-from them and what it adds. For a series cover letter or a "Changes in
-vN" changelog use the cel-prose:cover-letter skill instead; for
-sign-off and patch mechanics, cel-kdev:stg.
+from them and what it adds. For a series cover letter use the
+cel-prose:cover-letter skill instead, for a "Changes in vN" changelog
+cel-prose:version-changelog; for sign-off and patch mechanics,
+cel-kdev:stg.
 
 ## Subject line
 
