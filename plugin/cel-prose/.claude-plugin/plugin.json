@@ -1,6 +1,6 @@
 {
   "name": "cel-prose",
-  "version": "3.2.2",
+  "version": "3.3.0",
   "description": "Skills for prose written for other developers: the shared voice, code comments, commit messages, cover letters, and version changelogs",
   "author": {
     "name": "Chuck Lever",
