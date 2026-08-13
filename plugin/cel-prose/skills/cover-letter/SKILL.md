@@ -177,6 +177,27 @@ there and the commit message is one click away. This is the content
 that bloats a cover, and it is the last an author cuts, because each
 sentence looks defensible on its own.
 
+**Register: disclosure, not instruction.** Whatever survives the sort
+is stated as disclosure. The test is whether the sentence tells the
+reviewer what to do, in any mood -- "the reviewer should confirm the
+count cannot go stale" assigns as surely as an imperative does. "The
+delegation count is read without deleg_lock and can be stale by the
+time the reply is encoded" hands the reviewer what only the author
+knows and leaves the conclusion to them. "Please verify that the
+delegation count, read without deleg_lock, cannot go stale before the
+reply is encoded" carries the same facts and hands back an assignment
+a reviewer on a kernel list did not ask for. This skill reasons about
+the cover in terms of what the reviewer must check. That is a test the
+author applies to a candidate sentence while sorting. It is not a
+shape the prose takes. The recast under "Example: recasting a patch
+roll-call" is the form to copy -- it states the design decision as
+fact and never names the reviewer.
+
+Disclosure is not improper anchoring. Silence anchors too. A
+tradeoff the cover leaves out is one the reviewer meets as a
+suspected bug. The choice is between informed and uninformed
+attention, not between anchoring and neutrality.
+
 ## What to keep out: the patch roll-call
 
 Patches are the subject of the diffstat, not of the cover's
@@ -278,8 +299,8 @@ A roll-call cover, each sentence owned by a patch:
   kTLS. Patch 5 converts svcsock, and patch 6 removes the old
   sock_recvmsg path.
 
-Recast so the subject is the design decision the reviewer must check,
-with patches as pointers:
+Recast so the subject is the design decision, with patches as
+pointers:
 
   The no-data cap comes first: control records reaching read_sock
   would otherwise hold the socket lock without bound (patch 1). The
