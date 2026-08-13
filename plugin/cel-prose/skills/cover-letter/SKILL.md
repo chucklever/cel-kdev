@@ -27,9 +27,11 @@ learn how to read the series.
 
 So the test for every sentence is whether it earns its place against
 that purpose. If a reviewer will find its content in the patch it
-belongs to -- the subject, the commit message, the diff -- it is
-redundant here; cut it. The cover is not a summary of the patches; it
-records the cross-cutting design that no single patch carries.
+belongs to -- the subject line in the shortlog, the commit message,
+the diff -- it is redundant here; cut it. The defect the series
+answers is the exception. State it here even though the fixing patch
+states it too. The cover is not a summary of the patches; it records
+the cross-cutting design that no single patch carries.
 
 The cover never enters git history: a part-zero cover is not applied
 at all, and for a lone patch the same text sits below the "---" that
@@ -102,22 +104,47 @@ and what is missing is the argument rather than the prose.
 
 ## What to put in it
 
-Ground each of these in the series as it stands -- the diffstat and
-the diffs, never memory of the plan -- and take the reasons from the
-record gathered above:
+Sort each candidate sentence by what it is *about*. Two kinds of
+content belong in the cover and one does not. Ground all of it in the
+series as it stands -- the diffstat and the diffs, never memory of
+the plan.
 
-- Name the two or three design choices that shape the series and
-  point to the patch that makes each. Give at most one clause of why
-  -- the reason a reviewer needs to know what to check -- not the
-  argument; that argument is in the patch's own commit message.
-- When a decision is scattered across several patches -- a
-  cross-cutting behavioral change, a workaround being retired, an
-  invariant enforced in three places -- state it once in the cover.
-  Otherwise the reviewer has to reconstruct the rationale from the
-  individual commits, which is the work the cover exists to save.
-- If the series is the first step of a larger plan, say so and say
-  what the later steps are. A reviewer who knows the destination
-  reviews the first step differently.
+**Keep: the code as it stands, and how it is broken.** This is the
+bulk of a good cover and it is where the argument lives. "A control
+record's octets are credited to the RPC stream, and a consumed
+control record leaves the server transport unmarked" carries no
+clause of why and needs none; the defect stated plainly is the case
+for the series. Draw on the record gathered above -- the commit that
+introduced the defect, the report that surfaced it, what the current
+interface has already cost. The alternative a reviewer would
+otherwise propose belongs here too, with the reason it was rejected;
+one sentence, and only for the alternative they would actually raise.
+
+**Keep: the design choices that span the patches, and the
+relationships the shortlog cannot show.** The send tool puts the
+shortlog and diffstat directly below the prose, so the reviewer
+already has the list of patches. What the list cannot give them is
+how the entries relate:
+
+- An ordering constraint or dependency, especially one that accounts
+  for patches that otherwise look unrelated. "The CB_RECALL send
+  buffer budget has to be correct before a referring call list can
+  ride in it" is the only thing that explains six budgeting patches
+  sitting in front of the fix.
+- A design choice scattered across several patches -- a cross-cutting
+  behavioral change, a workaround being retired, an invariant
+  enforced in three places. State it once, here.
+- A contract a later patch relies on, and the user-visible behavior
+  changes taken together rather than one patch at a time.
+- What the series deliberately does not do, and what follows it. A
+  reviewer who knows the destination reviews the first step
+  differently, and a limitation you name is one they do not spend a
+  pass discovering.
+
+**Cut: what a patch in this series does.** The shortlog is right
+there and the commit message is one click away. This is the content
+that bloats a cover, and it is the last an author cuts, because each
+sentence looks defensible on its own.
 
 ## What to keep out: the patch roll-call
 
@@ -138,10 +165,14 @@ at all -- not a line, not a clause. A patch is named only when it is
 load-bearing for a design choice, and then only as a parenthetical
 pointer inside that choice's sentence.
 
-Self-test: for each sentence, ask whether a patch -- one, or a batch
-of them -- is its subject or main referent. If yes, cut it or recast
-it so the subject is the design decision and the patch is only a
-pointer.
+Self-test: for each sentence, ask what it is about, not what its
+grammatical subject is. A paragraph that names no patch at all can
+still be a compressed copy of one patch's commit message, and the
+grammatical test waves it through. A cover whose paragraphs run in
+patch order, one per patch, reads as a disguised roll-call however
+its sentences are built. If a sentence is about what a patch does,
+cut it; if it is about the defect or about how the patches relate,
+keep it.
 
 ## Length
 
@@ -175,7 +206,11 @@ skill. Load that to write one.
 A GitHub pull request description does the cover's job. Its readers
 are going to read the diffs, and the description tells them how. Every
 rule above holds: the roll-call prohibition, the 400-word cap, the
-test that each sentence earn its place. Three things differ.
+test that each sentence earn its place. Those rules are argued above
+from the shortlog sitting directly below the cover's prose; on GitHub
+the commit list is a tab away instead. That changes how far the
+reviewer reaches for it and nothing about what to cut. Three things
+differ.
 
 - The text is not stripped. GitHub folds a squash-merged PR body into
   the commit message, and a merge commit message is history by
@@ -216,17 +251,39 @@ Recast so the subject is the design decision the reviewer must check,
 with patches as pointers:
 
   The no-data cap comes first: control records reaching read_sock
-  would otherwise hold the socket lock without bound (patch 1).
-  svcsock is converted in two steps. The new path is added beside the
-  old one so the two can be compared, and the old one goes in the
-  patch after (patches 5-6).
+  would otherwise hold the socket lock without bound (patch 1). The
+  svcsock conversion adds the new path beside the old so the two can
+  be compared before the old one goes (patches 5-6).
 
-The first tells the reviewer what the diffstat already tells them.
-The second names each decision, points to its patch, and stops at one
-clause of why -- the argument itself stays in the commit messages.
-Note the sentence lengths in the recast: one causal link each, no
-aside wedged into a clause that already carries one. An earlier draft
-of this same passage read "The no-data cap is a prerequisite, not a
+The first tells the reviewer what the shortlog already tells them.
+The second keeps only what the shortlog cannot show: that patch 1 is
+a prerequisite rather than a fix in its own right, and why the
+svcsock conversion is split across two patches. An earlier version of
+this recast opened its second half with "svcsock is converted in two
+steps" -- true, already in the shortlog, and therefore gone.
+
+Note the sentence lengths as well: one causal link each, no aside
+wedged into a clause that already carries one. An earlier draft of
+the first sentence read "The no-data cap is a prerequisite, not a
 stand-alone fix -- without it, control records reaching read_sock
 could pin the socket lock," and the posted cover built on it drew
 "incomprehensible slop" from the maintainer.
+
+## Example: the roll-call in disguise
+
+The roll-call that survives a subject-line check names no patch at
+all:
+
+  The kTLS read_sock path puts no bound on control records, so a
+  stream of them can hold the socket lock indefinitely. Bounding them
+  requires knowing the record type, which the existing proto_ops
+  cannot report, so a new method returns it. kTLS implements that
+  method from the record header it has already parsed.
+
+No patch is the subject of any sentence, and each one reads as
+design. But the paragraph is patches 1-3 in order, one sentence
+apiece, each a commit message compressed. Apply the test: every
+clause of it reaches the reviewer anyway, in a commit message they
+have to read regardless. What does not reach them is that patch 1 has
+to land first -- which is the clause the recast above spends on it,
+and the rest of the paragraph is gone.
