@@ -1,6 +1,6 @@
 ---
 name: cover-letter
-description: Use when composing, editing, or reworking the *content* of a document that introduces a set of changes to the people who will review them -- a Linux kernel patch series cover letter (the [PATCH 0/N] blurb), a GitHub pull request description, or a merge commit message taking a topic branch. Load this whenever you decide what such a document should say -- "write the cover", "rework the cover letter to match the series", "summarize the series for submission", "write the PR description" -- even when the request does not name one. Governs prose and content only; for where the cover file lives and how a kernel series is sent, use the series-send and cel-kdev:b4 skills, for a reroll's "Changes in vN" changelog the cel-prose:version-changelog skill, and for a single patch's commit message the cel-prose:commit-message skill. Not for a [GIT PULL] request to Linus, which is release notes for already-reviewed work.
+description: Use when composing, editing, or reworking the *content* of a document that introduces a set of changes to the people who will review them -- a Linux kernel patch series cover letter (the [PATCH 0/N] blurb), a GitHub pull request description, or a merge commit message taking a topic branch. Load this whenever you decide what such a document should say -- "write the cover", "rework the cover letter to match the series", "summarize the series for submission", "write the PR description" -- even when the request does not name one. Load it also to judge a cover that already exists -- "review this cover letter", "is this cover ready to send", "does the cover match the series". Governs prose and content only; for where the cover file lives and how a kernel series is sent, use the series-send and cel-kdev:b4 skills, for a reroll's "Changes in vN" changelog the cel-prose:version-changelog skill, and for a single patch's commit message the cel-prose:commit-message skill. Not for a [GIT PULL] request to Linus, which is release notes for already-reviewed work.
 ---
 
 # cover-letter
@@ -225,6 +225,49 @@ patch order, one per patch, reads as a disguised roll-call however
 its sentences are built. If a sentence is about what a patch does,
 cut it; if it is about the defect or about how the patches relate,
 keep it.
+
+## Reviewing a cover
+
+Judging a cover that already exists is a different task from
+drafting one, and it fails differently. The pull is to audit the
+prose for coverage, which reintroduces the roll-call from the
+reviewing side.
+
+- A patch absent from the prose is not a defect. That absence is
+  what the roll-call rule asks for, and the shortlog and diffstat
+  the send tool emits already answer "what is in this series."
+  What can be missing is a relationship rather than a patch: an
+  ordering constraint that accounts for patches which otherwise
+  look unrelated, a contract a later patch relies on, a limitation
+  the series leaves standing. Six budgeting patches sitting in
+  front of a fix with no sentence saying why they come first is a
+  real gap; the same six unnamed, with the ordering stated once,
+  is not.
+- Do not derive an obligation from the subject line. A plural
+  subject ("CB_RECALL_ANY fixes and a meaningful keep count") is
+  answered by the shortlog, not by a paragraph per fix.
+- Backportability is not the cover's job either. Stable maintainers
+  act on the `Fixes:` tag, and a kernel cover never enters git
+  history, so it is the least durable place to record that a patch
+  stands alone. This one is kernel-specific: a PR body folded into
+  a squash-merge commit does become history, and
+  cel-prose:commit-message governs it there.
+- The defect to look for instead is duplication: a paragraph whose
+  argument already sits in the commit message of the patch it points
+  at. The cover text alone cannot show this -- read the series'
+  commit messages, then hold each paragraph against the one it
+  tracks. Per-patch cadence is how you find it, not a finding on its
+  own: where the paragraphs run in patch order, report the clauses
+  that reach the reviewer anyway. "Example: the roll-call in
+  disguise" below works that check through. The defect the series
+  answers is the one exemption -- it belongs in the cover even
+  though the fixing patch states it too.
+- A patch earns prose only when it is load-bearing for a
+  cross-cutting decision, or when the author wants a handling
+  decision from the maintainer ("take patch 1 now, independent of
+  where this discussion lands"). That second case is a request about
+  application rather than review. It is the author's to make, so do
+  not recommend it unprompted.
 
 ## Length
 
