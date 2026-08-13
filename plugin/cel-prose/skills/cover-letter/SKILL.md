@@ -98,9 +98,36 @@ answers it with specifics.
   Cc: stable" does not.
 - A revert or removal: what harm does the current code do?
 - A behavioral change: who observes it, and what breaks when they do?
+- A change that narrows what the code asks for while the larger ask
+  is still permitted -- a smaller number requested, a permission not
+  taken, a limit set below the ceiling -- where the retrieval above
+  turned up no report of the current value failing: why is the
+  current value the wrong thing to ask for? This shape is usually
+  also a behavioral change. It takes this bullet, because who
+  observes it is the smaller question. The reasoning is the
+  argument. Answer from what the asking side cannot know and what
+  the aggressive value does not buy even when granted. If it does
+  buy something, name the gain and why the cost outweighs it. A
+  false "buys nothing" is one sentence a reviewer can disprove. Do
+  not answer from how a peer implementation behaves on the current
+  value, even when its maintainer reported it in your thread: that
+  reframes the series as a workaround for someone else's bug and
+  invites "fix the peer" as the whole review. "One client returns all
+  of its delegations when the count is zero" is the sentence that
+  costs the series its argument. "A server cannot know which
+  delegations a client is using, and a delegation the client gives
+  back while still using it just becomes an OPEN stateid" is the one
+  that makes it.
 
 A cover that cannot answer its own objection is not ready to send,
-and what is missing is the argument rather than the prose.
+and what is missing is the argument rather than the prose. Where the
+objection is answered from incidents, go find them; the retrieval
+above is that job. Where it is not -- the fourth bullet's shape --
+the missing incident is not the gap. A borrowed incident, one that
+happened to someone else's code and is offered as the reason for
+yours, or a manufactured one, is worse than the reasoning it
+displaces: it gives the reviewer a narrower thing to attack, and
+disqualifying it leaves the series with no case at all.
 
 ## What to put in it
 
@@ -109,7 +136,8 @@ content belong in the cover and one does not. Ground all of it in the
 series as it stands -- the diffstat and the diffs, never memory of
 the plan.
 
-**Keep: the code as it stands, and how it is broken.** This is the
+**Keep: the code as it stands, and how it is broken -- or, when
+nothing is broken, why it asks for the wrong thing.** This is the
 bulk of a good cover and it is where the argument lives. "A control
 record's octets are credited to the RPC stream, and a consumed
 control record leaves the server transport unmarked" carries no
@@ -119,6 +147,9 @@ introduced the defect, the report that surfaced it, what the current
 interface has already cost. The alternative a reviewer would
 otherwise propose belongs here too, with the reason it was rejected;
 one sentence, and only for the alternative they would actually raise.
+When nothing is broken, this slot holds the reasoning instead of a
+defect, and the fourth bullet under "The objection test" is how to
+build it.
 
 **Keep: the design choices that span the patches, and the
 relationships the shortlog cannot show.** The send tool puts the
