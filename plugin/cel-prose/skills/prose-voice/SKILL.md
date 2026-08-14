@@ -39,7 +39,12 @@ documentation is ordinary prose and does follow them.
   scheduler time" all drew "terms no kernel developer would
   use." The words for those things are "the syscall return
   bounds the loop," "process context," and "costs the caller
-  CPU time."
+  CPU time." When unsure whether a phrase is coined, grep the
+  subsystem. If neither the code nor the file's existing
+  comments use it, and a plain kernel term covers the same
+  thing, it is coined. Terminology the subsystem does use is
+  not coined however unfamiliar it looks, so read the tree
+  before cutting a term.
 - Subsystem names in prose take their uppercase form: NFSD,
   SUNRPC, NFS. Others write "nfsd" or "knfsd"; do not match
   them. This overrides the preceding rule about taking
@@ -62,7 +67,12 @@ documentation is ordinary prose and does follow them.
   "the record delivers no payload, so the loop never exits."
   One link per sentence, though. Spend "so" or "because" once,
   and never hang an aside off a sentence that already carries
-  one. A second link is the run-on a maintainer bounces. Do not
+  one. A second link is the run-on a maintainer bounces. The
+  countable instance is two or more "so"/"because"/"which"
+  links in a sentence past roughly 40 words. Count them before
+  concluding a long sentence reads clearly. A sentence that
+  enumerates rather than argues does not count, however long it
+  runs. Do not
   bullet-ize reasoning that already reads clearly, and do not
   restructure prose that is already clear.
 - Dashes: do not reach for an em dash when drafting. The first
