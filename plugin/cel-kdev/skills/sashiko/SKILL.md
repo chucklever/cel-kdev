@@ -393,6 +393,22 @@ Per-part `status` transitions: `null` -> `"In Review"` ->
 most parts to remain `"In Review"` for hours.  Poll
 `/api/patchset?id=<msgid>` rather than the web UI.
 
+A patchset-level `status` of `"Incomplete"` means the daemon is
+still waiting for parts of the series.  Compare `received_parts`
+against `total_parts` in the same response; cover letters never
+count, so a healthy 8-patch series reads 8 of 8, not 9.  What a
+short count means depends on how the series arrived.  One
+ingested from lore arrives message by message, so the count
+climbs on its own -- re-poll a few minutes later and see whether
+it moves.  One submitted as a single mbox has nothing in flight,
+so a short count is already the answer: it fragmented on the way
+in, and the status will never clear, because it advances only as
+parts arrive and nothing sweeps the row.
+[references/submitting.md](references/submitting.md) covers that
+failure, and the `cancel` that is the only way to clear the row.
+Cancelling writes to a shared instance and cannot be undone:
+confirm with the user first.
+
 A patchset-level `status` of `"Failed To Apply"` means sashiko
 ingested the series but could not construct a baseline to apply
 it onto: `reviews[]` is empty and no findings exist. This state
