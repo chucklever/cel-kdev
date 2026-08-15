@@ -307,7 +307,7 @@ sashiko source tree, or install per the upstream README.
 | `sashiko-cli show <id>` | Print the review for a patchset (numeric id, or `latest`) |
 | `sashiko-cli list [filter]` | List patchsets (`pending`, `failed`, list-name, etc.) |
 | `sashiko-cli status` | Daemon status and aggregate counts |
-| `sashiko-cli submit <input>` | Queue a commit, range, mbox file, or lore.kernel.org thread for review (for a patch of your own, `--type mbox` -- see "Submitting a patch") |
+| `sashiko-cli submit <input>` | Queue a patch for review. Only `--type mbox` ships patch content; the commit and range forms send a bare ref the daemon resolves in *its own* clone, so they review something else without failing. For a lore thread, `--type thread` with a bare Message-Id (not a URL). See "Submitting a patch" |
 | `sashiko-cli local [<input>]` | Run a one-shot review without enqueuing on a daemon (defaults to `HEAD`) |
 | `sashiko-cli rerun <id>` | Re-review a completed patchset |
 | `sashiko-cli cancel <id>` | Cancel a pending review |
@@ -324,16 +324,23 @@ deployment, or when no local daemon is running.
 
 `submit --type mbox` is the path for a local daemon and a
 private remote instance alike, and the only one: it is the
-sole input form that ships patch content.  The daemon resolves
-a ref in its own clone either way, so remoteness is not what
-decides this.  The `remote`, `range`, and `thread` forms ship
-a bare ref that the daemon resolves with `git rev-parse` in
-*its own* clone, so a local sha either fails to resolve or
-resolves to different code and comes back as a clean review
-of something else.  A bare `submit` with no input and no pipe
-defaults to `remote HEAD` and does exactly that.  `--baseline`
-is read on the mbox path only; the other three drop it
-without a word.
+sole input form that ships patch content.  The `remote` and
+`range` forms ship a bare ref that the daemon resolves with
+`git rev-parse` in *its own* clone -- true of a local daemon
+too -- so a local sha either fails to resolve or resolves to
+different code and comes back as a clean review of something
+else.  A bare `submit` with no input and no pipe defaults to
+`remote HEAD` and does exactly that.  The `thread` form is
+different again: it takes a Message-Id and fetches that series
+from lore, so it reviews what was posted rather than anything
+in the local tree.  `--baseline` is read on the mbox path
+only; the other three drop it without a word.
+
+Auto-detection picks `thread` only for an input carrying an
+`@` and no slash, and falls back to `remote` for anything else
+that is not an existing file.  A lore URL has slashes, so it
+lands on `remote` and the daemon tries to `git rev-parse` the
+URL.  Pass `--type thread` with the bare Message-Id instead.
 
 The daemon parses an mbox as email, so it needs the headers a
 mailed patch carries, and the local export tools omit them.
