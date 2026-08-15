@@ -308,11 +308,13 @@ diff context interleaved with reviewer commentary.  Apply
 the verify-and-label rule from the CRITICAL block above.
 
 Replies do not reach the bot.  Sashiko is a one-shot
-generator, not a conversation partner; replies to its email
-go to the SMTP `sender_address` and are not ingested back
-into its context.  Decisions and rationale belong in the
-cover letter or commit message of the next revision, not in
-an email thread with the bot.
+generator, not a conversation partner; nothing sent back is
+ingested into its context.  A reply is not a dead letter
+either: sashiko sets a `Reply-To`, and the public deployment
+points it at `sashiko-reviews@lists.linux.dev`, so a reply
+posts to an archived public list.  Decisions and rationale
+belong in the cover letter or commit message of the next
+revision, not in an email thread with the bot.
 
 ## Attributing reviews in commit messages
 
