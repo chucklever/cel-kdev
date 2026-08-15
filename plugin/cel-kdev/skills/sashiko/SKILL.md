@@ -37,61 +37,17 @@ the user.  Do not quote sashiko output into commit messages,
 PR comments, or review replies without that verification
 step.
 
-### Verify cited rule IDs before calling them fabricated
-
-Sashiko grounds some findings in named rules (e.g.
-`SUNRPC-RDMA-004`, `SUNRPC-GSS-007`).  The SUNRPC rule
-families are real and defined in
-`~/src/review-prompts/kernel/subsystem/sunrpc.md` (a local
-checkout of the `masoncl/review-prompts` guide set):
-`SUNRPC-CORE-NNN`, `SUNRPC-RDMA-NNN`, `SUNRPC-GSS-NNN`, and
-`SUNRPC-SOCK-NNN`.  The numbered-ID convention is not unique
-to SUNRPC -- other guides carry their own (e.g. `RCU-001`,
-`BPF-001`) -- so never judge a cited ID invented from memory.
-Grep the guides first, whatever the subsystem.
-
-Substitute the cited ID and search the guides.  `-i` covers
-case; separators and zero-padding drift more often, since the
-files store three-digit IDs (`SUNRPC-RDMA-004`).  Use `$HOME`,
-not `~`: a tilde inside a quoted path does not expand, and the
-empty result then reads like a missing rule.  If the directory
-itself is absent, the checkout lives elsewhere or is missing;
-say "I cannot locate the rule guides" rather than treating
-every cited ID as ungrounded.
-
-```bash
-grep -rin "SUNRPC-RDMA-004" "$HOME/src/review-prompts/kernel/subsystem/"
-```
-
-Interpret the result:
-
-- A full match: the rule exists; treat the citation as
-  grounded (not the same as the finding being correct --
-  still verify the claim against the code).
-- No match: a literal miss is often formatting drift, not a
-  missing rule.  Retry with separators and padding loosened
-  (the `\b` keeps `-4` from matching `040` or `400`):
-
-  ```bash
-  grep -rinE "SUNRPC.?RDMA.?0*4\b" "$HOME/src/review-prompts/kernel/subsystem/"
-  ```
-
-  Still nothing?  The full-ID grep cannot tell a missing
-  number from a missing family, so re-grep the family stem
-  alone:
-
-  ```bash
-  grep -rinoE "SUNRPC-RDMA-[0-9]+" "$HOME/src/review-prompts/kernel/subsystem/" | sort -u
-  ```
-
-  - The stem lists other numbers but not the cited one:
-    report "rule family <family> exists, but <id> is not
-    defined," not "fabricated."
-  - The stem matches nothing either: prefer "I cannot find
-    this rule" over "fabricated."
-
-A rule you do not recognize is not the same as a rule that
-does not exist.
+A finding may ground itself in a named rule (`SUNRPC-RDMA-004`,
+`RCU-001`).  Never call one fabricated from memory: the rule
+families are real, they are not unique to SUNRPC, and they are
+greppable in a local checkout of the `masoncl/review-prompts`
+guide set at `$HOME/src/review-prompts/kernel/subsystem/`.  If
+that directory is absent, say "I cannot locate the rule guides"
+rather than treating every cited ID as ungrounded.  A rule you
+do not recognize is not a rule that does not exist.
+[references/rule-ids.md](references/rule-ids.md) carries the
+grep, the retry that tells formatting drift from a missing rule,
+and the wording for each outcome.
 
 ## CRITICAL: Do not run lore_search for sashiko output
 
@@ -360,31 +316,17 @@ an email thread with the bot.
 
 ## Attributing reviews in commit messages
 
-When a patch exists to address something sashiko flagged,
-credit the bot with a trailer pair following the syzbot
-precedent:
-
-```
-Reported-by: sashiko-bot <sashiko-bot@kernel.org>
-Closes: https://sashiko.dev/#/patchset/<cover-msgid>?part=<n>
-```
-
-Use `Suggested-by:` (same address) when the bot proposed an
-improvement rather than reporting a defect.
-
-The `Closes:` URL is the SPA route, fragile but the only
-canonical reference when the review never reached a public
-list.  Prefer a `lore.kernel.org/r/<bot-message-id>` URL
-when sashiko's `email_policy.toml` routes reviews to the
-destination list (i.e., `reply_all = true` for that block).
-
-Avoid `Reviewed-by:` and `Co-developed-by:` for the bot;
-these are routinely stripped by maintainers and overstate
-the bot's role given the self-reported false-positive rate.
-
-The sender address `sashiko-bot@kernel.org` is greppable
-and worth using verbatim so downstream tooling can match
-on it.
+When a patch addresses something sashiko flagged, credit the
+bot with a `Reported-by: sashiko-bot <sashiko-bot@kernel.org>`
+and a `Closes:` trailer, following the syzbot precedent.  Use
+that address verbatim rather than reconstructing one: it is
+neither the sashiko.dev domain nor the reply-to list, and
+downstream tooling matches on it.  Do not reach for
+`Reviewed-by:` or `Co-developed-by:`; maintainers routinely
+strip them, and they overstate the bot's role given the
+false-positive rate.
+[references/attribution.md](references/attribution.md) carries
+the `Closes:` URL forms and the `Suggested-by:` variant.
 
 ## Monitoring progress
 
@@ -435,3 +377,14 @@ rather than advising a re-poll.
 The web UI is public: anyone with the cover-letter
 Message-ID can read the reviews.  Confirm with the user
 before sharing a sashiko.dev URL externally.
+
+## Reference files
+
+- [references/submitting.md](references/submitting.md) --
+  queueing a patch or series: the mbox headers, which `--type`
+  each input form selects, the write-access gate, and
+  confirming a submit landed
+- [references/rule-ids.md](references/rule-ids.md) --
+  verifying a rule ID a finding cites before reporting on it
+- [references/attribution.md](references/attribution.md) --
+  the commit trailers that credit the bot
