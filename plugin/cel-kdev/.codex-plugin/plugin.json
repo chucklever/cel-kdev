@@ -24,7 +24,7 @@
   "interface": {
     "displayName": "cel-kdev",
     "shortDescription": "Linux kernel development skills for Codex",
-    "longDescription": "Codex skills for StGit patch management, b4 patch workflows, perf analysis, trace-cmd analysis, drgn debugging, and sashiko review retrieval.",
+    "longDescription": "Codex skills for StGit patch management, b4 patch workflows, perf analysis, trace-cmd analysis, drgn debugging, and sashiko patch submission and review retrieval.",
     "developerName": "Chuck Lever",
     "category": "Developer Tools",
     "capabilities": [

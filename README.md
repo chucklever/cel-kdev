@@ -52,15 +52,16 @@ non-interactive operation constraints.
 
 ### sashiko
 
-Teaches coding agents how to retrieve and interpret reviews
-from the [sashiko](https://sashiko.dev) kernel-patch review
-bot. Points at the unauthenticated `/api/patchset` endpoint
-and away from two common dead ends: lore searches (the bot
-does not post to public lists by default) and fetches against
-the SPA web UI (returns only the app shell). Covers
-the email delivery policy, review-status transitions, and
-the false-positive rate that governs how review output
-should be treated.
+Teaches coding agents how to submit patches to the
+[sashiko](https://sashiko.dev) kernel-patch review bot and how
+to retrieve and interpret the reviews it produces. Points at
+the unauthenticated `/api/patchset` endpoint and away from two
+common dead ends: lore searches (the bot does not post to
+public lists by default) and fetches against the SPA web UI
+(returns only the app shell). Covers the mbox headers a
+submission needs, the email delivery policy, review-status
+transitions, and the false-positive rate that governs how
+review output should be treated.
 
 ## cel-prose
 

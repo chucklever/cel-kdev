@@ -16,7 +16,7 @@ description: >-
   rather than a human reviewer.
 ---
 
-# sashiko: retrieving bot reviews for kernel patch series
+# sashiko: submitting patches for bot review and retrieving the results
 
 Sashiko is an agentic LLM-based kernel patch reviewer.  It
 monitors lore mailing lists for new submissions, produces an
