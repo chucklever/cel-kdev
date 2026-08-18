@@ -132,7 +132,8 @@ disqualifying it leaves the series with no case at all.
 ## What to put in it
 
 Sort each candidate sentence by what it is *about*. Two kinds of
-content belong in the cover and one does not. Ground all of it in the
+content belong in the cover and one does not; two rules of register
+and frame then apply to whatever survives. Ground all of it in the
 series as it stands -- the diffstat and the diffs, never memory of
 the plan.
 
@@ -197,6 +198,17 @@ Disclosure is not improper anchoring. Silence anchors too. A
 tradeoff the cover leaves out is one the reviewer meets as a
 suspected bug. The choice is between informed and uninformed
 attention, not between anchoring and neutrality.
+
+**Tense: mark which tree you mean.** The cover's default frame is
+the code as it stands, so a sentence about behavior after the
+series reads, unmarked, as a statement about today's tree.
+"Currently the server credits a control record's octets to the RPC
+stream" on one side; "after this series the server marks the
+transport when it consumes a control record" on the other. The
+imperative is not available here. A commit message's imperative is
+addressed to the tree the patch is applied to; the cover is never
+applied, so it has no tree to address. The marker is lexical and
+has to be written. A paragraph does not switch frames without one.
 
 ## What to keep out: the patch roll-call
 

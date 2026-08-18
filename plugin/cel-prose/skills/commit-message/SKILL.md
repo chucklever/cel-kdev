@@ -99,6 +99,47 @@ and a commit log is read as narrative. Reserve lists for genuinely
 enumerable things (a set of affected configs), never for the
 reasoning.
 
+## Tense and mood
+
+The reader has to be able to tell, from a sentence alone, which
+tree it describes: the one in the repository now, or the one the
+patch produces. Mood separates the why from the what, so the two
+halves of the body do not share one. It cannot separate the
+current tree from the one the patch leaves behind, because both
+are indicative; a marker does that.
+
+- The current tree takes present-tense indicative, with the code
+  as the subject: "Every incoming call recomputes the maximum
+  payload size." The body's default frame is the tree as it
+  stands, so the why paragraph needs no marker. Open with
+  "Currently" only where that frame has already moved -- a
+  current-tree sentence that follows the change, or a paragraph
+  that carries both.
+- The change takes the imperative, addressed to the tree:
+  "Compute the size once when the svc_rqst is allocated." Not
+  "this patch computes it once," and not "the size will be
+  computed once." The imperative has no explicit subject, so
+  cel-prose:prose-voice's rule about making the component the
+  subject governs the indicative sentences, not this one.
+- The tree the patch leaves behind takes present-tense indicative
+  too, marked: "After the change, the receive path reads the
+  cached value." Do not reach for "will." A commit message is
+  read after the patch has landed, when the future tense has
+  already come true.
+
+Past tense belongs to what already happened: a commit that landed
+-- "commit 1a2b3c4d5e6f ("nfsd: encode fattr4 attributes") dropped
+the check" -- an incident that was reported or observed, and a
+runtime event the current code produces. It does not belong to the
+code being fixed. "The encoder freed the stid too early" reads as
+though the bug is already gone.
+
+The check: read the what-half on its own. Every sentence in it is
+either an imperative addressed to the tree or a marked claim about
+the tree the patch leaves behind. An unmarked indicative is a
+claim about the current tree that belongs in the why-half, or the
+diff narrated back.
+
 ## Rerolling: rewrite, do not accrete
 
 A message grows longest across review cycles, because each round
@@ -178,12 +219,11 @@ and its cause before naming the correction.
 ```
 commit: Fix path_patterns no-match message to say ANY (OR)
 
-The query tool's commit-summary output printed "No commits matched
-ALL N path pattern(s)" when a path filter excluded everything.
-path_patterns is OR'd, though: the filter keeps a commit when ANY
-pattern matches any changed file (matches_any_pattern), and the
-sibling author and subject messages already say "matched ANY". Only
-the path branch said "ALL".
+The query tool's commit-summary output prints "No commits matched ALL N
+path pattern(s)" when a path filter excludes everything. path_patterns
+is OR'd, though: the filter keeps a commit when ANY pattern matches any
+changed file (matches_any_pattern), and the sibling author and subject
+messages already say "matched ANY". Only the path branch says "ALL".
 
 Say "ANY" to match the OR behavior, mirroring the same fix in the
 MCP server's find_commit and vcommit_similar_commits output. The
