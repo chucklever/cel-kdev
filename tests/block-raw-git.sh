@@ -139,6 +139,19 @@ HOME=$TMPDIR expect_blocked "git -C ~/active commit -m update"
 HOME=$TMPDIR expect_blocked "git -C \$HOME/active commit -m update"
 HOME=$TMPDIR expect_blocked "git -C \${HOME}/active commit -m update"
 
+# A quoted -C target must be read, not stripped with the other quoted
+# strings: stripping it leaves the subcommand as the target, and the
+# guard fails open.
+cd "$TMPDIR/inactive" || exit 1
+expect_blocked "git -C \"$TMPDIR/active\" commit -m update"
+expect_blocked "git -C '$TMPDIR/active' commit -m update"
+HOME=$TMPDIR expect_blocked "git -C \"\$HOME/active\" commit -m update"
+cd "$TMPDIR/active" || exit 1
+expect_blocked "git -C '$TMPDIR/active' commit -m update"
+expect_allowed "git -C \"$TMPDIR/inactive\" commit -m update"
+expect_allowed "git -C '$TMPDIR/inactive' commit -m update"
+expect_blocked "git -C '$TMPDIR/inactive' log; git commit -m update"
+
 if [ "$failures" -ne 0 ]; then
     exit 1
 fi

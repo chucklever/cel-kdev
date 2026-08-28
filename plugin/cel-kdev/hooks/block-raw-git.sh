@@ -10,6 +10,29 @@ fi
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
+# Each "git -C <dir>" invocation targets <dir>; a bare "git
+# <subcommand>" (no -C) targets the hook's cwd -- the session's primary
+# branch. The guard must test stg-activity on the repo each subcommand
+# actually mutates, so collect every -C target rather than only the
+# first: a benign "git -C <plain> ..." must not vouch for a prohibited
+# "git -C <stg> ..." chained on the same line.
+#
+# Collect the targets before the quote strip below, and accept a
+# quoted target. Stripping first deletes a quoted target outright,
+# and the subcommand that follows is then read as the target: the
+# fold further down eats it, no prohibited pattern matches, and the
+# command is allowed. That is a fail-open in the guard's own repo,
+# since "git -C '<stg repo>' commit" is permitted.
+C_TARGET="(\"[^\"]*\"|'[^']*'|[^[:space:]\"']+)"
+mapfile -t GIT_C_DIRS < <(echo "$COMMAND" |
+    grep -oE "\\bgit[[:space:]]+-C[[:space:]]+$C_TARGET" |
+    sed -E "s/.*-C[[:space:]]+//; s/^\"(.*)\"\$/\\1/; s/^'(.*)'\$/\\1/")
+
+# Replace each target with a neutral unquoted token so the quote strip
+# leaves the -C form intact for the bare/-C distinction and the fold
+# below.
+COMMAND=$(echo "$COMMAND" | sed -E "s/\\bgit[[:space:]]+-C[[:space:]]+$C_TARGET/git -C DIR/g")
+
 # Strip quoted strings so that "git commit" inside a message
 # argument (e.g. stg edit -m "...git commit...") is not matched.
 STRIPPED=$(echo "$COMMAND" | sed -e 's/"[^"]*"//g' -e "s/'[^']*'//g")
@@ -23,16 +46,6 @@ STRIPPED=$(echo "$COMMAND" | sed -e 's/"[^"]*"//g' -e "s/'[^']*'//g")
 # prohibited subcommand chained on the same line (e.g.
 # "git merge-base x y; git merge z").
 STRIPPED=$(echo "$STRIPPED" | sed -E 's/\bgit[[:space:]]+(commit-tree|merge-tree|merge-base|merge-file)\b/git PLUMBING/g')
-
-# Each "git -C <dir>" invocation targets <dir>; a bare "git
-# <subcommand>" (no -C) targets the hook's cwd -- the session's primary
-# branch. The guard must test stg-activity on the repo each subcommand
-# actually mutates, so collect every -C target rather than only the
-# first: a benign "git -C <plain> ..." must not vouch for a prohibited
-# "git -C <stg> ..." chained on the same line.
-mapfile -t GIT_C_DIRS < <(echo "$STRIPPED" |
-    grep -oE '\bgit[[:space:]]+-C[[:space:]]+[^[:space:]]+' |
-    sed -E 's/.*-C[[:space:]]+//')
 
 # A bare prohibited git (the subcommand immediately follows "git")
 # targets the cwd. Detect it before folding the -C prefixes away, while
