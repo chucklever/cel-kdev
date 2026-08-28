@@ -49,9 +49,11 @@ email format` nor `git format-patch` writes one by default;
 message without one, and the drop leaves no client-visible
 trace, because the inject path creates no placeholder
 patchset row.  The HTTP 200 `accepted` and the returned ID
-mean only that the event reached the daemon's channel.  The daemon log
-carries the sole signal, `Parse error for unknown: No
-Message-ID header`.
+mean only that the event reached the daemon at the moment of
+return.  Client-side, the only evidence is the row's absence
+from `sashiko-cli list` (see "Confirming a submit landed");
+the daemon log carries the positive signal, `Parse error for
+unknown: No Message-ID header`.
 
 `--thread` makes git write the header, and `stg email format`
 forwards options to `git format-patch` with `-G`.  Prefer
@@ -149,12 +151,17 @@ sashiko-cli --server <url> submit --type mbox \
     <dir>/series.mbox --baseline <public-commit>
 ```
 
-**A remote instance rejects writes by default.**  `submit`,
-`rerun`, and `cancel` require a loopback source address or a
-daemon started with `--enable-unsafe-all-submit`.  The 403
-carries no body, and read endpoints stay ungated, so an
-instance that answers `/api/stats` still refuses a
-submission.
+**A remote instance may reject writes.**  `submit`, `rerun`,
+and `cancel` require a loopback source address or a daemon
+started with `--enable-unsafe-all-submit`.  The 403 carries
+no body, and read endpoints stay ungated, so an instance
+that answers `/api/stats` can still refuse a submission.
+Test the gate rather than assume it: try the direct submit
+first and fall back to the tunnel below on a 403.  The 403
+is loud and costs one command; a tunnel set up for a daemon
+that already accepts LAN writes is silent overhead.  A 0.3.2
+instance took a direct submit from an ordinary LAN host with
+no flag and no tunnel.
 
 The public `https://sashiko.dev` deployment is not a submit
 target.  It runs without that flag, and the tunnel below
@@ -163,7 +170,7 @@ open.  It ingests from the lore lists it tracks; a review
 there means posting the series to one of them.  Everything
 here is for a private instance you or the user runs.
 
-Tunnel rather than reconfigure.  It touches nothing on the
+On a 403, tunnel rather than reconfigure.  It touches nothing on the
 host, and it doubles as the diagnostic: both gates return a
 bare 403, so a 403 that survives the tunnel is the separate
 `read_only` check (daemon started with `--no-api`), which
@@ -198,17 +205,38 @@ and says nothing about it.  Use `submit --type mbox`.
 
 ## Confirming a submit landed
 
-The returned `sashiko-inject-<ts>-<rand>` ID is not a lookup
-key; polling it 404s forever.  The ingest path rewrites the
-group `api-submit` to `manual` and keys the record on the
-mbox's own Message-Id, so poll `/api/patchset?id=<that
-Message-Id>` instead -- stripped of its angle brackets.
-Sashiko trims them on ingest and the lookup is an exact
-match, so a raw captured id 404s until you strip them.  Each
-recipe above leaves that stripped id in `$POLLID`.  A 404 for
-a stripped id,
-after a submit that exited 0, means the message was dropped
-in parsing, not that the review is still queued.
+The poll key varies by server version.  Capture the
+`sashiko-inject-<ts>-<rand>@sashiko.local` ID that `submit`
+prints, but poll the mbox's own Message-Id first: some
+versions rewrite the group `api-submit` to `manual` and key
+the record on that id, and the inject ID 404s there forever.
+Others (0.3.2 among them) key the record on the inject ID
+and the mbox Message-Id 404s instead.  Poll
+`/api/patchset?id=<id>` with the id stripped of its angle
+brackets -- sashiko trims them on ingest and the lookup is
+an exact match, so a raw captured id 404s until you strip
+them.  Each recipe above leaves the stripped mbox id in
+`$POLLID`.  On a 404 for it, poll the inject ID before
+concluding anything.  There is no version probe worth
+running; the two polls are the detection.
+
+When both 404 after a submit that exited 0, read the stored
+key back rather than declaring the message dropped in
+parsing:
+
+```bash
+sashiko-cli --server <url> list          # match on subject and submit time
+sashiko-cli --server <url> show <n> --format json   # <n>: the numeric `id`
+                                                     # list prints (what cancel
+                                                     # takes), or `latest`
+```
+
+After a resubmit, several rows share the subject; take the
+highest numeric id, or `show latest`.  The JSON `message_id`
+field is the id to poll with.  The same JSON carries
+`status`, `baseline`, and the `received_parts`/`total_parts`
+pair.  Only when the patchset is absent from `list` as well
+was the message dropped in parsing.
 
 `/api/stats` lags.  It reported `patchsets: 39` while a
 direct `/api/patchset` lookup returned the record just
@@ -216,8 +244,9 @@ ingested.  Do not read the counter as an empty queue.
 
 For a series, compare `received_parts` against `total_parts`.
 Both are fields of the same `/api/patchset` response, so the
-poll above already carries them.  Do not reach for
-`sashiko-cli show`: its text output renders neither field.
+poll above already carries them, as does `sashiko-cli show
+<id> --format json`.  The text output of `show` renders
+neither field; pass `--format json`.
 Cover letters never count toward `received_parts`, so a
 healthy 8-patch series reads 8 of 8, not 9.  Fewer means the
 threading failure above.
@@ -231,9 +260,9 @@ only when the missing parts arrive -- and there is no delete
 route and no CLI delete.  `sashiko-cli cancel <id>` flips the
 row to `Cancelled` and is the whole cleanup story; it is
 allowed from `Incomplete` without `--force`.  `<id>` is one
-numeric patchset id -- there is no range form -- and it is
-the `id` field of the `/api/patchset` response, not the
-Message-Id you polled with.  A status that cannot be
+numeric patchset id -- there is no range form -- the same
+`id` field of the `/api/patchset` response that `show` took
+above, not the Message-Id you polled with.  A status that cannot be
 cancelled comes back HTTP 200 `not_modified` with exit 0, so
 a loop reports success while cancelling nothing.  Cancelling
 writes to a shared instance and cannot be undone: confirm
