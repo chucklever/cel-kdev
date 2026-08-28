@@ -127,6 +127,18 @@ expect_blocked "git -C $TMPDIR/does-not-exist commit -m update"
 cd "$TMPDIR/inactive" || exit 1
 expect_allowed "git -C $TMPDIR/does-not-exist commit -m update"
 
+# A home-relative -C target is expanded by the hook, since the shell
+# has not run yet when the command text is inspected; without the
+# expansion it would fall back to the cwd check.
+cd "$TMPDIR/active" || exit 1
+HOME=$TMPDIR expect_allowed "git -C ~/inactive commit -m update"
+HOME=$TMPDIR expect_allowed "git -C \$HOME/inactive commit -m update"
+HOME=$TMPDIR expect_allowed "git -C \${HOME}/inactive commit -m update"
+cd "$TMPDIR/inactive" || exit 1
+HOME=$TMPDIR expect_blocked "git -C ~/active commit -m update"
+HOME=$TMPDIR expect_blocked "git -C \$HOME/active commit -m update"
+HOME=$TMPDIR expect_blocked "git -C \${HOME}/active commit -m update"
+
 if [ "$failures" -ne 0 ]; then
     exit 1
 fi

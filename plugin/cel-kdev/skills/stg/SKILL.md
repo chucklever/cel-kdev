@@ -40,13 +40,21 @@ The `block-raw-git.sh` guard hook checks stg-activity against
 the repo the command targets: a leading `git -C <dir>` retargets
 the check at `<dir>` when `<dir>` resolves to a directory,
 otherwise it falls back to the hook's cwd -- the session's
-primary branch -- keeping the guard fail-closed. The hook cannot see a `cd <repo> &&`
-prefix; the harness resets cwd between calls. So when an stg
-session also touches a second, non-stg repo, drive that repo
-with `git -C <repo> <subcommand>` rather than a `cd`. The guard
-then resolves `<repo>`, and once it confirms `<repo>` carries no
-stg stack it permits raw git there. This is not a license to
-bypass the guard on an actual stg branch.
+primary branch -- keeping the guard fail-closed. That fallback
+blocks the command whenever the session's primary branch is
+stg, even though the target repo is not, and the BLOCKED
+message names the primary branch, not the target. The hook
+cannot see a `cd <repo> &&` prefix; the harness resets cwd
+between calls. So when an stg session also touches a second,
+non-stg repo, drive that repo with `git -C <repo> <subcommand>`
+rather than a `cd`, giving `<repo>` as an absolute path or one
+starting with `~/`, `$HOME/`, or `${HOME}/`. The hook inspects
+the command text before the shell expands it and expands only
+those three prefixes itself; `~user/` or any other variable in
+`<repo>` is unresolvable and triggers the cwd fallback. The
+guard then resolves `<repo>`, and once it confirms `<repo>`
+carries no stg stack it permits raw git there. This is not a
+license to bypass the guard on an actual stg branch.
 
 ## CRITICAL: Prohibited git commands
 

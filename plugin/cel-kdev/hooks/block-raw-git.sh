@@ -70,6 +70,15 @@ stg_active() {
 check_cwd=$BARE_PRESENT
 addressed_stg=no
 for dir in "${GIT_C_DIRS[@]}"; do
+    # The hook sees the command text before the shell runs it, so a
+    # leading ~ or $HOME is still literal here. Expand the forms the
+    # shell would, so a -C into a home-relative repo resolves rather
+    # than falling back to the cwd check.
+    case "$dir" in
+        '~'|'~/'*)         dir="$HOME${dir#\~}" ;;
+        '$HOME'|'$HOME/'*) dir="$HOME${dir#\$HOME}" ;;
+        '${HOME}'*)        dir="$HOME${dir#\$\{HOME\}}" ;;
+    esac
     if [ -d "$dir" ]; then
         if stg_active "$dir"; then
             addressed_stg=yes
