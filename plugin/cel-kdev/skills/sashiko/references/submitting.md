@@ -43,8 +43,8 @@ on unposted work has to be rebased onto a public ref first
 (`stg rebase <public-ref>`).  Rebasing after the export
 invalidates the mbox, so the export has to be redone.
 
-**Add a `Message-Id` to a single patch.**  Neither `stg
-email format` nor `git format-patch` writes one by default;
+**Add a `Message-Id` to a single patch.**  `git format-patch`
+does not write one by default;
 `git send-email` adds it at send time.  Sashiko's parser drops a
 message without one, and the drop leaves no client-visible
 trace, because the inject path creates no placeholder
@@ -55,12 +55,13 @@ from `sashiko-cli list` (see "Confirming a submit landed");
 the daemon log carries the positive signal, `Parse error for
 unknown: No Message-ID header`.
 
-`--thread` makes git write the header, and `stg email format`
-forwards options to `git format-patch` with `-G`.  Prefer
-this over inserting the header by hand:
+`--thread` makes git write the header.  Prefer this over
+inserting the header by hand (`stg email format` is a wrapper
+that passes options through to `git format-patch` with `-G`,
+so the same flag works there too):
 
 ```bash
-stg email format -G --thread=shallow -o <dir> <patch>
+git format-patch --thread=shallow -o <dir> -1 <commit>
 POLLID=$(sed -n 's/^[Mm]essage-[Ii][Dd]: //p' <dir>/0001-*.patch | head -1)
 [ -n "$POLLID" ] || { echo "no Message-Id in the export" >&2; exit 1; }
 POLLID=${POLLID#<}; POLLID=${POLLID%>}   # the id to poll with, below
@@ -131,17 +132,20 @@ by hand touches nothing b4 tracks; do not reach for
 `--no-sign` without the user's say-so.
 
 For a series that is not on a b4 prep branch, skip the loop
-entirely -- `stg email format --cover-letter -G
---thread=shallow -o <dir> <first>..<last>` threads every part
-against the cover in one command.  Two things remain.  Fill
+entirely -- `git format-patch --cover-letter --thread=shallow
+-o <dir> <base>..<last>` threads every part against the cover
+in one command.  `<base>` is the commit *below* the first
+patch: a git range excludes its left end, unlike the
+inclusive patch-name range `stg email format` takes.  Two
+things remain.  Fill
 in the `*** SUBJECT HERE ***` placeholder the generated cover
 carries, and concatenate: `submit --type mbox` reads one
 file, so submitting the parts one at a time recreates the
 fragmentation this recipe avoids.
 
 ```bash
-stg email format --cover-letter -G --thread=shallow \
-    -o <dir> <first>..<last>
+git format-patch --cover-letter --thread=shallow \
+    -o <dir> <base>..<last>
 # edit <dir>/0000-*.patch to replace *** SUBJECT HERE ***
 cat <dir>/[0-9][0-9][0-9][0-9]-*.patch > <dir>/series.mbox
 POLLID=$(sed -n 's/^[Mm]essage-[Ii][Dd]: //p' <dir>/0000-*.patch | head -1)
