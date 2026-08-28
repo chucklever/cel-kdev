@@ -1,0 +1,4 @@
+interface:
+  display_name: "semcode"
+  short_description: "Query the semcode kernel source and lore index"
+  default_prompt: "Use $semcode to look up functions, callers, commits, or lore mailing-list threads in the local semcode index."

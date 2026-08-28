@@ -63,6 +63,16 @@ submission needs, the email delivery policy, review-status
 transitions, and the false-positive rate that governs how
 review output should be treated.
 
+### semcode
+
+Teaches coding agents to query [semcode](https://github.com/facebookexperimental/semcode),
+a local semantic index over kernel source trees and the
+lore.kernel.org mailing-list archive: function and type lookup,
+callers and call chains, commit search, and lore thread search.
+Covers the index-freshness contract, which lore lists are
+mirrored locally (an empty result is usually a coverage gap),
+and the unbounded `lore_search` form to avoid.
+
 ## cel-prose
 
 A second plugin in this marketplace, installed separately. It
@@ -95,6 +105,7 @@ plugin/cel-kdev/
     stg/SKILL.md
     perf/SKILL.md
     sashiko/SKILL.md
+    semcode/SKILL.md
     trace-cmd/SKILL.md
 plugin/cel-prose/
   .claude-plugin/
@@ -160,6 +171,7 @@ python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-githu
   --path plugin/cel-kdev/skills/drgn \
   --path plugin/cel-kdev/skills/perf \
   --path plugin/cel-kdev/skills/sashiko \
+  --path plugin/cel-kdev/skills/semcode \
   --path plugin/cel-kdev/skills/stg \
   --path plugin/cel-kdev/skills/trace-cmd
 ```
