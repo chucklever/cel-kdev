@@ -108,19 +108,27 @@ fi
 
 # Allow read-only forms of git branch and config-only changes
 # (--set-upstream-to, --unset-upstream, --edit-description), which
-# only touch .git/config and are invisible to stg.
-# Block only forms that create, delete, rename, or copy branches,
-# as those operations leave stg refs out of sync.
-if echo "$STRIPPED" | grep -qE '\bgit\s+branch\b'; then
-    if ! echo "$STRIPPED" | grep -qE '\s-[dDmMcC]\b'; then
-        exit 0
-    fi
-fi
-
-# Only worktree creation is prohibited here. Read-only worktree
-# inspection does not move HEAD or update stg stack metadata.
-if echo "$STRIPPED" | grep -qE '\bgit\s+worktree\b'; then
-    if ! echo "$STRIPPED" | grep -qE '\bgit\s+worktree\s+add\b'; then
+# only touch .git/config and are invisible to stg. Block the forms
+# that delete, rename, copy, or force-repoint branches, as those
+# operations leave stg refs out of sync. Flagless creation passes;
+# a brand-new branch carries no stack to desync. Likewise only
+# worktree creation is prohibited; read-only worktree inspection
+# does not move HEAD or update stg stack metadata.
+#
+# Test each simple command on its own line so a flag belonging to a
+# neighboring command ("stg series -c" chained after a read-only
+# "git branch --show-current") is not read as a branch-mutating flag,
+# and so a read-only git branch cannot vouch for a prohibited
+# subcommand chained on the same line. The allowed forms are rewritten
+# to a neutral token and the remainder re-tested, mirroring the
+# plumbing rewrite above.
+SEGMENTS=$(echo "$STRIPPED" | tr ';|&' '\n')
+if ! { echo "$SEGMENTS" | grep -E '\bgit\s+branch\b' |
+           grep -qE '\s(--(delete|move|copy|force)\b|-[a-zA-Z]*[dDmMcCfF][a-zA-Z]*\b)'; } &&
+   ! echo "$SEGMENTS" | grep -qE '\bgit\s+worktree\s+add\b'; then
+    REST=$(echo "$SEGMENTS" |
+        sed -E 's/\bgit[[:space:]]+(branch|worktree)\b/git ALLOWED/g')
+    if ! echo "$REST" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pick|checkout|switch|restore|worktree|merge)\b'; then
         exit 0
     fi
 fi

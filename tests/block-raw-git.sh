@@ -85,6 +85,39 @@ expect_blocked "git merge-tree --write-tree base topic && git merge topic"
 
 expect_allowed "git branch"
 expect_allowed "git branch --show-current"
+
+# A -c/-d/-m flag on a neighboring command must not mark a read-only
+# git branch as mutating; this is the orientation batch that was
+# falsely blocked.
+expect_allowed "git branch --show-current; stg series -c"
+expect_allowed "git branch --show-current; stg series -d --short=3; stg top"
+expect_allowed 'git show-ref --verify refs/stacks/$(git branch --show-current)'
+expect_allowed "git branch --show-current; git worktree list"
+
+# A read-only git branch must not vouch for a prohibited subcommand
+# chained on the same line, nor may the mutating flag test lose the
+# flag to the clause split.
+expect_blocked "git branch --show-current; git commit -m update"
+expect_blocked 'git checkout $(git branch --show-current)'
+expect_blocked "git branch --show-current; git worktree add ../topic topic"
+expect_blocked "git branch -d topic; stg series"
+
+# Long-form and bundled mutating flags are as mutating as the
+# separated short forms.
+expect_blocked "git branch --delete topic"
+expect_blocked "git branch --move old new; stg series"
+expect_blocked "git branch -rd origin/topic"
+
+# Force-repointing an existing branch moves its ref just as a
+# delete or rename does; flagless creation stays allowed since a
+# brand-new branch carries no stack to desync.
+expect_blocked "git branch -f topic deadbeef"
+expect_blocked "git branch --force topic deadbeef"
+expect_allowed "git branch topic"
+
+# A worktree word must not vouch for a prohibited subcommand
+# chained after it; the old whole-text test failed open here.
+expect_blocked "git worktree list; git commit -m update"
 expect_allowed "stg edit -m 'mention git commit in text'"
 expect_allowed "git merge-tree --write-tree base topic"
 expect_allowed "git merge-base master topic"
