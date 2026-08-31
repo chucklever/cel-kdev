@@ -174,57 +174,17 @@ just refreshed.
 
 The stack base is the commit each applied patch sits above.
 It is recorded per branch in stg metadata; do not assume
-`origin/master` -- a branch may be rooted on any ref. Pick by
-what you need: the base *commit* comes from `stg id {base}`;
-the *upstream ref name* (the b4 fork-point) is composed from
-the recorded parent, below.
-
-```bash
-# Commit hash of the base (canonical lookup)
-stg id {base}
-
-# Upstream ref name (the form b4 expects as a fork-point).
-# <name> is the current branch (git branch --show-current).
-remote=$(git config branch.<name>.remote)
-parent=$(git config branch.<name>.stgit.parentbranch)
-# Composition maps a bare LOCAL parent (master) to its remote-tracking
-# ref (cel/master). It breaks two ways: parent may already BE a
-# remote-tracking ref (net-next/main), and the push remote
-# (branch.<name>.remote) is often NOT the remote the base tracks -- a
-# series can push to cel/ while sitting on net-next/main. Blind
-# composition then yields a non-existent cel/net-next/main. Try the
-# composed form, fall back to the recorded parent (prefix stripped, so
-# both paths emit the same form) when it does not resolve.
-#
-# Detect the unreliable case up front: derive the remote the base
-# tracks and warn when it differs from the push remote. Even a ref
-# that resolves may then be the wrong same-named branch, so trust
-# stg id {base} for the commit.
-case "$parent" in
-  refs/heads/*) base_remote="$remote" ;;        # local ref -> push remote
-  */*)          base_remote="${parent%%/*}" ;;  # remote-tracking ref (net-next/main)
-  *)            base_remote="$remote" ;;        # bare local name -> push remote
-esac
-[ "$base_remote" = "$remote" ] || \
-  echo "WARN: push remote ($remote) != base remote ($base_remote); trust 'stg id {base}'" >&2
-ref="${remote}/${parent#refs/heads/}"
-git rev-parse --verify -q "$ref" >/dev/null || ref="${parent#refs/heads/}"
-echo "$ref"
-```
-
-`stgit.parentbranch` may be stored as a bare branch name
-(`master`) or as a `refs/heads/` ref; stripping the prefix
-handles both.  Not every stg branch has `parentbranch`
-configured, so `stg id {base}` -- which reads the recorded
-base directly and never hits the composition above -- is the
-canonical lookup when only the commit hash is needed.
-
-**When `branch.<name>.remote` differs from the parent's
-tracked remote** (the WARN case above): the rev-parse guard
-only rejects a ref that does not resolve, so a composed ref
-that *does* resolve but points at a same-named branch on the
-push remote passes silently. `stg id {base}` stays
-authoritative for the base commit.
+`origin/master` -- a branch may be rooted on any ref. The
+base *commit* comes from `stg id {base}`, the canonical
+lookup. The *upstream ref name* (the b4 fork-point) is
+composed from the recorded parent branch, and the
+composition has enough failure modes -- a parent already
+stored as a remote-tracking ref, a push remote that differs
+from the remote the base tracks -- that you must read
+[references/stack-base.md](references/stack-base.md) for the
+recipe and its caveats before composing it. Even when the
+composed ref resolves, trust `stg id {base}` for the base
+commit.
 
 ## Retiring patches upstream has taken
 
@@ -241,9 +201,11 @@ stg clean                      # drop the emptied patches
 
 `<upstream-ref>` is the ref that now carries the patches, not
 an assumed `origin/master`. Usually that is the base's
-upstream, derived in "Finding the stack base" above; when the
-push remote differs from the base remote (the WARN case
-there), it is the ref you actually pushed to.
+upstream, composed per
+[references/stack-base.md](references/stack-base.md) (see
+"Finding the stack base" above); when the push remote differs
+from the remote the base tracks -- the case that file's
+script warns about -- it is the ref you actually pushed to.
 
 Prefer this over `stg commit <patch>`. Both end with the
 patch folded into the base, but `stg commit` never consults
