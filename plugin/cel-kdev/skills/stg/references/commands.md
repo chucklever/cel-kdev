@@ -195,8 +195,8 @@ them from the series, so when an applied entry is a local
 patch, commit the upstream commits by count (`stg commit -n
 <N>`) instead.
 
-See "Recovering a stack detached by a raw reset" in
-SKILL.md.
+See the raw-reset section of recovery.md for the full
+procedure and the three `stg series -d` cases.
 
 ## Rebasing
 

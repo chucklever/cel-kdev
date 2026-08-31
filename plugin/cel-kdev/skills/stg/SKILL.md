@@ -267,10 +267,10 @@ lines first. To bring a pushed one into reach use `stg goto
 order -- not `stg push <patch>`, which reorders the series
 (see that pitfall).
 
-The `stg commit -a` in the raw-reset recovery (see Pitfalls)
-is a separate case: what it absorbs is upstream history that
-`stg repair` turned into patches, not a patch of yours a
-remote took.
+The `stg commit -a` in the raw-reset recovery (see
+references/recovery.md) is a separate case: what it absorbs
+is upstream history that `stg repair` turned into patches,
+not a patch of yours a remote took.
 
 ## Combining branches: there is no stg merge
 
@@ -456,98 +456,25 @@ upstream before re-picking. For the diagnosis, the reason
 the upstream-first repair, see
 [references/conflict-resolution.md](references/conflict-resolution.md).
 
-**Merge commits and repair**: Raw `git merge` on an stg branch
-commits the merge to the stack's HEAD, leaving the patches below
-the merge commit; `stg repair` then reports them "hidden below
-the merge commit" and marks them unapplied. `stg repair` cannot
-convert a merge commit into a patch. Use `stg undo` to remove an
-accidental merge before running `stg repair`. To combine branches
-deliberately, build the merge below the stack base instead of on
-its HEAD -- see "Combining branches: there is no stg merge".
+**Merge commits and repair**: `stg repair` cannot convert a
+merge commit into a patch, so it alone cannot recover from a
+raw `git merge` committed on the stack's HEAD. On noticing
+an accidental merge, or when `stg repair` reports patches
+"hidden below the merge commit", read the "accidental raw
+merge" section of
+[references/recovery.md](references/recovery.md) before
+acting.
 
-**Recovering a stack detached by a raw reset**: when the
-branch was reset to a commit far ahead of the stack base
-(catching master up to origin without stg, say), HEAD and
-the stack top diverge and `stg new`, `goto`, `push`, and the
-rest refuse with "HEAD and stack top are not the same." The
-same error follows any raw git that moved HEAD. The two
-recoveries below diverge on whether the branch is meant to
-sit on the reset target, and nothing in either one recovers
-that intent, so settle it with the user before running
-either.
-
-When the reset was unwanted, the stack log still holds the
-state recorded before it, and restoring that state is the
-whole recovery. A raw reset records no log entry of its
-own, so the newest state listed is the pre-reset one:
-
-```bash
-stg log             # stack states, newest first; the first
-                    # column is the state's meta-sha
-stg reset <state>   # re-attach HEAD to that state
-```
-
-`stg reset` is the one command that consumes that meta-sha
-directly; it is not a git revision anywhere else (see
-"Tracing patch evolution with stg log").
-
-Prefer this over `stg undo` here. Undo steps back one
-recorded *stg* operation, and a raw reset records none, so
-it reverses whatever stg last did before the reset as well.
-Plain `stg reset` with no state resets worktree changes
-only, and `stg reset --hard` discards them; neither
-re-attaches the stack.
-
-Rebuild on the new HEAD only when the reset target is kept:
-
-```bash
-stg repair       # commits between the old base and the new
-                 # HEAD become applied patches; local patches
-                 # unreachable from HEAD go unapplied
-stg series -d    # read it; it decides the next step -- see
-                 # the three cases below
-stg commit -a    # fold those commits into the base, which
-                 # advances to the reset target
-stg push -a      # replay the local patches on top -- use
-                 # stg goto <former-top> instead when only
-                 # part of the stack was applied before the
-                 # reset (see the "stg push -a overshoots"
-                 # pitfall)
-```
-
-How much repair sweeps up depends on the history it walks:
-it follows first parents down from the new HEAD and stops at
-the first merge commit, so it reaches the old base only when
-that path is merge-free. Do not predict the outcome -- read
-`stg series -d` and branch on it:
-
-- Applied set is upstream commits only: `stg commit -a`,
-  then `stg push -a`, as above. On a busy tree the repair
-  turns hundreds of commits into patches; that is the
-  intended intermediate state, so do not stop there thinking
-  it created junk, because `stg commit -a` is the step that
-  absorbs them into the base.
-- A local patch sits among the applied ones, because the
-  reset target already carries its commit: commit the
-  upstream ones by count instead (see
-  references/commands.md), since `stg commit -a` would
-  finalize the local patch into the base too.
-- Nothing applied and no new patches: the walk hit a merge
-  commit before reaching the old base, which is what a
-  mainline reset target usually produces. Repair has already
-  made the new HEAD the base, so skip `stg commit -a` -- it
-  has nothing to absorb -- and go straight to the replay.
-
-Every step here is a
-recorded stack operation, so `stg undo` reverses it,
-including the commit; the reflog is a last resort, not the
-first. Patches the maintainer already took empty out on the
-replay rather than conflict -- resolve conflicts as usual,
-then `stg clean` to drop the ones that emptied. If the
-former top cannot be recovered from `stg log`, ask rather
-than applying the whole stack. Prevention: catch a stack up
-to upstream with `stg rebase <upstream-ref>`; the raw reset
-is what detaches the stack in the first place.
+**Recovering a stack detached by a raw reset**: when a raw
+git command moved HEAD (a `git reset` catching the branch up
+to origin, say), `stg new`, `goto`, `push`, and the rest
+refuse with "HEAD and stack top are not the same." On that
+error, read [references/recovery.md](references/recovery.md)
+before running any recovery command -- the two recovery paths
+diverge on whether the branch is meant to sit on the reset
+target, and the wrong first command destroys the state the
+right one needs. Prevention: catch a stack up to upstream
+with `stg rebase <upstream-ref>`, never a raw reset.
 
 **Conflicting `stg import` creates no patch**: when `stg import`
 cannot apply a patch it aborts atomically -- no patch lands, and
@@ -555,12 +482,10 @@ a plain import leaves the worktree clean, so there is nothing to
 refresh. Re-run with `-3`/`--3way` to get resolvable markers;
 only `--3way` leaves the diff loose in the worktree. After
 resolving and `stg resolved`, a bare `stg refresh` folds the
-change into whatever patch is top, not a patch of its own. Full
-recovery -- recreating the patch, mbox author recovery, detecting
-a stray refresh, the `git apply --reject` hand-rebase, and the
-missing-blob (`--3way` "repository lacks the necessary blob")
-fetch -- is in
-[references/conflict-resolution.md](references/conflict-resolution.md).
+change into whatever patch is top, not a patch of its own. For
+the full recovery, read "Recovering from a failed `stg import`"
+in [references/conflict-resolution.md](references/conflict-resolution.md)
+before acting.
 
 **`git add` before `stg refresh`**: `stg refresh` picks up
 all changes to tracked files automatically. Do not run
@@ -954,8 +879,10 @@ When `stg push` or `stg rebase` produces conflicts:
    ones), not `stg files <patch>`: until the finalizing
    `stg refresh` `stg files` can return empty for the
    in-flight patch, and a loop driven off it fails open --
-   no error, no files, patch silently skipped.  See the
-   reference for the mechanism.
+   no error, no files, patch silently skipped.  See
+   [references/conflict-resolution.md](references/conflict-resolution.md)
+   for the mechanism; "the reference" throughout this
+   section means that file.
 2. Classify each conflict (take-ours, take-theirs,
    concatenate, or semantic).  Resolve trivial cases
    directly.
@@ -967,12 +894,11 @@ When `stg push` or `stg rebase` produces conflicts:
    resolution into whatever patch is top, so if `stg top`
    names a different patch -- the in-flight patch is
    unapplied with the merged content loose in the worktree --
-   do NOT `stg resolved` and do NOT refresh.  Recover first:
-   confirm with `stg log` that the last recorded operation is
-   the conflict to reverse, then `stg undo --hard`
-   (`git stash` unrelated edits first; it discards the
-   worktree) and `stg goto <patch>` to re-derive on the
-   correct top.  See the reference for when undo is unsafe.
+   do NOT `stg resolved` and do NOT refresh.  Read
+   "Recovering an unapplied-in-flight state" in the
+   reference before acting; its `stg undo` recovery is
+   unsafe unless the last recorded stack operation is the
+   conflict itself.
 5. `stg resolved <file>` (not `git add`) after each file.
 6. `stg refresh` to finalize.
 
@@ -980,8 +906,12 @@ If intent cannot be determined, leave conflict markers in
 place and report what is ambiguous rather than guessing.
 
 To abort: `stg undo` reverts the failed operation.  In the
-unapplied-in-flight case (step 4), use `stg undo --hard` to
-also clear the merged content left loose in the worktree.
+unapplied-in-flight case (step 4), `stg undo --hard` also
+clears the merged content left loose in the worktree -- but
+the step-4 gate applies to the abort too: `--hard` discards
+the whole worktree, so `git stash` unrelated edits first,
+and undo only when the conflict is the last recorded stack
+operation.
 
 See [references/conflict-resolution.md](references/conflict-resolution.md)
 for the full context-gathering strategy, classification
