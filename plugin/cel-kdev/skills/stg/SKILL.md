@@ -11,18 +11,34 @@ description: >-
 # stg: patch stack management
 
 When stg is active on a branch, use stg commands instead of
-raw git for all commit operations. Check activation in two
-steps so each command stays simple and avoids unnecessary
-permission prompts:
+raw git for all commit operations. Check activation with two
+read-only commands:
 
 1. `git branch --show-current` — get the branch name
 2. `git show-ref --verify refs/stacks/<branch>` — check
    for the stg stack ref
 
 A zero exit status on step 2 means stg is active; non-zero
-means it is not. Do not combine these into a single shell
-command: pipes, `$()`, and `xargs` are harder for hooks and
-approval rules to inspect and can trigger prompts.
+means it is not. Step 2 needs the branch name: take it from
+step 1's output or from session context that already holds
+it, and write it literally -- `$()` substitution, pipes, and
+`xargs` are harder for approval rules to inspect and can
+trigger permission prompts. Only when the branch name is
+genuinely unknown does step 1 need its own call first. With
+the name in hand, the check may be chained with `;` into one
+command together with the read-only orientation calls below
+(one `stg series` call chosen per "Scope orientation on a
+deep stack" -- `-c` to probe when depth is unknown, `-d`
+directly when the stack is known shallow -- and `stg top` if
+needed), or any other read-only command: the raw-git guard
+tests each simple command on its own, so a `-c` or `-d` on
+a neighboring command does not block the batch. When step 2
+is chained, its exit status is not separately visible; judge
+by its output instead -- `show-ref --verify` prints the ref
+line when the stack exists and `fatal: ... not a valid ref`
+when it does not. On a non-stg branch the chained stg calls
+fail alongside step 2; that is the expected answer, not an
+error to chase.
 
 Once stg is active, orient before your first mutating
 command (`new`, `refresh`, `goto`, `push`, `pop`, `float`,
