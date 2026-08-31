@@ -825,6 +825,18 @@ temp file and pass it with `--file`; both commands accept
 it. On a partially-applied stack, check the applied state
 before `stg new` -- see the `stg new` pitfall in Pitfalls.
 
+Keep the repo as the working directory when the temp file
+lives elsewhere (the session scratchpad): never `cd` into
+its directory -- write the file at its absolute path and
+pass that same absolute path to `--file`. A
+`cd <scratchpad> && ... && stg edit --file <name>` compound
+runs stg outside the repo and fails with "Could not find a
+git repository" -- or, if the scratchpad sits under some
+other git tree, silently targets the wrong repo. Issuing
+the `cd` as its own command is no better: the harness
+resets cwd between calls, so the next stg invocation never
+sees it.
+
 ### Trailer flags
 
 `stg new`, `stg edit`, and `stg refresh` accept three
