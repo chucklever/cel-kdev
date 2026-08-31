@@ -498,14 +498,18 @@ conflicts have been cleared, not for routine refreshes.
 
 **Dirty index guard on `stg refresh`**: When changes exist
 in both the index and the worktree (e.g., after `stg add`,
-`stg mv`, or `stg rm` staged some paths), plain `stg refresh`
-refuses with "the index is dirty." Two flags override this:
+`stg mv`, `stg rm`, or `stg resolved` staged some paths),
+plain `stg refresh` refuses with "the index is dirty." The
+staged and unstaged changes need not touch the same file.
+Two flags override this:
 
 - `--index` (`-i`): refresh only from what is staged in the
   index, ignoring worktree changes. Use after `stg add`,
   `stg mv`, or `stg rm` when only the staged changes belong
-  in the patch. Mutually exclusive with pathspecs, `--update`,
-  and `--force`.
+  in the patch, and to finalize a conflict resolution after
+  `stg resolved` (see "Merge conflict resolution").
+  Mutually exclusive with pathspecs, `--update`, and
+  `--force`.
 - `--force` (`-F`): fold in all changes from both the index
   and the worktree, bypassing the dirty-index check.
 
@@ -900,7 +904,18 @@ When `stg push` or `stg rebase` produces conflicts:
    unsafe unless the last recorded stack operation is the
    conflict itself.
 5. `stg resolved <file>` (not `git add`) after each file.
-6. `stg refresh` to finalize.
+6. `stg refresh --index` to finalize.  `stg resolved` stages
+   the file, and when any tracked file also carries an
+   unstaged change -- common mid-resolution -- a bare
+   `stg refresh` refuses with "the index is dirty".
+   `--index` folds in exactly what was staged; an unstaged
+   edit is silently left out, so check `git status --short`
+   for second-column `M` entries first.  Use `--force`
+   instead only when the unstaged edits belong in the patch
+   too -- a file fixed after its `stg resolved`, or a fix in
+   a file that never conflicted -- but it also sweeps in
+   every other dirty tracked file (see "Unintended files in
+   `stg refresh`").
 
 If intent cannot be determined, leave conflict markers in
 place and report what is ambiguous rather than guessing.

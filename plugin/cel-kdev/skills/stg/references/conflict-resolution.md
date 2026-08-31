@@ -214,8 +214,25 @@ top-patch check above before `stg resolved`.
 stg resolved <file>
 
 # Once all conflicts are resolved:
-stg refresh
+stg refresh --index
 ```
+
+`stg resolved` stages the file. A bare `stg refresh` handles a
+staged-only resolution, but when any tracked file also carries an
+unstaged change -- an edit made after its `stg resolved`, or a
+dirty file unrelated to the conflict -- it refuses with "error:
+the index is dirty; consider using `--index` or `--force`".
+`stg refresh --index` folds in exactly what `stg resolved` staged
+and succeeds in both states, so it is the default finalizer here.
+An unstaged edit is silently left out: the refresh succeeds and
+the edit stays dirty in the worktree, with nothing to flag the
+omission. Before finalizing, check `git status --short` -- a
+second-column `M` is an unstaged edit; decide whether each
+belongs in the patch. Reach for `--force` only when such edits
+belong in the patch too (a caller fixed after its file was
+marked resolved, or a consistency fix in a file that never
+conflicted, say); it also sweeps in every other dirty tracked
+file, which is the "Unintended files in `stg refresh`" pitfall.
 
 ## Step 6: Verify cross-hunk consistency
 
@@ -224,6 +241,12 @@ signature, variable name, or data structure layout, check
 all other callers and references in the file.  A resolution
 that fixes the conflicting hunk but leaves a stale reference
 200 lines away produces a silent build break.
+
+A fix made here lands after Step 5's finalizing refresh, so
+fold it in with another refresh.  The index is clean after
+Step 5, so a bare `stg refresh` works -- scope it
+(`stg refresh <pathspec>`) when the worktree still carries
+dirt that does not belong in the patch.
 
 ```bash
 # Quick check: does the resolved file compile?
@@ -384,4 +407,6 @@ recoveries:
   reverts later changes. Delete the `.rej` files and confirm none
   remain with `git status` before refreshing. `stg add` any new
   files, then `stg refresh` -- or `stg refresh --force` when
-  `stg add` left the index dirty.
+  `stg add` left the index dirty (the `git apply` edits are
+  unstaged and belong in the patch, so `--index` would leave
+  them out).
