@@ -264,7 +264,7 @@ sashiko source tree, or install per the upstream README.
 | `sashiko-cli list [filter]` | List patchsets (`pending`, `failed`, list-name, etc.) |
 | `sashiko-cli status` | Daemon status and aggregate counts |
 | `sashiko-cli submit <input>` | Queue a patch for review. Only `--type mbox` ships patch content; the commit and range forms send a bare ref the daemon resolves in *its own* clone, so they review something else without failing. For a lore thread, `--type thread` with a bare Message-Id (not a URL). See "Submitting a patch" |
-| `sashiko-cli local [<input>]` | Run a one-shot review in the local tree without enqueuing (defaults to `HEAD`).  Ignores `--server`; it cannot target a remote instance |
+| `sashiko-cli local [<input>]` | Run a one-shot review in the local tree without enqueuing (defaults to `HEAD`).  Ignores `--server`; it cannot target a remote instance.  The review is a full LLM pass that routinely outruns a foreground shell call, and its stdout is the only copy of the result -- nothing is stored, so a timed-out run forfeits the paid review.  Always start it with the shell tool's background mode (`run_in_background`), never a shell `&` or a raised foreground timeout, with output redirected to a file outside the repo (the session scratchpad, when one is provided), and read that file when the run exits |
 | `sashiko-cli rerun <id>` | Re-review a completed patchset |
 | `sashiko-cli cancel <id>` | Cancel a `Pending` or `Incomplete` review.  Writes to a shared instance and cannot be undone -- confirm with the user first |
 
