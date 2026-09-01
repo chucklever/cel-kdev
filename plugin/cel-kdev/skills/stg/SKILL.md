@@ -18,59 +18,46 @@ read-only commands:
 2. `git show-ref --verify refs/stacks/<branch>` — check
    for the stg stack ref
 
-A zero exit status on step 2 means stg is active; non-zero
-means it is not. Step 2 needs the branch name: take it from
-step 1's output or from session context that already holds
-it, and write it literally -- `$()` substitution, pipes, and
+A zero exit status on step 2 means stg is active. Write the
+branch name literally -- `$()` substitution, pipes, and
 `xargs` are harder for approval rules to inspect and can
-trigger permission prompts. Only when the branch name is
-genuinely unknown does step 1 need its own call first. With
+trigger permission prompts; take the name from step 1's
+output or from session context that already holds it. With
 the name in hand, the check may be chained with `;` into one
-command together with the read-only orientation calls below
-(one `stg series` call chosen per "Scope orientation on a
-deep stack" -- `-c` to probe when depth is unknown, `-d`
-directly when the stack is known shallow -- and `stg top` if
-needed), or any other read-only command: the raw-git guard
-tests each simple command on its own, so a `-c` or `-d` on
-a neighboring command does not block the batch. When step 2
-is chained, its exit status is not separately visible; judge
-by its output instead -- `show-ref --verify` prints the ref
-line when the stack exists and `fatal: ... not a valid ref`
-when it does not. On a non-stg branch the chained stg calls
-fail alongside step 2; that is the expected answer, not an
-error to chase.
+command together with other read-only calls (the orientation
+`stg series` call below, `stg top`): the raw-git guard tests
+each simple command on its own. When chained, step 2's exit
+status is not separately visible; judge by its output --
+`show-ref --verify` prints the ref line when the stack
+exists and `fatal: ... not a valid ref` when it does not. On
+a non-stg branch the chained stg calls fail alongside step
+2; that is the expected answer, not an error to chase.
 
 Once stg is active, orient before your first mutating
 command (`new`, `refresh`, `goto`, `push`, `pop`, `float`,
 `sink`): run `stg series -d` once to see the applied set --
 the current top (`>`) and whether any `-` unapplied patches
-sit below it. On a deep stack, probe the depth and scope
-that call -- see "Scope orientation on a deep stack". Many
-rules below turn on this state: where `stg new` lands,
-whether `stg push -a` overshoots, and which patch a bare
-`stg refresh` folds into.
-Orient once per session, not before every command (see
-"Token efficiency").
+sit below it. Many rules below turn on this state: where
+`stg new` lands, whether `stg push -a` overshoots, and which
+patch a bare `stg refresh` folds into. Orient once per
+session, not before every command; on a deep stack, probe
+with `stg series -c` first and window the call (see "Scope
+orientation on a deep stack" under Token efficiency).
 
-The `block-raw-git.sh` guard hook checks stg-activity against
-the repo the command targets: a leading `git -C <dir>` retargets
-the check at `<dir>` when `<dir>` resolves to a directory,
-otherwise it falls back to the hook's cwd -- the session's
-primary branch -- keeping the guard fail-closed. That fallback
-blocks the command whenever the session's primary branch is
-stg, even though the target repo is not, and the BLOCKED
-message names the primary branch, not the target. The hook
-cannot see a `cd <repo> &&` prefix; the harness resets cwd
-between calls. So when an stg session also touches a second,
-non-stg repo, drive that repo with `git -C <repo> <subcommand>`
-rather than a `cd`, giving `<repo>` as an absolute path or one
-starting with `~/`, `$HOME/`, or `${HOME}/`. The hook inspects
-the command text before the shell expands it and expands only
-those three prefixes itself; `~user/` or any other variable in
-`<repo>` is unresolvable and triggers the cwd fallback. The
-guard then resolves `<repo>`, and once it confirms `<repo>`
-carries no stg stack it permits raw git there. This is not a
-license to bypass the guard on an actual stg branch.
+The `block-raw-git.sh` guard hook checks stg-activity
+against the repo a command targets. When an stg session also
+touches a second, non-stg repo, drive that repo with
+`git -C <repo> <subcommand>`, giving `<repo>` as an absolute
+path or one starting with `~/`, `$HOME/`, or `${HOME}/` --
+never a `cd <repo> &&` prefix, which the hook cannot see
+(and the harness resets cwd between calls anyway). Any other
+path form is unresolvable to the hook and falls back to
+checking the session's primary branch, blocking the command
+whenever that branch is stg even though the target repo is
+not. See
+[references/raw-git-guard.md](references/raw-git-guard.md)
+for the fallback mechanics. This is not a license to bypass
+the guard on an actual stg branch.
 
 ## CRITICAL: Prohibited git commands
 
@@ -96,7 +83,7 @@ absence from the table is not permission to reach for raw git.
 | `git rebase -i` (squash) | fold workflow (see "Combining patches: avoid stg squash") |
 | `git worktree add` | (not supported with stg) |
 | `git checkout <branch>` / `git switch <branch>` | `stg branch <branch>` |
-| `git checkout`/`git restore` (pathspec, any form) | prohibited; leave worktree dirty + scope `stg refresh <pathspec>` (see prose) |
+| `git checkout`/`git restore` (pathspec, any form) | prohibited; leave worktree dirty + scope `stg refresh <pathspec>` (see Pitfalls) |
 | `git merge` | No stg merge; build a base merge commit and `stg rebase` onto it (see "Combining branches: there is no stg merge") |
 
 This applies to all agents and subagents.
@@ -107,32 +94,22 @@ runtime hook's `git branch -> stg branch` line refers to
 this.
 
 `git checkout` is not used on an stg branch in any form,
-period. This covers every surface: the branch forms
-`git checkout <branch>`, `git checkout -b`, and
-`git switch`; and the pathspec forms `git checkout <file>`,
-`git checkout .`, `git checkout <commit> -- <file>`, and
-`git restore [--staged] <file>`. The branch-switching form
-bypasses stg's metadata bookkeeping. The pathspec form does
-not move HEAD, but it is equally prohibited: it conflates
-"discard this from the worktree" with "keep this out of the
-patch." Reverting a file in the worktree does not remove an
-already-refreshed change from the patch commit -- the stale
-diff stays baked in, and a later `stg refresh` cannot undo
-it, so the patch must be deleted and recreated. When only
-some worktree changes belong in the next patch, scope the
-refresh with `stg refresh <pathspec>` and leave the rest of
-the worktree modified (see Pitfalls).
+period. The branch forms (`git checkout <branch>`,
+`git checkout -b`, `git switch`) bypass stg's metadata
+bookkeeping. The pathspec forms (`git checkout <file>`,
+`git checkout .`, `git checkout <commit> -- <file>`,
+`git restore [--staged] <file>`) do not move HEAD but are
+equally prohibited -- see the "Never `git checkout`/
+`git restore`" pitfall for why and what to do instead.
 
 **`git worktree`** creates a new checkout that shares refs
-with the main working tree. Stg tracks its stack state in
-refs (`refs/stacks/<branch>`); a worktree that checks out
+with the main working tree; stg tracks its stack state in
+refs (`refs/stacks/<branch>`), so a worktree that checks out
 the same branch or manipulates shared refs corrupts the
-stack metadata just like a raw `git commit` would.
-
-This rule overrides the `superpowers:using-git-worktrees`
-skill on stg branches.  Do not create a worktree for an
-stg branch even when that skill recommends one for plan
-isolation; on an stg branch, the stg prohibition wins.
+stack metadata just like a raw `git commit` would. This
+overrides the `superpowers:using-git-worktrees` skill on stg
+branches: do not create a worktree for an stg branch even
+when that skill recommends one for plan isolation.
 
 ## CRITICAL: No parallel stg operations
 
@@ -194,9 +171,7 @@ It is recorded per branch in stg metadata; do not assume
 base *commit* comes from `stg id {base}`, the canonical
 lookup. The *upstream ref name* (the b4 fork-point) is
 composed from the recorded parent branch, and the
-composition has enough failure modes -- a parent already
-stored as a remote-tracking ref, a push remote that differs
-from the remote the base tracks -- that you must read
+composition has enough failure modes that you must read
 [references/stack-base.md](references/stack-base.md) for the
 recipe and its caveats before composing it. Even when the
 composed ref resolves, trust `stg id {base}` for the base
@@ -206,49 +181,18 @@ commit.
 
 After a remote takes a patch -- a maintainer merging part of
 a series, or a plain `git push` to a repo you own -- clear it
-from the stack by re-deriving from upstream rather than
-folding it in locally:
-
-```bash
-git fetch <remote>
-stg rebase -m <upstream-ref>   # patches already upstream go empty
-stg clean                      # drop the emptied patches
-```
-
-`<upstream-ref>` is the ref that now carries the patches, not
-an assumed `origin/master`. Usually that is the base's
-upstream, composed per
-[references/stack-base.md](references/stack-base.md) (see
-"Finding the stack base" above); when the push remote differs
-from the remote the base tracks -- the case that file's
-script warns about -- it is the ref you actually pushed to.
-
-Prefer this over `stg commit <patch>`. Both end with the
-patch folded into the base, but `stg commit` never consults
-the remote: a push that failed, or landed as something other
-than what you sent, leaves the stack asserting work the
-remote never received. The rebase checks -- a patch upstream
-did not take comes back non-empty and survives the
-`stg clean`. Read a survivor before concluding the push
-failed, though: a patch the remote took in modified form also
-comes back non-empty, because the check compares content, not
-intent, and keeping that one re-sends work upstream already
-has.
-
-`-m` tests only the applied patches. `stg rebase` pops the
-applied set and pushes back that same set, so an unapplied
-patch is never re-derived: one upstream took stays non-empty,
-`stg clean` leaves it in the stack, and it conflicts or
-duplicates on its next push. Check `stg series -d` for `-`
-lines first. To bring a pushed one into reach use `stg goto
-<patch>`, which applies the intervening patches in series
-order -- not `stg push <patch>`, which reorders the series
-(see that pitfall).
-
-The `stg commit -a` in the raw-reset recovery (see
-references/recovery.md) is a separate case: what it absorbs
-is upstream history that `stg repair` turned into patches,
-not a patch of yours a remote took.
+from the stack by re-deriving from upstream: `git fetch`,
+`stg rebase -m <upstream-ref>` (patches already upstream go
+empty), `stg clean` (drop the emptied ones). Never
+`stg commit <patch>`, which consults no remote and can leave
+the stack asserting work upstream never received. The rebase
+re-derives only the *applied* set, so check `stg series -d`
+for `-` lines first and bring a pushed-but-unapplied patch
+into reach with `stg goto` (not `stg push <patch>`, which
+reorders). Before running this, read
+[references/retiring.md](references/retiring.md) for
+choosing `<upstream-ref>`, reading a patch that survives the
+clean, and the unapplied-patch trap.
 
 ## Combining branches: there is no stg merge
 
@@ -258,27 +202,21 @@ multi-parent merge commit (this is why `stg repair` refuses
 merge commits). The base *below* the stack can still be any
 commit, including a merge. Never run raw `git merge` on an stg
 branch -- it commits the merge to the stack's HEAD and corrupts
-the stack (see the "Merge commits and repair" pitfall). To
-combine branches, build the merge as ordinary history at the
-base, then replay the stack onto it with `stg rebase`.
+the stack (see the "Merge commits and repair" pitfall).
 
-Split on intent:
-
-- **Linearize onto a new base** (the stg-shaped task): no merge
-  commit involved.
-  - `stg rebase <new-base>` -- replay the stack on a new base
-    (e.g. a release tag).
-  - `stg pick -B <branch> <commit>` / `stg pick <sha>` -- absorb
-    individual commits from another branch as new patches (no
-    sign-off added; see the `stgit.autosign` pitfall).
-  - `stg import -M <mbox>` -- pull a series in as patches.
-- **True merge** (keep a merge commit as the base): construct the
-  merge commit with plumbing (never moves HEAD), anchor it under
-  `refs/tmp/`, then `stg rebase` onto it. See
-  [references/combining-branches.md](references/combining-branches.md)
-  for the `merge-tree`/`commit-tree` recipe, octopus merges,
-  release-rebase seeding, the temp-ref anchoring rationale, and
-  the `diff --stat` base check.
+Split on intent. **Linearize onto a new base** (the
+stg-shaped task, no merge commit involved): `stg rebase
+<new-base>` to replay the stack on a new base (e.g. a
+release tag); `stg pick -B <branch> <commit>` /
+`stg pick <sha>` to absorb individual commits as new patches
+(no sign-off added; see the `stgit.autosign` pitfall);
+`stg import -M <mbox>` to pull a series in. **True merge**
+(keep a merge commit as the base): construct the merge with
+plumbing (never moves HEAD), anchor it under `refs/tmp/`,
+then `stg rebase` onto it -- see
+[references/combining-branches.md](references/combining-branches.md)
+for the `merge-tree`/`commit-tree` recipe, octopus merges,
+release-rebase seeding, and the `diff --stat` base check.
 
 ## Combining patches: avoid stg squash
 
@@ -286,41 +224,13 @@ Split on intent:
 new patch whose `stg log` history begins at the squash; the
 change history of every input patch is discarded. Do not use
 it to fold a fix patch into the patch it corrects. Fold the
-patch by hand instead -- the fold appears as ordinary refresh
-and edit entries in the surviving patch's history.
-
-To fold patch B into the patch A beneath it:
-
-```bash
-orig_top=$(stg top)          # topmost applied patch, to restore at the end
-stg export -d <dir> B        # writes <dir>/B: B's message + diff
-stg pop B
-stg goto A                   # make A top (stg fold applies to the
-                             # top patch); no-op only when B was the
-                             # top patch directly above A
-stg fold <dir>/B             # apply B's diff to the worktree
-stg refresh                  # fold the change into A
-stg edit --file <msg-file> A # combined message, if needed
-stg delete B
-[ "$orig_top" = B ] && orig_top=A  # if B itself was the top patch, the
-                                   # fold deleted it; goto A instead
-stg goto "$orig_top"         # restore the prior applied set; never
-                             # 'stg push -a' here (see Pitfalls).
-```
-
-`<dir>/B` is a full patch file (message plus diff), not a
-commit message. When A's message needs text from B's, write
-the combined message to a temp file and pass that file as
-`<msg-file>` -- do not pass `<dir>/B`. When A carries a
-`Signed-off-by`, re-include that line in the combined message
-to preserve it; `stg edit --file` does not autosign, so an
-omitted trailer drops the one A had. A patch created while
-`stgit.autosign` was unset carries none; do not add one.
-After the fold the worktree holds only B's diff,
-so a bare `stg refresh` is correct; scope it with a pathspec
-only when the worktree was already dirty before the fold.
-A content change may invalidate existing Reviewed-by tags
-on A.
+patch by hand instead -- export, pop, goto, `stg fold`,
+refresh -- so the fold appears as ordinary refresh and edit
+entries in the surviving patch's history. Follow the recipe
+in [references/folding.md](references/folding.md); it
+carries message-combining, trailer-preservation, and
+restore-position caveats that are easy to get wrong from
+memory.
 
 ## Pitfalls
 
@@ -341,98 +251,69 @@ The named forms reposition that one patch -- they do not step
 the stack in series order. Using them to walk a stack lifts
 patches ahead of their prerequisites, and later pushes hit
 context-shift conflicts whose root cause is the silent
-reordering, not the patches. To navigate without reordering
-use `stg goto <name>`, or `stg push -n N` / `stg push -a` for
+reordering. To navigate without reordering use
+`stg goto <name>`, or `stg push -n N` / `stg push -a` for
 forward steps. See [references/commands.md](references/commands.md).
 
 **`stg new` inserts above the current top, not at the series
-end**: `stg new` places the new patch immediately above the
-current top (`>`). On a partially-applied stack -- top is a
-mid-series patch with `-` unapplied patches below it -- a patch
-meant for the END of the series lands between the applied set
-and those unapplied patches, mid-series. Before `stg new`,
-check `stg series`: any `-` line means the stack is partial
-(unapplied patches always sit below the top). No `-` lines
-means the top is already the series end and `stg new` appends
-correctly -- no action needed. Run `stg series` now if you
-have not oriented this session.
-To append at the true end, `stg push -a` first so the top
-becomes the last patch, then `stg new`. Do this only when
-applying the whole stack is genuinely intended: `push -a`
-applies every unapplied patch and leaves the stack fully
-applied -- a state change beyond just adding a patch -- and any
-patch unapplied on purpose may raise the stale-context
-conflicts the "`stg push -a` overshoots" pitfall describes.
-If you cannot tell whether the new patch belongs at the end
-rather than above the current top, or whether the unapplied
-patches should be applied at all, do NOT `push -a`: create the
-patch above the current top and report its position, or ask
-the user. This is the one case where `push -a` is wanted -- it
-still applies the whole stack as that pitfall warns, but here
-that is the goal.
+end.** On a partially-applied stack (any `-` line in
+`stg series`; run it now if you have not oriented this
+session), a patch meant for the END of the series lands
+mid-series, between the applied set and the unapplied
+patches. No `-` lines means the top is already the series
+end and `stg new` appends correctly. To append at the true
+end of a partial stack, `stg push -a` first, then `stg new`
+-- but only when applying the whole stack is genuinely
+intended: `push -a` is a state change beyond adding a patch,
+and patches left unapplied on purpose may raise stale-context
+conflicts. If you cannot tell whether the new patch belongs
+at the end, or whether the unapplied patches should be
+applied at all, do NOT `push -a`: create the patch above the
+current top and report its position, or ask the user.
 
 **`stg push -a` overshoots the prior state**: after a
 goto-based edit (fold, message edit, reorder), reapply by
-returning to the patch that was top before the goto --
-`stg goto <original-top>` -- not `stg push -a`. Patches left
-unapplied before the edit are usually unapplied on purpose
-(not recently rebased, likely to conflict); `push -a` applies
-them too, overshooting the prior applied set and often hitting
-stale-context conflicts in a patch unrelated to the edit.
-Record the original top with `stg top` before the goto. Use
-`push -a` only when the intent is genuinely to apply the whole
-stack. One such case is appending a patch at the true
-series end on a partial stack, which requires the whole stack
-applied first (see the `stg new` pitfall above) -- but only
-when that full application is itself intended.
+returning to the patch that was top before the goto -- record
+it with `stg top` first, then `stg goto <original-top>` --
+not `stg push -a`. Patches left unapplied before the edit are
+usually unapplied on purpose (not recently rebased, likely to
+conflict); `push -a` applies them too, overshooting the prior
+applied set. Use `push -a` only when applying the whole stack
+is itself the goal (e.g. the series-end append above).
 
 **Editing a non-top patch cascades conflicts on re-push.**
-When a fix belongs in a lower patch, `stg goto` positions it
-correctly -- but re-pushing the stack afterward re-runs a
-3-way merge for every intervening patch. If the edited line
-sits adjacent to lines those patches also add or remove (a
-shared prototype/declaration list, an enum, a struct-member
-block), each patch conflicts in turn: a one-line change can
-fan out to N trivial "both deleted adjacent lines" conflicts,
-and on a large file each conflict re-injects the whole file
-into context.
-
+Re-pushing the stack after a `stg goto` edit re-runs a 3-way
+merge for every intervening patch. When the edited line sits
+adjacent to lines those patches also add or remove (a shared
+prototype list, an enum, a struct-member block), a one-line
+change can fan out to N trivial "both deleted adjacent
+lines" conflicts, each re-injecting the file into context.
 Before such an edit, check whether the intervening patches
-touch the same region -- `stg diff -r <target>..<top> --
-<file>` shows exactly what they change there (note the range
-takes no `~`: it excludes target's own diff, showing only
-what the patches above it touch). For a quick scan, `git log
--S<symbol> -- <file>`. If they do, tell the
-user the re-push cost up front and confirm, rather than
-discovering it mid-cascade. The resolution is usually
-mechanical (drop both adjacent deletions), so the value is
-the a-priori warning, not the fix. If you cannot cheaply tell
-whether the region overlaps, say so and let the user decide
-rather than guessing.
+touch the same region: `stg diff -r <target>..<top> --
+<file>` shows exactly what they change there (the range
+takes no `~`: it excludes target's own diff), or `git log
+-S<symbol> -- <file>` for a quick scan. If they overlap,
+tell the user the re-push cost up front and confirm rather
+than discovering it mid-cascade; if you cannot cheaply tell,
+say so and let the user decide.
 
 **A `stg pick` conflict means a skipped prerequisite, not a
-bad patch.** This is not the cascade above: there the context
-shifts because an intervening patch on the destination stack
-edits the same region, whereas a pick conflicts because the
-destination never received the commit the picked patch was
-built on, so the context its hunks expect is missing. Do not
-resolve the markers in place: folding the missing fix into the
-dependent patch loses that fix's standalone commit along with
-the `Fixes:` and `Cc: stable` trailers it carries. The
-conflicted patch is left APPLIED as top, so `stg top` names it
-and the generic resolution flow below reads it as an ordinary
-push conflict to resolve. It is not one.
-
-Back the pick out instead: `stg undo --hard` after a plain
-pick, or a bare `stg reset --hard` after `stg pick --fold` or
-`--update`, which create no patch and so leave nothing to undo.
-Both discard the index and worktree, and `stg pick` refuses to
-start unless both are clean, so the only content dropped is the
-failed merge. Then identify the prerequisite and land it
-upstream before re-picking. For the diagnosis, the reason
-`git stash` cannot substitute for `stg reset --hard` here, and
-the upstream-first repair, see
-[references/conflict-resolution.md](references/conflict-resolution.md).
+bad patch.** Unlike the cascade above, a pick conflicts
+because the destination never received the commit the picked
+patch was built on. Do not resolve the markers in place:
+folding the missing fix into the dependent patch loses that
+fix's standalone commit along with its `Fixes:` and
+`Cc: stable` trailers. The conflicted patch is left APPLIED
+as top, so the generic resolution flow misreads it as an
+ordinary push conflict. Back the pick out instead --
+`stg undo --hard` after a plain pick, or a bare
+`stg reset --hard` after `stg pick --fold`/`--update` (which
+create no patch); both discard only the failed merge, since
+`stg pick` refuses to start dirty. Then land the
+prerequisite upstream before re-picking. See "Pick
+conflicts" in
+[references/conflict-resolution.md](references/conflict-resolution.md)
+for the diagnosis and why `git stash` cannot substitute.
 
 **Merge commits and repair**: `stg repair` cannot convert a
 merge commit into a patch, so it alone cannot recover from a
@@ -448,11 +329,10 @@ git command moved HEAD (a `git reset` catching the branch up
 to origin, say), `stg new`, `goto`, `push`, and the rest
 refuse with "HEAD and stack top are not the same." On that
 error, read [references/recovery.md](references/recovery.md)
-before running any recovery command -- the two recovery paths
-diverge on whether the branch is meant to sit on the reset
-target, and the wrong first command destroys the state the
-right one needs. Prevention: catch a stack up to upstream
-with `stg rebase <upstream-ref>`, never a raw reset.
+before running any recovery command -- the wrong first
+command destroys the state the right one needs. Prevention:
+catch a stack up to upstream with `stg rebase
+<upstream-ref>`, never a raw reset.
 
 **Conflicting `stg import` creates no patch**: when `stg import`
 cannot apply a patch it aborts atomically -- no patch lands, and
@@ -466,101 +346,76 @@ in [references/conflict-resolution.md](references/conflict-resolution.md)
 before acting.
 
 **`git add` before `stg refresh`**: `stg refresh` picks up
-all changes to tracked files automatically. Do not run
-`git add <file> && stg refresh` or `stg add <file> &&
-stg refresh` -- the staging step is unnecessary. `stg add`
-is needed only when introducing a new file to the repository
-(adding it to the tracked list for the first time).
-`stg resolved` is needed only to indicate that merge
-conflicts have been cleared, not for routine refreshes.
+all changes to tracked files automatically; do not stage
+first. `stg add` is needed only when introducing a new file
+to the repository; `stg resolved` only to clear merge
+conflicts, not for routine refreshes.
 
 **Dirty index guard on `stg refresh`**: When changes exist
 in both the index and the worktree (e.g., after `stg add`,
-`stg mv`, `stg rm`, or `stg resolved` staged some paths),
-plain `stg refresh` refuses with "the index is dirty." The
-staged and unstaged changes need not touch the same file.
-Two flags override this:
+`stg mv`, `stg rm`, or `stg resolved` staged some paths --
+the staged and unstaged changes need not touch the same
+file), plain `stg refresh` refuses with "the index is
+dirty." Two overrides:
 
-- `--index` (`-i`): refresh only from what is staged in the
-  index, ignoring worktree changes. Use after `stg add`,
-  `stg mv`, or `stg rm` when only the staged changes belong
-  in the patch, and to finalize a conflict resolution after
-  `stg resolved` (see "Merge conflict resolution").
-  Mutually exclusive with pathspecs, `--update`, and
-  `--force`.
+- `--index` (`-i`): refresh only from what is staged,
+  ignoring worktree changes. Use after `stg add`, `stg mv`,
+  or `stg rm` when only the staged changes belong in the
+  patch, and to finalize a conflict resolution after
+  `stg resolved`. Mutually exclusive with pathspecs,
+  `--update`, and `--force`.
 - `--force` (`-F`): fold in all changes from both the index
-  and the worktree, bypassing the dirty-index check.
+  and the worktree.
 
 **Unintended files in `stg refresh`**: bare `stg refresh`
 captures *all* modified tracked files, not just the ones
-edited for the current patch. If the worktree has unrelated
-dirty files (generated artifacts, uncommitted work from a
-prior step), they silently enter the patch. When only
-specific files belong in the patch, pass them as pathspec
-arguments:
-
-```bash
-stg refresh path/to/file1 path/to/file2
-```
-
-Do not run bare `stg refresh` after `stg new` when the
-worktree contains other modifications. Check `git status`
-first if uncertain.
+edited for the current patch -- unrelated dirty files
+silently enter the patch. When only specific files belong,
+pass them as pathspecs: `stg refresh path/to/file1
+path/to/file2`. Do not run bare `stg refresh` after
+`stg new` when the worktree contains other modifications;
+check `git status` first if uncertain.
 
 **Never `git checkout`/`git restore` to drop worktree
-noise**: when some worktree modifications belong in the
-patch and others do not, scope the refresh -- `stg refresh
-<pathspec>` folds in only the named paths and leaves the
-rest dirty. Do not reach for `git checkout -- <file>` or
-`git restore <file>` to discard the unwanted changes first.
-On an stg branch this is prohibited outright: if the
-unwanted change was already folded into the patch, restoring
-the worktree leaves the stale diff in the patch commit, and
-`stg refresh` cannot remove it. Leave unwanted modifications
-dirty in the worktree and deal with them after the patch is
-complete: `git stash` (and later `git stash pop`) only
-touches the worktree and the stash ref, never HEAD or stack
-metadata, so it is safe on an stg branch; or fold them into
-a later patch.
+noise**: reverting a file in the worktree does not remove an
+already-refreshed change from the patch commit -- the stale
+diff stays baked in, a later `stg refresh` cannot undo it,
+and the patch must be deleted and recreated. When only some
+worktree changes belong in the patch, scope the refresh
+(`stg refresh <pathspec>`) and leave the rest dirty; deal
+with them after the patch is complete -- `git stash` /
+`git stash pop` is safe on an stg branch (it never touches
+HEAD or stack metadata), or fold them into a later patch. To
+back out a change *already folded into* the patch: edit the
+file to the wanted content and refresh; or, if the refresh
+was the last operation, `stg undo` -- which un-folds into an
+applied `refresh-temp` patch, discarded with `stg delete
+refresh-temp`, not back to the worktree; or, when the patch
+is beyond repair, `stg delete <patch>` and recreate it.
 
-To actually back out a change that is *already folded into*
-the patch, edit the file in the worktree to the content you
-want and `stg refresh` to fold the correction in -- or, if
-the refresh was the last operation, `stg undo` to reverse
-it. `stg undo` un-folds the change into an applied
-`refresh-temp` patch rather than back to the worktree (see
-"Conflicting `stg import` creates no patch"); `stg delete
-refresh-temp` then discards it. When the patch is beyond
-repair, `stg delete <patch>` and recreate it. Never use
-`git checkout`/`git restore` to undo a refreshed change.
+**`stgit.autosign` trailer**: When set (e.g., to
+`Signed-off-by`), `stg new` and `stg import` append that
+trailer automatically, including the non-interactive paths
+(`stg new -m`/`--file`); do not also write it in by hand.
+(On `stg import`, `-m`/`--mail` and `-M`/`--mbox` only
+select input format.) Autosign stamps git's effective
+`user.email`, which falls back to global config -- on a
+project whose sign-off identity differs from your global
+default this silently bakes in the wrong address, and once
+stamped it is not fixed by a plain refresh. Whenever
+autosign is set and this repo's identity is unconfirmed,
+check `git config --get user.email` before the first
+`stg new`/`stg import`; see
+[references/signoff.md](references/signoff.md) for
+confirming the identity and correcting a wrong stamp.
 
-**`stgit.autosign` trailer**: When `stgit.autosign` is set
-(e.g., to `Signed-off-by`), `stg new` and `stg import` append
-that trailer automatically, including the non-interactive
-paths (`stg new -m`/`--file`); do not also write it in by
-hand. On `stg import`, `-m`/`--mail` and `-M`/`--mbox` only
-select the input format; neither affects trailer behavior.
-
-Autosign stamps the address from git's effective `user.email`,
-which falls back to global config when the repo has no local
-identity. On a project whose sign-off identity differs from
-your global default this silently bakes the wrong address in.
-Whenever autosign is set and you have not confirmed this repo's
-sign-off identity, check `git config --get user.email` before
-the first `stg new`/`stg import` and confirm it matches how you
-sign off *on this project*; once stamped, a wrong address is
-not fixed by a plain `stg refresh`. See
-[references/signoff.md](references/signoff.md) for confirming
-the right identity and correcting a patch stamped wrong.
-
-When `stgit.autosign` is unset, the absence is the signal that
-no sign-off is wanted: on a newly created patch add no
-`Signed-off-by` -- neither in the message text nor via
-`-s`/`--signoff` -- unless the user explicitly asks. Preserving
-a sign-off the patch already carries through an edit or fold is
-not adding one (see the `stg edit` exception below). Read the
-setting with `git config --get stgit.autosign`; a non-zero
-exit means unset.
+When `stgit.autosign` is unset (`git config --get
+stgit.autosign` exits non-zero), that absence is the signal
+that no sign-off is wanted: add no `Signed-off-by` to a
+newly created patch -- neither in the message text nor via
+`-s`/`--signoff` -- unless the user explicitly asks.
+Preserving a sign-off the patch already carries through an
+edit or fold is not adding one.
 
 `stg edit`, `stg refresh`, and `stg pick` do NOT autosign
 (`stg edit` autosigns only when it opens the interactive
@@ -568,65 +423,57 @@ editor, which the `-m`/`--file` forms this skill mandates do
 not). Two consequences:
 
 - `stg edit -m`/`--file`: a `Signed-off-by` omitted from the
-  message drops one the patch carried. To preserve it,
-  re-include the line in the message text -- recent stg
-  de-duplicates an identical trailer, so no duplicate results
-  -- or restore it with `-s`/`--signoff`. A patch created while
-  autosign was unset carries none; do not add one here.
-- `stg pick`: it copies the picked commit's message and
-  trailers verbatim, adding no `Signed-off-by` even when
-  autosign is set. This verbatim mirror is the reversible
-  default -- correct for a backport meant to match the upstream
-  commit. Add a backporter sign-off only when actually wanted
-  (the user asked, or recent picks on this branch carry one):
-  `stg edit -s`/`--signoff`, or `stg refresh --signoff` on the
-  just-picked top patch, appends it without opening the editor.
-  That trailer takes `user.email`, so confirm the identity
-  first. If autosign is set and you still cannot tell whether
-  this branch wants the sign-off, ask the user.
+  message drops one the patch carried. Re-include the line in
+  the message text (recent stg de-duplicates an identical
+  trailer) or restore it with `-s`/`--signoff`. A patch
+  created while autosign was unset carries none; do not add
+  one here.
+- `stg pick` copies the picked commit's message and trailers
+  verbatim, adding no `Signed-off-by` even when autosign is
+  set -- the reversible default, correct for a backport
+  meant to match upstream. Add a backporter sign-off only
+  when actually wanted (the user asked, or recent picks on
+  this branch carry one): `stg edit -s` or `stg refresh
+  --signoff` on the just-picked top appends it without an
+  editor. That trailer takes `user.email`, so confirm the
+  identity first; if you still cannot tell whether this
+  branch wants it, ask.
 
 **Position before editing**: `stg goto`, `stg push`,
 `stg pop`, and `stg rebase` refuse to run when any tracked
 file is dirty (`worktree not clean`). The error offers
 `refresh` or `reset --hard` -- the latter is
-`stg reset --hard` (stg's own suggestion, not the prohibited
-`git reset`), which **discards your uncommitted worktree
-changes**. It is not in the prohibited table and the guard
-hook permits it, so nothing stops you; never take it to
-escape this error. `stg rebase` is the one with a safe
-escape: `--autostash` stashes the dirty worktree and restores
-it after (`stgit.autostash` makes that the default).
+`stg reset --hard`, which **discards your uncommitted
+worktree changes**; it is not in the prohibited table and
+the guard hook permits it, so nothing stops you. Never take
+it to escape this error. `stg rebase` alone has a safe
+escape: `--autostash` (`stgit.autostash` makes it the
+default).
 
 General rule: to route a change into a specific patch,
 `stg goto <patch>` FIRST, then edit and refresh. A
 `stg refresh` on the wrong top does not warn -- it silently
 folds the change into whatever patch is top -- so confirm
-`stg top` names the target before every refresh. If a stray
-refresh was the last operation, `stg undo` reverses it,
-un-folding the change into a `refresh-temp` patch rather than
-the worktree (see "Conflicting `stg import` creates no
-patch").
+`stg top` names the target before every refresh. A stray
+refresh, if it was the last operation, reverses with
+`stg undo` (un-folding into a `refresh-temp` patch; see the
+checkout/restore pitfall).
 
-When the worktree is already dirty and you need to route
-the change, recover thus. Note `stg refresh` itself is exempt
-from the clean-worktree check -- unlike goto/push/pop, it runs
-with a dirty worktree, which is why the first case needs no
-move:
-- Target patch is already top -> just `stg refresh` (no move
-  needed). If the worktree also holds changes that do *not*
-  belong in this patch, scope it -- `stg refresh <pathspec>`
-  (see "Unintended files in `stg refresh`") -- so they are not
-  folded in.
+When the worktree is already dirty and the change must be
+routed (note `stg refresh` itself is exempt from the
+clean-worktree check, which is why the first case needs no
+move):
+
+- Target patch is already top -> just `stg refresh`, scoped
+  with a pathspec when the worktree also holds changes that
+  do not belong (see "Unintended files in `stg refresh`").
 - A *different* patch is the target -> move while keeping
   the dirty changes, then confirm `stg top` before
-  `stg refresh`. Either `stg goto -k <patch>` (native;
-  aborts without moving if the local changes will not apply
-  at the destination, leaving the stack untouched), or
-  `git stash` / goto /
-  `git stash pop` (safe on an stg branch; see "Never
-  `git checkout`/`git restore` to drop worktree noise" -- the
-  pop may conflict against the new position, so resolve it
-  first).
+  refreshing. Either `stg goto -k <patch>` (native; aborts
+  without moving if the changes will not apply at the
+  destination), or `git stash` / goto / `git stash pop`
+  (safe on an stg branch; the pop may conflict against the
+  new position, so resolve it first).
 
 **File-edit cache stale after stack ops**: Any stg command that
 moves HEAD or rewrites a patch's tree (`push`, `pop`, `goto`,
@@ -640,38 +487,24 @@ edit.
 **Never pipe a mutating stg command**: pipe only the
 read-only commands -- `series`, `show`, `log`, `diff`,
 `files`, `id`, `top`, `export`. Every other stg command can
-change stack state, and streams per-patch progress to stdout
-while it works. A consumer that stops reading early --
-`head -N`, `grep -q` -- closes the read end. Rust ignores
-SIGPIPE, so stg does not die on the signal; its next write
-fails with EPIPE and stg aborts mid-operation. Do not reason
-about which consumers read to EOF; the redirect below always
-works.
-
-What the abort leaves behind varies. `push` and `sink` roll
-the stack back, though not always cleanly -- an aborted
-`sink` can leave an unresolved conflict (`UU`) in the
-worktree, and later stg commands then refuse with "resolve
-outstanding conflicts first" -- clear it per "Merge conflict
-resolution" above before re-running. `import` is worse: it
-commits each patch as its own transaction, so piping a
-five-patch mbox into `head -1` applies the first patch and
-strands the rest.
-
-The exit status hides it. stg prints `error: Broken pipe (os
-error 32)` on stderr and exits 2 (stg 2.5), but `$?` on a
-pipeline carries the consumer's status, so a bare check reads
-as success, and `2>&1 |` hides the message as well. Check
-`${PIPESTATUS[0]}`. This is the one case that overrides "Do
-not verify after refresh" and "Limit stg series calls" below:
-confirm with `stg series -d` that the stack moved, then
-re-run without the pipe.
-
-To trim noisy progress, redirect to a file outside the repo
--- the session scratchpad, when the harness provides one; a
-log inside the repo is untracked noise in the `git status`
-checks this skill relies on -- and read the file:
+change stack state and streams progress to stdout; a
+consumer that stops reading early (`head -N`, `grep -q`)
+makes stg's next write fail with EPIPE, aborting it
+mid-operation -- an aborted `import` strands a
+partially-applied mbox. Do not reason about which consumers
+read to EOF; to trim noisy progress, redirect to a file
+outside the repo (the session scratchpad; a log inside the
+repo pollutes the `git status` checks this skill relies on)
+and read the file:
 `stg sink -t <patch> > <scratchpad>/stg-sink.log 2>&1; echo $?`.
+The pipeline's exit status hides the failure (it carries the
+consumer's status; check `${PIPESTATUS[0]}`). After a
+suspected pipe abort, confirm the stack state with
+`stg series -d` -- the one override of "Do not verify after
+refresh" and "Limit stg series calls" -- and read "Mutating
+command aborted by a broken pipe" in
+[references/recovery.md](references/recovery.md) before
+re-running.
 
 ## Token efficiency
 
@@ -684,13 +517,11 @@ the user's request).
 
 Exception for pathspec-scoped refresh: `stg refresh
 <pathspec>` exits 0 even when the pathspec matches no
-modified file, folding in nothing.  Exit code alone cannot
-tell "captured the change" from "matched nothing."  Confirm
-the path is correct relative to the current working
-directory, or pass a repo-absolute path, and check with
-`git status --short` that the path is no longer dirty.  This
-one cheap check is warranted for pathspec-scoped refreshes,
-even though verification is otherwise discouraged.
+modified file, folding in nothing.  Confirm the path is
+correct relative to the current working directory, or pass a
+repo-absolute path, and check with `git status --short` that
+the path is no longer dirty.  This one cheap check is
+warranted for pathspec-scoped refreshes.
 
 **Use `git status` for working tree state.** `git status`
 is the cheapest way to check whether there are modified
@@ -700,9 +531,8 @@ whether anything needs refreshing, not what the changes are.
 
 **Do not diff before refresh.** `stg refresh` captures all
 modifications to tracked files automatically.  Do not run
-`stg diff` before `stg refresh` to preview what will be
-folded in — unless the user explicitly asks to review
-pending changes first.
+`stg diff` first to preview what will be folded in — unless
+the user explicitly asks to review pending changes.
 
 **Batch patch inspection.** When reviewing multiple patches,
 avoid walking the stack one `stg show` at a time.  Prefer:
@@ -716,16 +546,15 @@ avoid walking the stack one `stg show` at a time.  Prefer:
 **Cap the full diff.** A whole-patch `stg show` is the single
 largest source of stg output, and most of that volume is one
 patch opened whole to find one hunk. For any patch not
-already in context, read the stat first: it names the files
-and their line counts, which is what the widen decision
-needs. When the stat names more than two files or more than
-200 changed lines (insertions plus deletions), do not widen
--- read the files that matter with `stg show <patch> --
-<path>`, which takes several paths in one call. Widen to the
-whole diff when the stat is under that bound, or when the
-task genuinely requires every file the patch touches --
-reviewing the patch as a patch. A lookup within the patch is
-not such a task, even when it arises during a review.
+already in context, read the stat first. When the stat names
+more than two files or more than 200 changed lines
+(insertions plus deletions), do not widen -- read the files
+that matter with `stg show <patch> -- <path>`, which takes
+several paths in one call. Widen to the whole diff when the
+stat is under that bound, or when the task genuinely
+requires every file the patch touches -- reviewing the patch
+as a patch. A lookup within the patch is not such a task,
+even during a review.
 
 **Prefer stg's own flag over `-O`.** `--stat` is native to
 both `stg show` and `stg diff`, and it replaces the diff, so
@@ -733,9 +562,8 @@ a range summary is `stg diff -r <first>~..<last> --stat`. Do
 not reach the stat through `-O`: `-O` forwards an option to
 `git diff` on top of the patch stg already asks for, so
 `stg show -O --stat` prints the diffstat *and* the full
-diff -- more output than a bare `stg show`, not less. `-O`
-is right for a git-diff option stg does not wrap, such as
-`-O --no-patch`.
+diff. `-O` is right for a git-diff option stg does not wrap,
+such as `-O --no-patch`.
 
 Trim output with `--stat`, `-O --no-prefix`, or a redirect to
 a file, never by piping a *mutating* command into `head` --
@@ -748,15 +576,15 @@ problem. It emits git-log format, which indents the commit
 message four spaces, and a tool that parses the message
 reads that indent as text -- checkpatch reports a spurious
 "Do not use whitespace before Signed-off-by:" on every
-patch. Point the tool at the commit instead, where the
-message is unindented: `./scripts/checkpatch.pl --strict -g
-$(stg id)` checks the patch just refreshed, and `-g $(stg id
-{base})..` the whole applied stack. Bare `stg id` is HEAD
-(see "Stack model"), so with the stack popped it names the
-base -- checkpatch would check an upstream commit as if it
-were yours. For a tool that wants a file, `stg export`
-writes a patch (`get_maintainer.pl` reads one); `stg email
-format` writes the mbox that `stg export` does not.
+patch. Point the tool at the commit instead:
+`./scripts/checkpatch.pl --strict -g $(stg id)` checks the
+patch just refreshed, and `-g $(stg id {base})..` the whole
+applied stack. Bare `stg id` is HEAD (see "Stack model"), so
+with the stack popped it names the base -- checkpatch would
+check an upstream commit as if it were yours. For a tool
+that wants a file, `stg export` writes a patch
+(`get_maintainer.pl` reads one); `stg email format` writes
+the mbox that `stg export` does not.
 
 **Limit stg series calls.** Run `stg series` (or
 `stg series -d`) once for orientation at the start of a
@@ -767,33 +595,23 @@ output — do not re-run `stg series` to confirm it.  Prefer
 individual `stg show` calls when both names and descriptions
 are needed.
 
-**Scope orientation on a deep stack.** The once-per-session
-rule holds the call count down, but `stg series -d` prints a
-line per patch in the stack, so a deep stack spends 3-4k
-chars before any work starts. Probe first: `stg series -c`
-prints the patch count and nothing else. The window below
-spans 11 patches, so at or under that take the full
-`stg series -d` -- there is nothing to save. Above it, when
-the work sits in one region, window the call:
-`stg series -d --short=5` prints five patches either side of
-the current top. The `=` is mandatory -- `-s 5` consumes the
-`5` as a patch name and stg exits 1 -- and `--short` takes
-no patch arguments.
-
-The window elides with no marker, and two cases turn that
-into a wrong reading. At most five `-` lines appear below
-the top however many are unapplied, so when the count from
-`-c` exceeds the window, do not read the last `-` line as
-the end of the unapplied set; the `stg new` and `push -a`
-pitfalls both turn on the full set, so take the unwindowed
-call before acting on either. And with nothing applied there
-is no `>` to center on: `--short=5` then prints the first
-five patches of the series rather than a window, so a fully
-popped stack needs the full call.
-
-Prefer the window over the `<first>..<last>` range form for
-orientation: a range ending at the top hides the `-` lines
-outright.
+**Scope orientation on a deep stack.** `stg series -d`
+prints a line per patch, so a deep stack spends 3-4k chars
+before any work starts. Probe first: `stg series -c` prints
+the patch count and nothing else. At 11 patches or fewer,
+take the full `stg series -d`. Above that, when the work
+sits in one region, window it: `stg series -d --short=5`
+prints five patches either side of the current top (the `=`
+is mandatory -- `-s 5` consumes the `5` as a patch name --
+and `--short` takes no patch arguments). Two windowing
+traps: the window elides with no marker, so when the count
+exceeds it, never read the last `-` line as the end of the
+unapplied set -- the `stg new` and `push -a` pitfalls turn
+on the full set, so take the unwindowed call before acting
+on either; and with nothing applied there is no `>` to
+center on, so a fully popped stack needs the full call.
+Prefer the window over a `<first>..<last>` range, which
+hides the `-` lines outright.
 
 ## Avoiding interactive editors
 
@@ -801,19 +619,16 @@ Always provide `-m` to `stg new` and `--file <path>` to
 `stg edit`. For multi-line messages, write the text to a
 temp file and pass it with `--file`; both commands accept
 it. On a partially-applied stack, check the applied state
-before `stg new` -- see the `stg new` pitfall in Pitfalls.
+before `stg new` -- see the `stg new` pitfall.
 
 Keep the repo as the working directory when the temp file
-lives elsewhere (the session scratchpad): never `cd` into
-its directory -- write the file at its absolute path and
-pass that same absolute path to `--file`. A
-`cd <scratchpad> && ... && stg edit --file <name>` compound
-runs stg outside the repo and fails with "Could not find a
-git repository" -- or, if the scratchpad sits under some
-other git tree, silently targets the wrong repo. Issuing
-the `cd` as its own command is no better: the harness
-resets cwd between calls, so the next stg invocation never
-sees it.
+lives elsewhere (the session scratchpad): write the file at
+its absolute path and pass that same absolute path to
+`--file`. Never `cd` toward it -- a `cd <scratchpad> && ...
+stg edit` compound runs stg outside the repo and fails (or,
+under some other git tree, silently targets the wrong repo),
+and a standalone `cd` does not persist: the harness resets
+cwd between calls.
 
 ### Trailer flags
 
@@ -859,90 +674,58 @@ There is no generic `--trailer` / `-t` flag on `stg edit`;
 
 ## Merge conflict resolution
 
-A `stg pick` conflict is NOT resolved this way -- it signals a
-prerequisite the destination never received, and resolving it
-in place folds the missing commit into the dependent patch.
-See the pick-conflict pitfall in Pitfalls before proceeding.
+A `stg pick` conflict is NOT resolved this way -- it signals
+a prerequisite the destination never received; see the
+pick-conflict pitfall before proceeding.
 
-When `stg push` or `stg rebase` produces conflicts:
+When `stg push` or `stg rebase` produces conflicts, follow
+[references/conflict-resolution.md](references/conflict-resolution.md):
+survey with `git status`, classify each conflict, resolve,
+then `stg resolved <file>` (not `git add`) per file and
+`stg refresh --index` to finalize. Non-negotiable gates,
+detailed in the reference:
 
-1. `git status` — identify every conflicted file.  For the
-   in-flight patch's *full* file set (e.g. to drive a
-   per-file mechanical loop), use `git status --short` (it
-   lists the merge-staged files as well as the conflicted
-   ones), not `stg files <patch>`: until the finalizing
-   `stg refresh` `stg files` can return empty for the
-   in-flight patch, and a loop driven off it fails open --
-   no error, no files, patch silently skipped.  See
-   [references/conflict-resolution.md](references/conflict-resolution.md)
-   for the mechanism; "the reference" throughout this
-   section means that file.
-2. Classify each conflict (take-ours, take-theirs,
-   concatenate, or semantic).  Resolve trivial cases
-   directly.
-3. For semantic conflicts, recover the three-way view
-   (`git show :1:`, `:2:`, `:3:` for base/ours/theirs)
-   and read both sides' commit messages before editing.
-4. Before marking any file resolved, run `stg top`.  It MUST
-   name the conflicting patch.  `stg refresh` folds the
-   resolution into whatever patch is top, so if `stg top`
-   names a different patch -- the in-flight patch is
-   unapplied with the merged content loose in the worktree --
-   do NOT `stg resolved` and do NOT refresh.  Read
-   "Recovering an unapplied-in-flight state" in the
-   reference before acting; its `stg undo` recovery is
-   unsafe unless the last recorded stack operation is the
-   conflict itself.
-5. `stg resolved <file>` (not `git add`) after each file.
-6. `stg refresh --index` to finalize.  `stg resolved` stages
-   the file, and when any tracked file also carries an
-   unstaged change -- common mid-resolution -- a bare
-   `stg refresh` refuses with "the index is dirty".
-   `--index` folds in exactly what was staged; an unstaged
-   edit is silently left out, so check `git status --short`
-   for second-column `M` entries first.  Use `--force`
-   instead only when the unstaged edits belong in the patch
-   too -- a file fixed after its `stg resolved`, or a fix in
-   a file that never conflicted -- but it also sweeps in
-   every other dirty tracked file (see "Unintended files in
-   `stg refresh`").
+- To enumerate the in-flight patch's full file set (e.g. for
+  a per-file mechanical loop), use `git status --short`,
+  never `stg files <patch>`: mid-conflict the latter can
+  return empty, and a loop driven off it fails open --
+  no error, no files, patch silently skipped.
+- Before any `stg resolved` or refresh, `stg top` MUST name
+  the conflicting patch. If it names a different patch, the
+  in-flight patch is unapplied with merged content loose in
+  the worktree: do NOT `stg resolved` and do NOT refresh --
+  read "Recovering an unapplied-in-flight state" in the
+  reference first; its `stg undo` recovery is unsafe unless
+  the conflict is the last recorded stack operation.
+- Before `stg refresh --index`, check `git status --short`
+  for second-column `M` entries: `--index` silently leaves
+  unstaged edits out. Use `--force` only when those edits
+  belong in the patch too -- it also sweeps in every other
+  dirty tracked file.
+- If intent cannot be determined, leave the conflict markers
+  in place and report what is ambiguous rather than
+  guessing.
 
-If intent cannot be determined, leave conflict markers in
-place and report what is ambiguous rather than guessing.
-
-To abort: `stg undo` reverts the failed operation.  In the
-unapplied-in-flight case (step 4), `stg undo --hard` also
-clears the merged content left loose in the worktree -- but
-the step-4 gate applies to the abort too: `--hard` discards
-the whole worktree, so `git stash` unrelated edits first,
-and undo only when the conflict is the last recorded stack
-operation.
-
-See [references/conflict-resolution.md](references/conflict-resolution.md)
-for the full context-gathering strategy, classification
-table, and prior-resolution retrieval.
+To abort: `stg undo` reverts the failed operation. In the
+unapplied-in-flight case, `stg undo --hard` also clears the
+loose merged content -- but `--hard` discards the whole
+worktree, so `git stash` unrelated edits first, and the
+last-recorded-operation gate applies to the abort too.
 
 ## Tracing patch evolution with stg log
 
 `stg log [<patch>]` prints the history of stack operations
 for a patch (or the whole stack), one line per operation:
-
-```
-<meta-sha>   <date>   <description>
-```
-
-**The `<meta-sha>` is an stg metadata commit, not the
-patch's code commit.** It snapshots stack state (which patches
-are applied, their order, their content). Do not pass it to
-`git show` or `git diff` expecting code -- it holds stg internal
-files (`stack.json`, `patches/<name>`, etc.). `stg log` accepts
-no `--format` or `--oneline`; output is its default, `--full`
-(full git-log format), or `--diff` (stack-state diffs).
-
-To align `stg log` with the branch reflog, walk HEAD snapshots
-of a file, reconstruct a patch's diff at a historical entry from
-its stored tree OIDs, or bisect when a change entered a patch,
-see [references/stg-log.md](references/stg-log.md).
+`<meta-sha> <date> <description>`. **The `<meta-sha>` is an
+stg metadata commit, not the patch's code commit** -- it
+snapshots stack state, so do not pass it to `git show` or
+`git diff` expecting code. `stg log` accepts no `--format`
+or `--oneline`; output is its default, `--full`, or
+`--diff` (stack-state diffs). To align `stg log` with the
+branch reflog, walk HEAD snapshots of a file, reconstruct a
+patch's diff at a historical entry, or bisect when a change
+entered a patch, see
+[references/stg-log.md](references/stg-log.md).
 
 ## Command reference
 

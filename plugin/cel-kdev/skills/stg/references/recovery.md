@@ -93,8 +93,8 @@ emptied. If the former top cannot be recovered from
 Note the `stg commit -a` here absorbs upstream history that
 `stg repair` turned into patches, not a patch of yours a
 remote took; retiring a patch upstream has taken goes
-through `stg rebase -m` instead (see "Retiring patches
-upstream has taken" in SKILL.md).
+through `stg rebase -m` instead (see
+[retiring.md](retiring.md)).
 
 Prevention: catch a stack up to upstream with
 `stg rebase <upstream-ref>`; the raw reset is what detaches
@@ -138,3 +138,30 @@ exactly on the pre-merge state in both cases.
 To combine branches deliberately, build the merge below the
 stack base instead of on its HEAD -- see "Combining
 branches: there is no stg merge" in SKILL.md.
+
+## Mutating command aborted by a broken pipe
+
+Entered from "Never pipe a mutating stg command" in
+SKILL.md: a mutating stg command was piped into a consumer
+that stopped reading early, and stg aborted mid-operation.
+
+What the abort leaves behind varies. `push` and `sink` roll
+the stack back, though not always cleanly -- an aborted
+`sink` can leave an unresolved conflict (`UU`) in the
+worktree, and later stg commands then refuse with "resolve
+outstanding conflicts first" -- clear it per
+[conflict-resolution.md](conflict-resolution.md) before
+re-running. `import` is worse: it commits each patch as its
+own transaction, so piping a five-patch mbox into `head -1`
+applies the first patch and strands the rest.
+
+The exit status hides it. Rust ignores SIGPIPE, so stg does
+not die on the signal; its next write fails with EPIPE, stg
+prints `error: Broken pipe (os error 32)` on stderr and
+exits 2 (stg 2.5). But `$?` on a pipeline carries the
+consumer's status, so a bare check reads as success, and
+`2>&1 |` hides the message as well. Check
+`${PIPESTATUS[0]}`. Confirm with `stg series -d` how far the
+stack actually moved, then re-run without the pipe,
+redirecting instead to a file outside the repo (see the
+pitfall in SKILL.md for the redirect form).

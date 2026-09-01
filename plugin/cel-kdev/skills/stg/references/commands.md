@@ -143,8 +143,7 @@ column is variable width during operations.
 
 `stg commit` finalizes patches into the base without
 consulting any remote, so it is not how you retire a patch a
-remote has taken -- see "Retiring patches upstream has taken"
-in SKILL.md for that.
+remote has taken -- see [retiring.md](retiring.md) for that.
 
 ## Undo and redo
 
@@ -210,8 +209,7 @@ patches: a maintainer merged part of the series, or -- the
 more frequent case outside kernel work -- you pushed to your
 own remote and are catching the stack up. Those patches go
 empty instead of conflicting; follow with `stg clean` to
-remove them. See "Retiring patches upstream has taken" in
-SKILL.md.
+remove them. See [retiring.md](retiring.md).
 
 ## Importing
 
@@ -285,5 +283,4 @@ stg spill      # reset current patch to empty, keep changes in worktree
 
 Patches go empty on their own after `stg rebase --merged`
 picks up the work upstream took; `stg clean` is the step that
-drops them. See "Retiring patches upstream has taken" in
-SKILL.md.
+drops them. See [retiring.md](retiring.md).
