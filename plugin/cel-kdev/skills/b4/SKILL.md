@@ -64,20 +64,16 @@ edit" below before importing.
 `<msgid>` can be a Message-Id, a lore URL, or a lore
 search query.
 
-`-l` (`--add-link`) is a `b4 am` flag that stamps a
+`-l` (`--add-link`) stamps a
 `Link: https://patch.msgid.link/<msgid>` trailer into each
-patch before the mbox is written, independent of `stg import`.
-It composes with `-o`, so always pass `-l` on the stg-import
-path above. The Link trailer turns a later "match this applied
-commit back to its patchwork patch" step into a direct msgid
-lookup instead of fuzzy subject matching. b4 has no config key
-to enable it by default. The trailer also survives the intake
-edit below into the applied commit, so an imported series can
-be traced back to the patch as posted. It is not a safety net
-for the edit itself: the trailer sits in the same
-commit-message span the edit rewrites, so an over-broad
-pattern takes it too, and recovery then depends on still
-holding the msgid.
+patch before the mbox is written; no config key enables it
+by default, so always pass it on the stg-import path above.
+The trailer turns a later "match this applied commit back to
+its posting" step into a direct msgid lookup instead of
+fuzzy subject matching, and it survives a correct intake
+edit into the applied commit. It sits in the same
+commit-message span that edit rewrites, though, so an
+over-broad pattern takes it too.
 
 Keep the mbox as a file rather than piping `b4 am` straight
 into `stg import`. An import that conflicts has to be retried
@@ -89,35 +85,18 @@ needs a file to rewrite in place for the same reason.
 ### The maintainer intake edit
 
 When the series is one you will carry in your own tree, a
-third step goes between `b4 am` and `stg import`: an in-place
-edit of the mbox that removes `Cc: stable@vger.kernel.org`
-from the commit-message region only -- the span between the
-RFC822 headers and the `---` diff separator -- leaving the
-mbox `Cc:` delivery header and the diff untouched. The
-maintainer's backport judgment replaces the submitter's after
-review and list discussion. Restoring the trailer is a later,
-per-patch decision and is not part of this intake; the
-`kernel-stable` skill covers that decision.
-
-The command that performs the edit is local to the
-maintainer's setup and is not part of this plugin, so it is
-not named here. Do not substitute an ad-hoc `sed` rewrite: an
-over-broad pattern also takes the delivery header or a `Cc:`
-the submitter meant to keep, and the resulting import looks
-clean. Ask which command to run, and do not `stg import`
-until the edit has been made.
-
-Copy the mbox before the edit and `diff` the two afterward.
-An over-broad pattern leaves an mbox that still imports
-cleanly, so no later step catches it; the diff is the check.
-Every removed line should be a `Cc: stable@vger.kernel.org`
-from a commit-message region. A removed delivery header, a
-dropped `Link:` trailer, or any change inside a diff hunk
-means the edit was wrong: discard the mbox and re-run
-`b4 am`.
-
-A series you are applying only to read or test needs no such
-edit. Import the mbox as written.
+third step goes between `b4 am` and `stg import`: an
+in-place edit of the mbox that removes
+`Cc: stable@vger.kernel.org` from the commit-message region
+only, leaving the `Cc:` delivery header and the diff
+untouched. The command that performs it is local to the
+maintainer's setup: ask which command to run, do not
+substitute an ad-hoc `sed` rewrite, and do not `stg import`
+until the edit has been made and verified. Read
+[references/intake.md](references/intake.md) for the
+scoping, the copy-and-diff check, and what a wrong edit
+looks like. A series you are applying only to read or test
+needs no such edit; import the mbox as written.
 
 ## Sending patch series
 
@@ -187,12 +166,12 @@ Verify with `b4 prep --show-info` that the fork-point
 and series-range are correct.
 
 The fork-point is the upstream ref the series is based on
-(e.g., `origin/main`). When stg is active, derive it from
-`branch.<name>.stgit.parentbranch` (a bare local branch
-name like `master`) and `branch.<name>.remote` (e.g.,
-`origin`), combining them as `origin/master`. If the
-fork-point is a tag or an explicit remote ref, pass it
-directly.
+(e.g., `origin/main`). When stg is active, it is the stack
+base's upstream ref: compose it per the stg skill's
+references/stack-base.md rather than naively joining
+`branch.<name>.remote` and `stgit.parentbranch` -- that
+composition's failure modes are documented there. A tag or
+an explicit remote ref passes directly.
 
 ### Workflow
 
@@ -235,34 +214,17 @@ unavailable in non-interactive agent shells.
 
 **Fork-point goes stale after rebase**: After `stg rebase`
 onto a new base, the fork-point b4 recorded at enrollment
-time no longer matches. b4 has no CLI command to update
+time no longer matches, and b4 has no CLI command to update
 `base-branch` on an already-enrolled branch (`-f` is a
 `b4 prep --new` option, not an enrollment one; see Setup).
-Update the tracking JSON directly:
-
-The tracking value is a JSON object like:
-```
-{"base-branch":"origin/master","series-id":"...","prefixes":["PATCH"]}
-```
-
-```bash
-# Read current tracking
-git config branch.<name>.b4-tracking
-
-# Write back with corrected "base-branch" value
-git config branch.<name>.b4-tracking '<updated JSON>'
-```
-
-The `base-branch` field determines which
-remote ref b4 uses to compute `base-commit` (the
-merge-base). After updating, verify with
-`b4 prep --show-info` that `base-commit` and
-`series-range` look correct.
-
 If the series has not yet been sent, `b4 prep --cleanup`
-followed by re-enrollment is simpler. Use the `git config`
-path when preserving an in-flight change-id and cover
-letter matters.
+followed by re-enrollment is simplest. To preserve an
+in-flight change-id and cover letter, rewrite the
+`base-branch` field in the `branch.<name>.b4-tracking` JSON
+instead -- see "The b4-tracking JSON" in
+[references/config.md](references/config.md) -- then verify
+with `b4 prep --show-info` that `base-commit` and
+`series-range` look correct.
 
 **GPG/patatt signing requires pinentry**: Signing is
 interactive and unavailable in non-interactive agent shells. Default
@@ -279,15 +241,12 @@ arbitrary patch files. The branch must be enrolled with
 
 **`stg import -M` conflicts**: A plain `stg import -M`
 that does not apply aborts with a clean worktree and
-creates no patch. Re-run with `stg import -M -3` for a
-3-way merge that leaves resolvable conflict markers,
-then follow the stg skill's "Conflicting `stg import`
-creates no patch" pitfall: mark resolved
-(`stg resolved <file>`), recreate the patch
-(`stg new <name> --file ...`, recovering author and
-message from the mbox), then `stg refresh`. A bare
-`stg refresh` would fold the change into the current
-top patch instead. To abandon the import outright,
+creates no patch. Re-run with `stg import -M -3` for
+resolvable conflict markers, then follow the stg skill's
+"Conflicting `stg import` creates no patch" pitfall for
+the recovery -- a bare `stg refresh` after resolving
+folds the change into the current top patch instead of a
+patch of its own. To abandon the import outright,
 `stg undo`.
 
 ## Troubleshooting
@@ -308,6 +267,8 @@ top patch instead. To abandon the import outright,
 ## References
 
 - [references/config.md](references/config.md) -- b4 git
-  config options
+  config options and the b4-tracking JSON
+- [references/intake.md](references/intake.md) -- the
+  maintainer intake edit's scoping and verification
 - [references/cover-strategies.md](references/cover-strategies.md)
   -- cover letter strategies and changelog format
