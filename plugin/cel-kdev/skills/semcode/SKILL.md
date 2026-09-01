@@ -113,19 +113,17 @@ this in my tree", `git grep` answers it and semcode does not.
 
 What keeps the index current is narrower than it looks:
 
-- `semcode-mcp` auto-indexes **once, at server start**, for whatever commit was
-  HEAD then. Your query does not trigger indexing. That startup pass can also
-  skip files (see defect 4 in `references/observed-bugs.md`), so "the server
-  just started" is not proof of freshness.
-- On an stg branch HEAD moves constantly -- every `refresh`, `goto`, `push`,
-  `pop` rewrites commits. After any stack move the server's picture is behind.
-- `semcode-index --commits <range>` populates **only the commits table**. It
+- `semcode-mcp` auto-indexes **once, at server start**, for whatever commit
+  was HEAD then. Your query does not trigger indexing, and the startup pass
+  can skip files (defect 4 in `references/observed-bugs.md`), so "the server
+  just started" is not proof of freshness. After any commit or stack move
+  (gate 1) the server's picture is behind.
+- `semcode-index --commits <range>` populates **only the commits table**: it
   makes `find_commit` and `dig` see your patches (`dig <commit>` finds the
-  lore mail for a commit, which is the "is this posted upstream" question; it
-  needs the commit indexed this way) and does nothing at all for
-  `find_function`, `find_type`, or `grep_functions`. The kernel review flows in
-  this tree run `--commits` before a review; that is right for commit search and
-  is not a code refresh.
+  lore mail for a commit -- the "is this posted upstream" question) and does
+  nothing at all for `find_function`, `find_type`, or `grep_functions`. The
+  kernel review flows in this tree run `--commits` before a review; that is
+  right for commit search and is not a code refresh.
 
 So:
 
@@ -167,19 +165,18 @@ when you also want commit-message and diff search over those patches.
 ls $SEMCODE_DB/lore/
 ```
 
-On the day this was written the archive held five lists, and lkml, linux-mm,
-and every other list were absent. The set changes -- archives get added -- so
-the only source for the roster is your own `ls`. Report what it printed, never
-a list remembered from elsewhere; a remembered list is how a coverage claim
-goes stale without anyone noticing. lore.kernel.org blocks bots, so there is
-no live fallback for a list that is not there.
+On the day this was written the archive held five lists; lkml, linux-mm, and
+every other list were absent. The set changes as archives get added, so the
+roster comes from your own `ls` (gate 3), never from memory -- a remembered
+list is how a coverage claim goes stale without anyone noticing.
+lore.kernel.org blocks bots, so there is no live fallback for a list that is
+not there.
 
-Never report "not posted" or "lore has no copy" from an empty search. Say "not
-found in the local lore archive, which mirrors only <the lists your `ls`
-printed>." If you have not run the `ls`, you cannot write that sentence, so
-run it now. An mm patch that
-was posted to linux-mm will never be found, and a session once downgraded a
-sashiko lookup to "patch was local-only" on exactly that mistake.
+Never report "not posted" or "lore has no copy" from an empty search. Say
+"not found in the local lore archive, which mirrors only <the lists your `ls`
+printed>" -- and if you have not run the `ls`, run it now. An mm patch posted
+to linux-mm will never be found; a session once downgraded a sashiko lookup
+to "patch was local-only" on exactly that mistake.
 
 **The archive lags a day or two.** A reply sent yesterday is often not there
 yet; that is lag, not silence. Refresh a *named* archive:
@@ -194,39 +191,29 @@ work than checking one thread justifies.
 ### Searching is cheap; expanding threads is what costs
 
 The intuition that "regex is the expensive part" is wrong, and acting on it
-makes you time out on searches that would have been free. Measured once, on
-netdev at 834 MB indexed. The archive only grows, so read the ratios rather
-than the absolute seconds -- and never quote these numbers as current:
-
-| query | cost |
-|---|---|
-| `lore -s '<sloppy multi-word pattern>' --limit 5` | 0.3 s |
-| `lore -m <msgid> --thread` (9-message thread) | 2.1 s |
-| `lore -s '...' --thread --limit 3` (26 messages total) | 5.5 s |
-
-A pattern search runs as a full-text query over tokens -- the pattern is split
-on non-alphanumeric characters -- and the regex is then applied in memory to the
-candidates. That stage is fast whatever you throw at it. Search freely.
+makes you time out on searches that would have been free. A pattern search
+runs as a full-text query over tokens with the regex applied in memory to the
+candidates; measured once on netdev at 834 MB indexed, a sloppy multi-word
+pattern search with `--limit 5` took 0.3 s. Search freely. (The archive only
+grows: read the ratios, not the seconds, and never quote these numbers as
+current.)
 
 **Thread expansion is the multiplier, at roughly 0.2 s per message.** Every
 message pulled in rescans the lore table (defect 3 in
-`references/observed-bugs.md` has the mechanism), so the cost of a
-`show_thread` search is about 0.2 s times *the total messages across every
-matched thread* -- a number you cannot see before you commit to the query.
-That is how a `subject_patterns` search with `show_thread: true` reached eleven
-minutes at 1.1 GB RSS on netdev.
-
-So the rule is about the multiplier, not the regex. The shape to refuse: any
-`*_patterns` search with `show_thread` or `show_replies` (CLI `--thread`) and
-no small `limit`.
+`references/observed-bugs.md` has the mechanism), so a `show_thread` search
+costs about 0.2 s times *the total messages across every matched thread* -- a
+number you cannot see before you commit to the query. That is how a
+`subject_patterns` search with `show_thread: true` reached eleven minutes at
+1.1 GB RSS on netdev. The shape to refuse: any `*_patterns` search with
+`show_thread` or `show_replies` (CLI `--thread`) and no small `limit`.
 
 - Leave `show_thread` and `show_replies` off unless you actually need the
-  thread. A search that only has to answer "does this exist" never needs them.
+  thread. "Does this exist" never needs them.
 - When you do want a thread, get there by message-id -- `lore -m <msgid>
   --thread` expands exactly one thread and nothing else.
-- If you must expand from a search, keep `limit` small. It bounds the match set
-  before expansion, so it is a real cost control. `since_date` helps for the
-  same reason -- fewer matches to expand -- not because it narrows the scan.
+- If you must expand from a search, keep `limit` small: it bounds the match
+  set before expansion, so it is a real cost control. `since_date` helps the
+  same way -- fewer matches to expand -- not by narrowing the scan.
 
 Cancellation does not save you: `TaskStop` reports success but only detaches the
 client request. `semcode-mcp` runs to completion, so a query you regret has to
@@ -250,12 +237,12 @@ semcode -q "lore -m <cover-msgid> --thread -v"       # with bodies -- redirect
 This is the reliable path to a review thread, and it is what the runaway regex
 scan was reaching for the long way around.
 
-It is not infallible, though: some indexed messages cannot be retrieved by their
-own Message-ID. `git-patchwork-notify` mail is reproducibly in this state -- a
-`-f patchwork` search prints it, and a `-m` lookup of the Message-ID that search
-displayed returns "not found", with or without angle brackets. So a failed `-m`
-lookup is not evidence the message is absent; fall back to a filtered search
-before concluding anything.
+It is not infallible, though: some indexed messages cannot be retrieved by
+their own Message-ID. `git-patchwork-notify` mail is reproducibly in this
+state (a `-f patchwork` search prints it; a `-m` lookup of that displayed
+Message-ID returns "not found", with or without angle brackets). A failed
+`-m` lookup is not evidence the message is absent; fall back to a filtered
+search before concluding anything.
 
 ### Output caps are recoverable
 
@@ -286,12 +273,12 @@ unlimited except where a tool declares a max, which wins.
 Every rule above is about a result that looks more complete than it is. Emit
 this line whenever the answer asserts absence or completeness -- "nobody
 replied", "not posted", "no callers", "no commit touches X" -- or whenever a
-lore or commit search fed the conclusion. A single positive `find_function` or
-`find_type` hit that you verified against the worktree does not need it. The
-answer should carry the shape of the search that produced it:
-which archives or commit range you covered, how you bounded the work, and what
-you know you did not reach. A reader who can see the scope can judge the gap; a
-reader given only the conclusion cannot.
+lore or commit search fed the conclusion; a single positive `find_function`
+or `find_type` hit verified against the worktree does not need it. The line
+carries the shape of the search that produced the answer: what you covered,
+how you bounded the work, and what you know you did not reach. A reader who
+can see the scope can judge the gap; a reader given only the conclusion
+cannot.
 
 Put it in one line, adjacent to the finding it qualifies:
 
@@ -306,9 +293,9 @@ Searched: netdev + linux-nfs, since 2026-06-01, limit 5, no thread expansion.
 Not covered: lkml, linux-mm; netdev mirror last refreshed 2026-08-06.
 ```
 
-The line is not a hedge and not optional where it applies. Dropping it is the failure this
-section exists to prevent: a conclusion with no stated scope reads as
-exhaustive, and the reader has no way to tell that it is not.
+The line is not a hedge and not optional where it applies: a conclusion with
+no stated scope reads as exhaustive, and the reader has no way to tell that
+it is not.
 
 ## Reading results without over-concluding
 
