@@ -35,7 +35,9 @@ code, label it "confirmed real" or "false positive" with a
 one-line evidence summary, and surface both categories to
 the user.  Do not quote sashiko output into commit messages,
 PR comments, or review replies without that verification
-step.
+step.  Do the tracing yourself, in the main session; never
+delegate a verification to a subagent (see "Delegating the
+work" below for why).
 
 A finding may ground itself in a named rule (`SUNRPC-RDMA-004`,
 `RCU-001`).  Never call one fabricated from memory: the rule
@@ -315,6 +317,49 @@ points it at `sashiko-reviews@lists.linux.dev`, so a reply
 posts to an archived public list.  Decisions and rationale
 belong in the cover letter or commit message of the next
 revision, not in an email thread with the bot.
+
+## Delegating the work: which model does what
+
+The mechanical steps -- fetching and parsing the backend API
+JSON, a single `received_parts` status check, and grepping a
+cited rule ID under `$HOME/src/review-prompts/kernel/subsystem/`
+-- need no judgment.  Run them inline by default: the
+one-shot recipe already prints parsed text, and one curl or
+grep costs less to run than to delegate.  Delegate only a
+fetch that must be repeated or a series long enough that its
+output would crowd the session.  Repeated polling is not
+subagent work either: a re-poll a few minutes apart belongs
+in a background shell loop, with the main session reading
+the result when it lands.
+
+When delegating, start a fresh agent (not `subagent_type:
+"fork"`, which ignores `model:` and copies the whole session
+into the agent), pass `model: "haiku"` to the Agent tool,
+and put the Message-ID and the recipe in its prompt, since a
+fresh agent has no session context.  Have the agent return
+every part's `inline_review` verbatim and unsummarized, plus
+the status summary, or the raw grep output.  Not raw JSON,
+and not a paraphrase: the main session verifies the
+finding's exact claim.  A rule-ID dispatch must tell the
+agent to read `references/rule-ids.md` (absolute path) and
+run all three greps it lists with `$HOME` expanded,
+returning the raw output of each.  The agent does not
+interpret a miss; the outcome wording is chosen in the main
+session from that file.
+
+Finding verification runs in the main session, on the
+session's own model: read the flagged code yourself and
+apply the verify-and-label rule from the CRITICAL block
+above.  Do not hand it to a subagent.  Telling a real bug
+from a plausible false positive is the hardest step in the
+pipeline -- sashiko already got it wrong one time in five --
+and a subagent's wrong "confirmed" label comes back looking
+exactly like a right one.  This holds for a long series too,
+and it overrides the general preference for delegating
+broad reads: a label assigned by a subagent cannot be
+audited from the main session.  A subagent may fetch the
+exact hunk a finding cites and return it verbatim, but the
+"confirmed real" or "false positive" label is assigned here.
 
 ## Attributing reviews in commit messages
 
