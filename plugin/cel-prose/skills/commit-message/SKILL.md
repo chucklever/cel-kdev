@@ -1,6 +1,6 @@
 ---
 name: commit-message
-description: Use when writing, amending, or rewording a git commit message in any repository -- drafting the log for a new commit, rewriting an stg patch's description, or fixing up a message before pushing or sending. Covers subject-line form, the why-first body, trailers, line widths, and the prose voice. Reach for this whenever a commit log needs prose, even if the request just says "commit this" or "write the patch description." Linux kernel patches take references/kernel.md on top of it. For a series cover letter, pull request description, or merge commit message, use the cel-prose:cover-letter skill; for sign-off and patch mechanics, cel-kdev:stg.
+description: Use when writing, amending, or rewording a git commit message in any repository -- drafting the log for a new commit, rewriting an stg patch's description, or fixing up a message before pushing or sending. Covers subject-line form, the why-first body, trailers, and line widths. The prose voice comes from cel-prose:prose-voice, which this skill depends on; load both. Reach for this whenever a commit log needs prose, even if the request just says "commit this" or "write the patch description." Linux kernel patches take references/kernel.md on top of it. For a series cover letter, pull request description, or merge commit message, use the cel-prose:cover-letter skill; for sign-off and patch mechanics, cel-kdev:stg.
 ---
 
 # commit-message
@@ -9,6 +9,13 @@ How to write a commit message in Chuck's voice, in any repository.
 This skill governs the *message text*. The mechanics of committing
 (git, stg) and sending (b4/series-send) live in the cel-kdev:stg and
 series-send skills; load those for the workflow, this for the prose.
+
+**Load cel-prose:prose-voice now, as your next tool call, before any
+other step in this skill.** It carries rules this file does not: the
+grep that decides whether a term is coined, the causal-link count per
+sentence, and the words-to-drop list. The sections below cite a few of
+its rules in passing; they are pointers, not a copy. Where the two
+disagree, this skill's more specific rule wins.
 
 **Linux kernel patches take one more file.** Read
 [references/kernel.md](references/kernel.md) before drafting one.

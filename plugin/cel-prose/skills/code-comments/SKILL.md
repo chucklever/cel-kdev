@@ -1,9 +1,16 @@
 ---
 name: code-comments
-description: Use when writing, editing, or reviewing a code comment in any codebase -- calibrating a comment's voice and verbosity, deciding whether a comment earns its place, judging whether to comment at all, or writing an API documentation block (kernel-doc, rustdoc, a docstring). Linux kernel trees take references/kernel.md on top of it; reviewing comments that already exist takes references/reviewing.md. For a commit message use the cel-prose:commit-message skill; for a doc-focused kernel patch review use kdoc.
+description: Use when writing, editing, or reviewing a code comment in any codebase -- calibrating a comment's voice and verbosity, deciding whether a comment earns its place, judging whether to comment at all, or writing an API documentation block (kernel-doc, rustdoc, a docstring). Linux kernel trees take references/kernel.md on top of it; reviewing comments that already exist takes references/reviewing.md. Pair it with cel-prose:prose-voice, which carries the voice rules this skill depends on. For a commit message use the cel-prose:commit-message skill; for a doc-focused kernel patch review use kdoc.
 ---
 
 # Code comments: voice and verbosity
+
+**Load cel-prose:prose-voice now, as your next tool call, before any
+other step in this skill.** It carries rules this file does not: the
+grep that decides whether a term is coined, the causal-link count per
+sentence, and the words-to-drop list. The sections below cite a few of
+its rules in passing; they are pointers, not a copy. Where the two
+disagree, this skill's more specific rule wins.
 
 ## Core principle
 
