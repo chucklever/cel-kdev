@@ -712,7 +712,22 @@ such as `-O --no-patch`.
 Trim output with `--stat`, `-O --no-prefix`, or a redirect to
 a file, never by piping a *mutating* command into `head` --
 that aborts the command; see "Never pipe a mutating stg
-command" in Pitfalls. Read-only commands pipe safely.
+command" in Pitfalls. Read-only commands pipe safely; for
+the `grep` pattern on the other end, see the next paragraph.
+
+**Filter diff lines with a bracket class.** Whatever produced
+the diff (`stg show`, `stg diff`, `git diff`, `git show`),
+when keeping only its added or removed lines write the sign
+inside a bracket class: `stg show <patch> -- <path> | grep
+'^[+]'`, `grep '^[-]'`, `grep -v '^[+][+][+]'`. In a plain
+`grep` pattern never escape the plus (`'^\+'`, `'^\+\+\+'`):
+Claude Code's shell `grep` is ugrep in basic-regex mode,
+which rejects the escape with "invalid syntax". `\+` stays
+valid in `sed`, `awk`, `perl`, and under `grep -E`/`-P`, but
+prefer the bracket form: it is valid in every grep and needs
+no mode flag. If `grep` answers "invalid syntax" with a caret
+under `^+`, the pattern is the cause, not the input; rewrite
+it with `[+]`.
 
 **Checking a patch with checkpatch or another patch-parsing
 tool.** Piping `stg show` is safe; its format is the
