@@ -57,6 +57,10 @@ asked to accept. Go get it first:
   and any objection raised on earlier postings of this work.
 - The prior versions of this series, for what reviewers already
   demanded and whether this version answers them.
+- The subsystem's maintainer entry profile under `Documentation/`,
+  for how it describes the branch the series is based on. Use its
+  terms for that branch, not your own; the cel-kdev:b4 skill's
+  "Describing the base branch" section has the lookup.
 
 Then interview the author. Retrieval runs first so the questions are
 informed -- never spend one on something `git log` would have

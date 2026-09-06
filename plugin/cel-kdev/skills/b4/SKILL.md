@@ -173,11 +173,56 @@ references/stack-base.md rather than naively joining
 composition's failure modes are documented there. A tag or
 an explicit remote ref passes directly.
 
+### Describing the base branch
+
+Whenever you name the base branch in prose -- a cover
+letter, a reply on the list, a note to the maintainer --
+take the description from the subsystem's maintainer entry
+profile rather than characterizing the branch yourself. The
+series' MAINTAINERS entry names the profile directly: its
+`P:` line is the path, and `get_maintainer.pl` prints it
+next to the `T:` lines that name the branch:
+
+    ./scripts/get_maintainer.pl --sections -f <a file the series touches>
+
+Grep `Documentation/` for the branch name only as a
+fallback, and only with a repo-absolute pathspec -- a bare
+`Documentation/` matches nothing from a subdirectory such as
+`fs/nfsd/`:
+
+    git grep -n '<branch name>' -- :/Documentation/
+
+A hit outside a maintainer profile does not count:
+`origin/master` appears in `Documentation/` only in a build
+guide, and `net-next` matches a BPF Q&A document and a
+translation as often as the netdev profile.
+
+With a profile in hand, describe the branch only in its own
+published terms -- quote or paraphrase them. Supply no
+characterization of your own, in any part of speech: not
+"volatile" or "unstable", not "churns" or "a staging area".
+A characterization you supply reads as a judgment on the
+maintainer's workflow. NFSD's profile,
+Documentation/filesystems/nfs/nfsd-maintainer-entry-profile.rst,
+calls nfsd-testing a topic branch that is rebased and
+"always open to new submissions", and names it as the
+branch to rebase on "just before each submission". Profiles
+differ in what they say -- netdev's gives when `net-next`
+closes and reopens and nothing about its stability; tip's
+names branches with no character language at all -- so
+reuse whatever the profile says rather than hunting for
+these particular words.
+
+With no `P:` line, or a profile that says nothing about the
+branch's character, name the branch and stop. b4 stamps the
+`base-commit:` trailer either way, so anyone applying the
+series never depends on the sentence.
+
 ### Workflow
 
 | Step | Command |
 | ---- | ------- |
-| Edit cover letter | See [references/cover-strategies.md](references/cover-strategies.md) |
+| Edit cover letter | See [references/cover-strategies.md](references/cover-strategies.md); to name the base branch in the prose, "Describing the base branch" above |
 | Populate To/Cc from MAINTAINERS | `b4 prep --auto-to-cc` |
 | Show series state | `b4 prep --show-info` |
 | Export patches to directory | `b4 prep --format-patch <dir>` |
