@@ -163,14 +163,16 @@ to examine them -- not `HEAD~N`.
 tree`. To inspect any patch, applied or unapplied, use
 `stg show <patch>` (optionally `stg show <patch> -- <path>`).
 For a patch-range diff, prefer the native `stg diff -r
-<first>~..<last>` over composing raw git. Reach for `stg id`
-only when a git command or an external tool genuinely needs
-a commit stg cannot supply -- e.g. `git log $(stg id
-<patch>)`, `git show $(stg id <patch>):<path>`, or
-`./scripts/checkpatch.pl --strict -g $(stg id)`. With no
-argument `stg id` resolves HEAD, which is the top patch
-whenever any patch is applied, so `$(stg id)` is the patch
-just refreshed.
+<first>~..<last>` over composing raw git. The inverse holds
+too: the endpoints of that range are patch names or
+`{base}`, not git revisions (see the "`stg diff -r` range
+endpoints" pitfall below). Reach for `stg id` only when a
+git command or an external tool genuinely needs a commit stg
+cannot supply -- e.g. `git log $(stg id <patch>)`, `git show
+$(stg id <patch>):<path>`, or `./scripts/checkpatch.pl
+--strict -g $(stg id)`. With no argument `stg id` resolves
+HEAD, which is the top patch whenever any patch is applied,
+so `$(stg id)` is the patch just refreshed.
 
 ## Finding the stack base
 
@@ -247,6 +249,25 @@ memory.
 **`stg diff` without `-r`**: `stg diff <patch-name>` treats
 the argument as a file path, producing silent wrong output.
 Use `stg diff -r <patch-name>~..<patch-name>` for a patch diff.
+
+**`stg diff -r` range endpoints are patch names, not git
+revisions**: with `..` in the argument, each endpoint
+resolves as a patch name or `{base}`, despite `stg diff
+--help` saying git revisions are accepted. `stg diff -r
+HEAD~..HEAD` fails with "patch `HEAD` does not exist", and so
+does a range built from the base or an upstream SHA, or one
+pairing a patch name with a git revision. An endpoint may
+carry a `~` or `~N` suffix (`<patch>~`, `{base}~2`) and
+nothing else; `^` is rejected as an invalid StGit revision.
+The only SHA a range accepts is a patch's own commit id
+(what `stg id <patch>` prints), which is why
+`$(stg id <patch>)~..$(stg id <patch>)` happens to work; name
+the patch instead. Without `..`, `-r <rev>` diffs one
+revision, patch name or git revision, against the worktree,
+so it prints nothing on a clean tree; it is never a patch's
+diff. Given a commit id that is not a stacked patch, use
+`git diff <sha>~..<sha>` or `git show <sha>`; given a patch
+name, use `stg diff -r <patch>~..<patch>`.
 
 **`stg fold` positioning**: `stg fold` applies to the current
 top patch only. Use `stg goto` first to position the stack.

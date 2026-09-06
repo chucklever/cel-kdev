@@ -106,7 +106,7 @@ column is variable width during operations.
 | Show message + diff | `stg show <patch-name>` |
 | Show message only | `stg show -O --no-patch <patch-name>` |
 | Show diff only | `stg diff -r <patch-name>~..<patch-name>` |
-| Combined diff across patches | `git diff $(stg id <first>~1) $(stg id <last>)` |
+| Combined diff across patches | `stg diff -r <first>~..<last>` (endpoints are patch names or `{base}`, not git revisions) |
 
 ## Inspecting metadata
 
