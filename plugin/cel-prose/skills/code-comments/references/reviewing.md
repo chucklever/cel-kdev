@@ -14,7 +14,11 @@ Run SKILL.md's gate backward over each comment and land on exactly one:
   pairing, a caller obligation, a rationale) that the code cannot
   carry. Leave it alone.
 - **Tighten to the surviving why.** It buries one fact the code
-  cannot carry in narration. Cut the narration; keep the fact.
+  cannot carry in narration. Cut the narration; keep the fact; then
+  refill the block to the file's width ([kernel.md](kernel.md) gives
+  the kernel's command and procedure). Cutting words from a wrapped
+  block leaves short lines that read as a second edit waiting to
+  happen; a block shortened but not refilled is half a tighten.
 - **Delete as noise.** It survives the deletion test below without
   loss -- it restates the line, captions the call, or decodes nothing
   a reader could not read directly.

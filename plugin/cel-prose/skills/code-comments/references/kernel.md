@@ -11,7 +11,15 @@ kernel's own documents, see
 The two SKILL.md defers to the project on, decided here:
 
 - **Wrap** comment text with `fmt -g 74 -w 74` -- 80 columns minus the
-  ` * ` prefix.
+  ` * ` prefix -- when writing a comment, and again when an edit leaves
+  a line of the block short of that width or over it. An edit that
+  keeps every line's length does not reflow lines it did not touch.
+  Strip the prefix, feed `fmt` one prose paragraph at a time, and
+  re-add the prefix. A kernel-doc brief line, each `@param`,
+  `Context:`, and `Return:` line, a list item, a diagram, and a code
+  fragment are not prose: `fmt` joins them, so leave them as they are
+  and break an over-long one by hand. `fmt` puts two spaces after a
+  sentence end it joins; reduce them to one (SKILL.md, "Voice").
 - **No tail comments.** They disturb the reading flow; use a
   freestanding comment above the code. The one sanctioned exception is
   C++-style `//` docs on struct members in headers, for compact

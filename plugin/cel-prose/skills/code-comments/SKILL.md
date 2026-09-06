@@ -458,7 +458,15 @@ has its documentation block re-decided, not merely re-checked. Keep
 only what the code cannot show and no other block already carries;
 what survives is an ordinary comment and goes through the gate. If
 nothing survives, drop the block. The block may not be in the diff:
-kernel-doc often sits on a header prototype. Go find it.
+kernel-doc often sits on a header prototype. Go find it. And every
+comment you edited, whether you added it or it predates the patch,
+is refilled to the file's width before you stop: no line short of it
+when the next word would fit, none over it. Cutting words from a
+wrapped block leaves short lines that read as a second edit waiting
+to happen. An edit that keeps every line's length does not reflow the
+lines around it. For a kernel tree,
+[references/kernel.md](references/kernel.md) gives the command and
+the procedure; do not hand wrap prose there.
 
 ## Going deeper
 
