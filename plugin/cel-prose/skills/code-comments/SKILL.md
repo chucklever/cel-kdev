@@ -35,11 +35,14 @@ narration is the check that never happens. Work in this order:
 3. **Fix what the code can fix.** Each stumble gets the code-first
    treatment below before it gets a comment.
 4. **Add comments only for what survives** -- the always-comment floor,
-   plus the facts step 2 surfaced that step 3 could not absorb.
+   plus the facts step 2 surfaced that step 3 could not absorb. The
+   reason a branch exists is a surviving fact; the story of how it
+   came to exist is not (see "History is not a comment's subject"
+   below).
 
 Every comment is now an addition you chose and can name a reason for.
-If you cannot say which floor item or which surviving fact a comment
-covers, it does not go in.
+If you cannot say which floor item or which surviving fact about the
+code as it stands a comment covers, it does not go in.
 
 Entering mid-stream: when the code is already drafted and already
 carries comments, delete the ones you wrote and rejoin at step 2.
@@ -97,6 +100,34 @@ widenings, both of which sink a comment that passes the bare gate:
 - **Your own diff.** One rationale governing several sites is one
   comment, at the site where a reader first meets the condition. The
   later sites go bare.
+
+A comment can pass the gate because the code cannot show its subject
+and still not belong, because its subject is the patch rather than
+the code:
+
+- **History is not a comment's subject.** In a comment you are
+  adding, what the code used to do, the incident that exposed the
+  bug, and why this patch changed it belong in the commit message,
+  where `git blame` and `git log` find them. A comment describes the
+  code in front of the reader as it stands. The test: rewrite the
+  comment in the present tense, as a fact about the code in front of
+  the reader, then strike every clause that is only true of the
+  patch, the bug, or the prior code. Narrative can wear the present
+  tense, so the discriminator is the object of the why. A comment's
+  why is the constraint a later editor must keep ("Hold the lock
+  across the check; the entry can otherwise be freed underneath
+  it"). A commit message's why is how that constraint was found: the
+  failure sequence, the symptom, the reporter, the prior shape of the
+  code. A rejected alternative a later editor would be tempted to
+  reintroduce is a present hazard, not history: state the alternative
+  and why it is refused, without the story of when it was tried. What
+  survives is the comment; what you struck is material for the commit
+  message, written to the cel-prose:commit-message skill's form
+  rather than pasted in. When nothing survives, there is no comment.
+  This rule governs comments the patch adds; a history comment
+  already in the tree is judged by the deletion test in
+  [references/reviewing.md](references/reviewing.md), not struck for
+  its tense.
 
 ## Length budget
 
@@ -303,6 +334,7 @@ bare.
 | Known shortcoming | FIXME/TODO naming the hazard |
 | Public / exported function | Full API doc block: every param, return, caller obligations |
 | Explaining *how* the code works | Rewrite the code instead |
+| Why the code changed, what it did before | Commit message; keep only the constraint it protects |
 | One rationale governs several sites | State it once; leave the rest bare |
 | Placing a comment at end of line | Follow the project; the kernel forbids it |
 | Judging a comment that already exists | [references/reviewing.md](references/reviewing.md) |
@@ -326,6 +358,10 @@ Against that list:
 - **Every remaining entry names its reason:** a floor item, or a fact
   the code cannot carry (intent, invariant, hazard, caller
   obligation). If you cannot name it, cut it.
+- **Any entry in the past tense, or that names this patch, a bug, a
+  reporter, or a previous behavior, is commit-message material.**
+  Move it; keep only the present-tense constraint it was protecting,
+  if one survives.
 
 Then, in place: every comment near code you **changed** must still be
 true. A stale comment is worse than none; update it or drop it.

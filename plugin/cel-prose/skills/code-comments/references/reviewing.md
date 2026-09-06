@@ -37,6 +37,14 @@ does, that surviving fact is the comment, and only it.
 Keep a comment for the fact that would be *lost*, not for the narration
 that would merely be *absent*.
 
+A history comment already in the file ("we used to", "previously",
+"this fixes") is judged by this test, not by SKILL.md's history rule.
+That rule routes narrative in a comment the patch *adds* to the
+patch's commit message; a comment that predates the patch has no
+commit message to move to, its origin may be unrecoverable from
+`git log`, and the rejected alternative it records is what would be
+lost.
+
 ## Look outside the diff
 
 A comment can restate something a reader already has without any line

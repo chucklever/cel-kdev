@@ -57,7 +57,8 @@ why-not-the-plain-load.
 
 ## 2. "Why" comments: rationale, hazard, erratum, spec
 
-Explain motivation, history, or hazard the code cannot show.
+Explain motivation, a rejected alternative, or hazard the code cannot
+show.
 
 `arch/x86/kernel/apic/apic.c`, hardware erratum
 ```c
@@ -93,8 +94,12 @@ sections and the attack they defend against.
  * Anon pages in shared mappings are surprising: now
  * just reject it.
 ```
-Records the removed behavior and its motivating use case so nobody
-"helpfully" re-adds it.
+Records a rejected alternative and its tempting use case so nobody
+"helpfully" re-adds it. That fact is a present hazard and earns its
+place; in new code state the alternative and the reason in the
+present tense ("Do not COW here for ptrace's sake; anon pages in a
+shared mapping are surprising") and leave the "we used to" story to
+the commit message (SKILL.md, "History is not a comment's subject").
 
 `mm/mlock.c`, a race note
 ```c
