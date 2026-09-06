@@ -199,13 +199,18 @@ for a trusted LAN.
 
 **`sashiko-cli local` does not target a remote instance.**
 Its server-vs-local decision probes `server.host:port` from
-a `Settings.toml` in the *current directory*, falling back to
-`~/.config/sashiko.toml` -- note the file, not a
-`~/.config/sashiko/` directory -- and ignoring `--server`
-throughout.  The submit it builds then passes a local
+a `Settings.toml` in the *current directory*, ignoring
+`--server` throughout.  `~/.config/sashiko.toml` is not
+consulted for the server; it configures the local review
+worker.  The submit it builds then passes a local
 filesystem *path* the remote daemon cannot resolve.  Run
-where neither file configures a server, it reviews locally
-and says nothing about it.  Use `submit --type mbox`.
+where no `Settings.toml` configures a server, it reviews
+locally and says nothing about it.  Use `submit --type mbox`.
+Every other subcommand resolves its server the same way when
+`--server` is absent: `$SASHIKO_SERVER`, then that cwd
+`Settings.toml`, then `http://127.0.0.1:8080`.  The source
+tree's own `Settings.toml` names port 8080 on `::`, so a
+`cargo run` from there targets `http://[::1]:8080`.
 
 ## Confirming a submit landed
 

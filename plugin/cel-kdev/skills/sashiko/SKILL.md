@@ -255,10 +255,31 @@ Subcommands are stable, default output is human-readable,
 and `--format json` returns the same shape as the Backend
 API above.
 
-Default server is `http://127.0.0.1:8080`.  Override with
-`--server <url>` or `SASHIKO_SERVER=<url>`.  Build via
+Default server is `http://127.0.0.1:8080`, which is right
+only when a daemon runs on this host.  Build via
 `cargo run --bin sashiko-cli -- <subcommand>` from the
 sashiko source tree, or install per the upstream README.
+
+Before the first `sashiko-cli` call that talks to a server
+(every subcommand except `local`, which never leaves this
+host), find the instance in this order and stop at the
+first hit: `$SASHIKO_SERVER` in the environment; a
+`SASHIKO_SERVER=<url>` line in `~/.claude/LOCAL.md`.  If
+neither names an instance, ask the user for the URL.  Do
+not fall through to 127.0.0.1, and do not substitute
+sashiko.dev: it is a different instance with its own
+patchset ids, and it does not accept submits.  Pass
+whatever the lookup yields as `--server <url>` on every
+call.  The LOCAL.md line is a note the next session reads,
+not an exported variable: LOCAL.md is instruction text the
+harness loads into context, so nothing sets it in the
+shell.  Once the user gives a URL, suggest recording it
+there in that exact form.  Do not suggest a `Settings.toml`
+`[server]` section for this: `sashiko-cli local` probes
+that file in the current directory to decide whether to
+submit instead of reviewing locally (see
+references/submitting.md), so setting it changes that
+command's behavior.
 
 | Command | Purpose |
 | ------- | ------- |
@@ -275,10 +296,12 @@ When a numeric patchset id appears in user input (e.g.,
 daemon's patchset id, not the public sashiko.dev id; the
 two are independent.
 
-Fall back to the Backend API for the public sashiko.dev
-deployment, or when no local daemon is running.  A private
-remote instance is neither: it goes through `sashiko-cli`
-too, with `--server <url>`.
+Fall back to the Backend API only for the public sashiko.dev
+deployment: reading the review of a series posted to a lore
+list it tracks.  No daemon on this host is not a reason to
+fall back; it is a reason to run the lookup above.  A
+private remote instance goes through `sashiko-cli` too, with
+`--server <url>`.
 
 ## Submitting a patch
 
