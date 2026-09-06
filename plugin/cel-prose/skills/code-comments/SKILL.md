@@ -389,7 +389,9 @@ repetition are obvious; in place, they are invisible.
 Against that list:
 
 - **Any two entries saying the same thing collapse to one.** Keep it
-  where a reader first meets the condition.
+  where a reader first meets the condition. An API documentation block
+  you added extends this outward: check the file for an existing block
+  stating the same contract, added or not.
 - **Any entry that reads as a caption** -- a sentence that only makes
   sense next to the line it sits on -- is narration. Delete it, or
   refactor the code it was propping up.
@@ -402,7 +404,15 @@ Against that list:
   if one survives.
 
 Then, in place: every comment near code you **changed** must still be
-true. A stale comment is worse than none; update it or drop it.
+true. A stale comment is worse than none; update it or drop it. Still
+true is not the test when the patch changed what a function *is*: a
+function that left or joined the API surface -- `static` added or
+removed, `pub` dropped, a leading underscore, an `EXPORT_SYMBOL` --
+has its documentation block re-decided, not merely re-checked. Keep
+only what the code cannot show and no other block already carries;
+what survives is an ordinary comment and goes through the gate. If
+nothing survives, drop the block. The block may not be in the diff:
+kernel-doc often sits on a header prototype. Go find it.
 
 ## Going deeper
 

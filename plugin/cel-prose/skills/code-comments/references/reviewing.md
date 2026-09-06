@@ -24,7 +24,14 @@ Run SKILL.md's gate backward over each comment and land on exactly one:
   removes the need, not a better comment.
 
 For API documentation blocks, judge by completeness (SKILL.md's
-API-documentation exception), not the deletion test.
+API-documentation exception), not the deletion test -- unless the
+patch changed whether the function is part of the API at all. A block
+on a function the patch made private is re-decided rather than
+re-checked: completeness is not the question when there is no longer
+a caller to serve. A fifth verdict applies there, **demote or drop**:
+keep only what the code cannot show and no other block already
+carries, as a plain comment through the gate, and drop the block if
+nothing survives. In a kernel tree [kernel.md](kernel.md) decides it.
 
 ## The deletion test
 

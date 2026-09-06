@@ -42,6 +42,27 @@ for file-static ones. Some subsystems, KVM among them, deliberately
 forbid kernel-doc on internal functions -- check the subsystem before
 adding one.
 
+A patch that changes which callers can reach a function re-decides
+its comment. When a function becomes static in a .c file and a new
+exported function now carries the contract, do not leave two blocks
+stating it: keep only what the new block does not say and the code
+cannot show, as a plain `/* */` comment that goes through SKILL.md's
+gate like any other, and drop the old block outright when nothing
+survives that. With no replacement carrying the contract, the block
+is discretionary again, as for any file-static function: keep it
+where the subsystem allows kernel-doc on internal functions, drop it
+where the subsystem forbids one. A function that becomes
+`static inline` in a header has not left the API surface: every file
+that includes the header is a caller that cannot see the body, and
+the block stays. A function that stops being exported but stays
+non-static still has callers that cannot see its body; its block
+stays. When a function becomes exported, it gains the kernel-doc
+requirement and needs the full block. Check this whenever the diff
+changes where a function can be called from -- a storage-class
+keyword, an `EXPORT_SYMBOL*` line added or removed, or a prototype
+entering or leaving a header. A change of export flavor alone,
+`EXPORT_SYMBOL` to `EXPORT_SYMBOL_GPL`, is not one.
+
 Judge a kernel-doc block by completeness. Over-commenting applies to
 what each line *says*, not to which lines exist: give every parameter a
 line, and make the line carry units, ownership, lifetime, or valid
