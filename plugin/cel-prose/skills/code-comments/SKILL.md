@@ -34,9 +34,10 @@ narration is the check that never happens. Work in this order:
    arbitrary, a branch whose reason is offstage.
 3. **Fix what the code can fix.** Each stumble gets the code-first
    treatment below before it gets a comment.
-4. **Add comments only for what survives** -- the always-comment floor,
-   plus the facts step 2 surfaced that step 3 could not absorb. The
-   reason a branch exists is a surviving fact; the story of how it
+4. **Add comments only for what survives**, each drafted at one line
+   (see "Length budget") -- the always-comment floor, plus the facts
+   step 2 surfaced that step 3 could not absorb. The reason a branch
+   exists is a surviving fact; the story of how it
    came to exist is not (see "History is not a comment's subject"
    below).
 
@@ -145,7 +146,11 @@ could be one, make it one. A block comment that could be one line is
 the most common form of earned-nothing length.
 
 There is no target comment *ratio* -- that is folklore, and no credible
-study supports it. The budget is per comment, not per file.
+study supports it. The budget is per comment, not per file. Draft
+every comment at one line. Add a second line only once you can name
+the floor item that needs it; add a fifth only once you can name what
+cannot compress. A first draft that lands at three lines and gets cut
+to one on request has cost a round trip the budget exists to prevent.
 
 ## Banned openings
 
@@ -402,6 +407,12 @@ Against that list:
   reporter, or a previous behavior, is commit-message material.**
   Move it; keep only the present-tense constraint it was protecting,
   if one survives.
+- **Every entry that is not an API documentation block and runs over
+  one line names the floor item that bought the room, or, past four
+  lines, the thing that cannot compress.** Give each entry its line
+  count and, beside it, that justification; a slot left blank is the
+  finding, and the entry shrinks to one line. "It explains the change
+  well" is not a floor item.
 
 Then, in place: every comment near code you **changed** must still be
 true. A stale comment is worse than none; update it or drop it. Still
