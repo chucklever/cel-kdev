@@ -70,11 +70,16 @@ the questions as a single batch rather than a trickle:
 
 - What makes this necessary now? If a specific incident drove it --
   a bug, a report, a production failure -- name it, with the commit
-  hash and reporter if you have them.
+  hash and reporter if you have them, and say whether the report is
+  public.
 - What will the maintainer push back on, and what would answer it?
 - What did you consider and reject? Only the alternative a reviewer
   would otherwise propose.
 - Is this the first step of something larger, and what follows?
+- What was this version tested against -- the suite, the
+  configuration, and what it did not exercise? A build alone needs
+  no answer. When the tests ran in this session, answer from the
+  run's output instead of asking.
 
 Skip any question the retrieval already answered. Skip the interview
 outright when the motivation is plain from the diffstat; a mechanical
@@ -94,8 +99,9 @@ Name the objection the series invites, then check that the cover
 answers it with specifics.
 
 - A new API or method: why must this exist? Answer with the
-  incidents that made it necessary -- commit hashes, the reporter,
-  the stable tags -- not with a characterization of the old
+  incidents that made it necessary -- commit hashes, the reporter
+  when the report is public, the stable tags -- not with a
+  characterization of the old
   interface. "The old API is difficult to use" gets conceded and
   dismissed in one line. "Four consumers implemented it
   independently, all four got it wrong, two of the fixes carried
@@ -133,9 +139,26 @@ yours, or a manufactured one, is worse than the reasoning it
 displaces: it gives the reviewer a narrower thing to attack, and
 disqualifying it leaves the series with no case at all.
 
+A private report -- an off-list email, a customer ticket, a hallway
+conversation, anything not in a public archive -- is an incident
+the reviewer cannot read. Do not name the reporter or cite the
+report in the cover. State the observed behavior as a plain fact
+about the code, with no attribution ("a Windows NFSv4.1 client
+rejects the reply because ..."): the behavior and its mechanism are
+what a reviewer can check, and a private reporter did not choose to
+be named on a public list. Attribution stays on the fixing patch's
+`Reported-by:` trailer, which cel-prose:commit-message's kernel
+reference governs, including the case where the report never
+reached the web.
+
+The same readiness test applies to testing: a cover that omits how
+the series was tested, when tests beyond a build were run, is not
+ready to send. The third Keep under "What to put in it" says what
+the line carries.
+
 ## What to put in it
 
-Sort each candidate sentence by what it is *about*. Two kinds of
+Sort each candidate sentence by what it is *about*. Three kinds of
 content belong in the cover and one does not; two rules of register
 and frame then apply to whatever survives. Ground all of it in the
 series as it stands -- the diffstat and the diffs, never memory of
@@ -148,8 +171,8 @@ record's octets are credited to the RPC stream, and a consumed
 control record leaves the server transport unmarked" carries no
 clause of why and needs none; the defect stated plainly is the case
 for the series. Draw on the record gathered above -- the commit that
-introduced the defect, the report that surfaced it, what the current
-interface has already cost. The alternative a reviewer would
+introduced the defect, the report that surfaced it if it is public,
+what the current interface has already cost. The alternative a reviewer would
 otherwise propose belongs here too, with the reason it was rejected;
 one sentence, and only for the alternative they would actually raise.
 When nothing is broken, this slot holds the reasoning instead of a
@@ -176,6 +199,17 @@ how the entries relate:
   reviewer who knows the destination reviews the first step
   differently, and a limitation you name is one they do not spend a
   pass discovering.
+
+**Keep: how the series was tested, in one or two lines, when the
+testing is more than a build** -- the suite run, the configuration,
+and any configuration the change touches that the run did not
+exercise. A reviewer deciding whether to re-run the tests needs to
+know what was run. On a reroll, revise this line in the cover body
+to say what was re-run against the new version. It is not a
+changelog bullet, because the changelog lists what changed between
+postings, and a testing line carried forward unchanged claims a run
+that did not happen. A cover that omits this when tests were run is
+not ready to send.
 
 **Cut: what a patch in this series does.** The shortlog is right
 there and the commit message is one click away. This is the content
@@ -284,6 +318,11 @@ reviewing side.
   where this discussion lands"). That second case is a request about
   application rather than review. It is the author's to make, so do
   not recommend it unprompted.
+- A missing testing line is a question, not a finding. Absence is
+  consistent with a build-only series, which owes no line. Report
+  it only when the session knows tests beyond a build were run --
+  from the author, or from having run them -- and the cover does
+  not say so.
 
 ## Length
 
