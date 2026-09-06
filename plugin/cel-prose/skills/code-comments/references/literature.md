@@ -98,7 +98,7 @@ derived ~62 patterns (TODO, FIXME, HACK, "workaround", "this is
 wrong") signalling admitted debt. SATD appears in up to 31% of
 files; more-experienced developers introduce most of it; only
 26-64% is ever removed. Legitimizes a specific valuable genre: the
-honest admission of a known shortcoming -- intent/warning content
+admission of a known shortcoming -- intent/warning content
 code cannot express. Verbosity is justified when it records a real
 hazard, wasted when it echoes code.
 

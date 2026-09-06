@@ -1,7 +1,7 @@
 # Official kernel guidance on code comments
 
 Distilled from the kernel tree's own documentation and tooling.
-Each entry gives the source, the load-bearing quotations, and a
+Each entry gives the source, the quotations the rules rest on, and a
 one-line gloss. Focus: VOICE (how a comment reads) and VERBOSITY
 (how much to write, what to omit). Line numbers drift between
 releases; treat them as hints, not anchors.

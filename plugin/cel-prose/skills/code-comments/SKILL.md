@@ -16,10 +16,10 @@ that the working is obvious." A comment is the fallback for what
 the code cannot be made to carry, not the first move.
 
 For the residue that naming and structure cannot express -- an
-intent, a rationale, a load-bearing invariant, a hazard -- say the
-non-obvious thing and stop. A comment that restates the code has
-a cost: it adds maintenance and goes stale the first time the
-code changes underneath it.
+intent, a rationale, an invariant the code depends on, a hazard --
+say the non-obvious thing and stop. A comment that restates the
+code has a cost: it adds maintenance and goes stale the first time
+the code changes underneath it.
 
 ## Start at zero
 
@@ -161,7 +161,7 @@ unrecorded:
 - Any non-obvious "cleanup" or workaround -- *why* it is done that
   way.
 - Non-obvious constraints and caller obligations.
-- A known shortcoming -- an honest FIXME/TODO naming the hazard.
+- A known shortcoming -- a FIXME/TODO naming the hazard.
 
 This is a floor, not a quota. It licenses nothing beyond itself, and a
 comment outside this list still has to pass the gate.
@@ -232,7 +232,7 @@ ew32(TCTL, tctl | E1000_TCTL_EN);
 ```
 A reader could write that comment from the line below. Cut it.
 
-**Narration -> the load-bearing why.**
+**Narration -> the why the code cannot show.**
 ```c
 time = jiffies;   /* set the start time for the receive */   // NO
 ```
@@ -300,7 +300,7 @@ bare.
 | Memory barrier or ordering primitive | One line: why, and what it pairs with |
 | Locking rule | State centrally; prefer an executable assertion in code |
 | Non-obvious workaround / cleanup | Comment *why*, cite erratum/RFC if any |
-| Known shortcoming | Honest FIXME/TODO naming the hazard |
+| Known shortcoming | FIXME/TODO naming the hazard |
 | Public / exported function | Full API doc block: every param, return, caller obligations |
 | Explaining *how* the code works | Rewrite the code instead |
 | One rationale governs several sites | State it once; leave the rest bare |

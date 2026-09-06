@@ -10,8 +10,8 @@ driver, a useful before/after control within one tree.
 
 ## 1. Terse invariant / constraint comments
 
-Document one load-bearing fact a future reader cannot see
-locally: a caller obligation, a locking rule, a why-not-the-
+Document one fact a future reader cannot see locally and cannot
+do without: a caller obligation, a locking rule, a why-not-the-
 obvious-thing. One or two lines.
 
 `mm/rmap.c`, before `tlb_ubc->writable = true;`
@@ -41,8 +41,8 @@ it doesn't itself crash.
  * device-exclusive, such that they unmap it now. Note that the
  * caller must filter this event out to prevent livelocks.
 ```
-The trailing clause is load-bearing: omit the filter and the
-system livelocks -- unknowable from the call itself.
+The trailing clause is the reason the comment exists: omit the
+filter and the system livelocks -- unknowable from the call itself.
 
 `kernel/locking/qspinlock.c`, before
 `smp_cond_load_acquire(&lock->locked, !VAL)`
@@ -96,7 +96,7 @@ sections and the attack they defend against.
 Records the removed behavior and its motivating use case so nobody
 "helpfully" re-adds it.
 
-`mm/mlock.c`, an honest race note
+`mm/mlock.c`, a race note
 ```c
  * This is a little surprising, but quite possible: PG_mlocked
  * must have got cleared already by another CPU.  Could this

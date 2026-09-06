@@ -13,8 +13,8 @@ Run SKILL.md's gate backward over each comment and land on exactly one:
 - **Keep as-is.** It records a surviving fact (an invariant, a barrier
   pairing, a caller obligation, a rationale) that the code cannot
   carry. Leave it alone.
-- **Tighten to the surviving why.** It buries one load-bearing fact in
-  narration. Cut the narration; keep the fact.
+- **Tighten to the surviving why.** It buries one fact the code
+  cannot carry in narration. Cut the narration; keep the fact.
 - **Delete as noise.** It survives the deletion test below without
   loss -- it restates the line, captions the call, or decodes nothing
   a reader could not read directly.
