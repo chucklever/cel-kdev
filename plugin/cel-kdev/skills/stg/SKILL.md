@@ -18,15 +18,20 @@ read-only commands:
 2. `git show-ref --verify refs/stacks/<branch>` — check
    for the stg stack ref
 
-A zero exit status on step 2 means stg is active. Write the
-branch name literally -- `$()` substitution, pipes, and
-`xargs` are harder for approval rules to inspect and can
-trigger permission prompts; take the name from step 1's
-output or from session context that already holds it. With
-the name in hand, the check may be chained with `;` into one
-command together with other read-only calls (the orientation
-`stg series` call below, `stg top`): the raw-git guard tests
-each simple command on its own. When chained, step 2's exit
+A zero exit status on step 2 means stg is active. When the
+branch name is already in session context, write it
+literally. When it is not, do not guess it from the checkout
+directory or the repo name; fold step 1 into step 2 instead:
+
+    git show-ref --verify refs/stacks/$(git branch --show-current)
+
+The raw-git guard tests each simple command on its own, so
+this form passes. Keep pipes and `xargs` out of the check;
+they are harder for approval rules to inspect and can
+trigger permission prompts. Either form may be chained with
+`;` into one command together with other read-only calls
+(the orientation `stg series` call below, `stg top`). When
+chained, step 2's exit
 status is not separately visible; judge by its output --
 `show-ref --verify` prints the ref line when the stack
 exists and `fatal: ... not a valid ref` when it does not. On
