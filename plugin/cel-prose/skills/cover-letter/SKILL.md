@@ -75,7 +75,8 @@ the questions as a single batch rather than a trickle:
 - What will the maintainer push back on, and what would answer it?
 - What did you consider and reject? Only the alternative a reviewer
   would otherwise propose.
-- Is this the first step of something larger, and what follows?
+- Is this the first step of something larger, and what follows? If
+  that work is posted, where; if not, say so.
 - What was this version tested against -- the suite, the
   configuration, and what it did not exercise? A build alone needs
   no answer. When the tests ran in this session, answer from the
@@ -193,12 +194,22 @@ how the entries relate:
 - A design choice scattered across several patches -- a cross-cutting
   behavioral change, a workaround being retired, an invariant
   enforced in three places. State it once, here.
-- A contract a later patch relies on, and the user-visible behavior
+- A contract a later patch in this series relies on, and the
+  user-visible behavior
   changes taken together rather than one patch at a time.
 - What the series deliberately does not do, and what follows it. A
   reviewer who knows the destination reviews the first step
   differently, and a limitation you name is one they do not spend a
-  pass discovering.
+  pass discovering. Follow-on work enters the cover in one of three
+  forms: a posted series, with its lore link; a limitation of this
+  series; or an intent, stated as intent ("a later series moves the
+  cache to the connection"). Do not mention patches that exist only
+  on a local branch, in any wording. Work no one has seen is not
+  context; it is a claim they cannot evaluate, and a cover that
+  leans on it reads as asking for credit against unposted code. If
+  the unposted work is why a design choice here looks odd, state
+  the choice and the intent in one sentence and leave the patches
+  out.
 
 **Keep: how the series was tested, in one or two lines, when the
 testing is more than a build** -- the suite run, the configuration,
@@ -288,11 +299,15 @@ reviewing side.
   the send tool emits already answer "what is in this series."
   What can be missing is a relationship rather than a patch: an
   ordering constraint that accounts for patches which otherwise
-  look unrelated, a contract a later patch relies on, a limitation
-  the series leaves standing. Six budgeting patches sitting in
+  look unrelated, a contract a later patch in this series relies
+  on, a limitation the series leaves standing. Six budgeting patches sitting in
   front of a fix with no sentence saying why they come first is a
   real gap; the same six unnamed, with the ordering stated once,
   is not.
+- A reference to other work is one the reviewer can open -- a lore
+  link, or a commit in the tree the series is based on -- or an
+  intent stated without patches behind it. A reference to patches
+  that are not on lore is cut, however it is worded.
 - Do not derive an obligation from the subject line. A plural
   subject ("CB_RECALL_ANY fixes and a meaningful keep count") is
   answered by the shortlog, not by a paragraph per fix.
