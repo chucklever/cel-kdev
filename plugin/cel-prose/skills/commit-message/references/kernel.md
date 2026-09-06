@@ -15,11 +15,18 @@ subsystem: imperative summary, no trailing period
 
 - Lowercase after the prefix. This is the one place the general rule
   inverts: your own repositories capitalize the summary, the kernel
-  does not.
-- Prefix with the subsystem. Find the prevailing prefix by reading
-  `git log --oneline` for the files you touched and match what that
-  subsystem already uses (`nfsd:`, `SUNRPC:`, `svcrdma:`). Do not
-  invent a new prefix when one is established.
+  does not. The rule governs the summary that follows the colon,
+  never the prefix itself.
+- Prefix with the subsystem. For NFSD, SUNRPC, and NFS the prefix
+  is `NFSD:`, `SUNRPC:`, `NFS:`, the proper casing from
+  cel-prose:prose-voice, whatever `git log --oneline` shows: other
+  contributors write `nfsd:` or `sunrpc:`, and their lines do not
+  set the prefix for your own patches. A contributor's patch keeps
+  the prefix it arrived with; do not recase it when applying. For
+  any other subsystem, read `git log --oneline` for the files you
+  touched and match the prefix it already uses, casing included
+  (`svcrdma:`, `xprtrdma:`). Do not invent a new prefix when one is
+  established.
 - When `git log --oneline` on the touched files shows no established
   prefix (a new file or subsystem), derive one from the directory or
   nearest parent subsystem rather than dropping it; a prefix-less
@@ -144,7 +151,7 @@ arrives carrying one keeps it -- do not strip it when applying.
 A bug fix whose body leads with the symptom and the cause:
 
 ```
-nfsd: fix use-after-free in nfsd4_encode_fattr4
+NFSD: fix use-after-free in nfsd4_encode_fattr4
 
 A client that closes a stateid while another thread is encoding
 GETATTR for the same file can free the nfs4_stid out from under the
@@ -159,6 +166,10 @@ Fixes: 1a2b3c4d5e6f ("nfsd: encode fattr4 attributes")
 Reported-by: Jane Tester <jane@example.org>
 Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
 ```
+
+The `Fixes:` line quotes the fixed commit's subject as its author
+wrote it, `nfsd:` and all; the casing rule governs the subject you
+are drafting, not a subject you quote.
 
 An optimization with no bug to cite: the body leads with the cost
 the change removes and carries no `Fixes:`.

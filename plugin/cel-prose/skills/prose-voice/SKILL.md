@@ -46,10 +46,11 @@ documentation is ordinary prose and does follow them.
   not coined however unfamiliar it looks, so read the tree
   before cutting a term.
 - Subsystem names in prose take their uppercase form: NFSD,
-  SUNRPC, NFS. Others write "nfsd" or "knfsd"; do not match
-  them. This overrides the preceding rule about taking
-  vocabulary from the subsystem's list traffic. Quoted commit
-  subjects keep their original casing.
+  SUNRPC, NFS, including the subject-line prefix of a kernel
+  patch. Others write "nfsd" or "knfsd"; do not match them.
+  This overrides the preceding rule about taking vocabulary
+  from the subsystem's list traffic. Quoted commit subjects
+  keep their original casing.
 - Write for a reader fluent in the subsystem. Do not explain its
   own mechanics back to it. A paragraph deriving how
   cond_resched() in __release_sock() lets a syscall path
