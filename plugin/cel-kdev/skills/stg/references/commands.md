@@ -247,8 +247,15 @@ Run `stg refresh` after `stg fold`.
 
 | Task | Command |
 | ---- | ------- |
-| Export to directory | `stg export -d <dir>` |
+| Export to directory | `stg export -d <dir>` (files named `<dir>/<patch>`, no suffix) |
+| Export with `.patch` suffix | `stg export -p -d <dir>` (`-e <ext>` for another suffix) |
+| Export numbered | `stg export -n -p -d <dir>` (`NN-<patch>.patch`) |
 | Export to stdout | `stg export -s` |
+
+Pass `-p` whenever a tool will read the exported files by glob: a
+plain export names each file after its patch with no suffix, so
+`<dir>/*.patch` matches nothing. `<dir>/*` is not a substitute:
+stg also writes `<dir>/series` there.
 
 ## Email
 

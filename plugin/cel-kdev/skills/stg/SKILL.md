@@ -613,9 +613,11 @@ patch just refreshed, and `-g $(stg id {base})..` the whole
 applied stack. Bare `stg id` is HEAD (see "Stack model"), so
 with the stack popped it names the base -- checkpatch would
 check an upstream commit as if it were yours. For a tool
-that wants a file, `stg export` writes a patch
-(`get_maintainer.pl` reads one); `stg email format` writes
-the mbox that `stg export` does not.
+that wants a file, `stg export -p -d <dir>` writes one
+`.patch` file per patch (`get_maintainer.pl` reads one);
+without `-p` the files carry no suffix and a `*.patch` glob
+matches nothing. `stg email format` writes the mbox that
+`stg export` does not.
 
 **Limit stg series calls.** Run `stg series` (or
 `stg series -d`) once for orientation at the start of a
