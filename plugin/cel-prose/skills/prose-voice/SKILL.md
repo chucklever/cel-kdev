@@ -20,6 +20,21 @@ documentation is ordinary prose and does follow them.
   why. Make the component the subject ("the encoder drops the
   reply"), not "we," and not what the code "wants" or "tries to
   do."
+- The subject is the component, not the role it plays in the
+  protocol. "The server retries" and "the client sends" name a
+  role that any implementation fills, so the reader cannot tell
+  which code is meant; in a series that touches both peers, or
+  on a host that runs both, not even which side. Name the
+  thing: "NFSD," "the NFS client," "svcrdma," "the xprtrdma
+  transport," "nfsd4_encode_fattr4()." A role word is right
+  only when the sentence is about whatever fills the role, any
+  implementation: what an RFC requires, a quotation from one,
+  or the peer at the other end of the wire as seen from this
+  code ("the client may retry after NFS4ERR_DELAY" in an NFSD
+  comment means every client). A sentence about code in this
+  tree names that code. The list traffic writes "the server"
+  freely; that does not vouch for it as the subject of a
+  sentence about this code.
 - ASCII only. US English spelling ("recognize," "behavior,"
   "serialize," not "recognise"/"behaviour"/"serialise"). Single
   blank between sentences. Text quoted from RFCs or upstream
