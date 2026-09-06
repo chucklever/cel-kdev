@@ -53,7 +53,7 @@ require_file "plugin/cel-kdev/hooks/codex-hooks.json" &&
 require_file "plugin/cel-kdev/.codex-plugin/plugin.json" &&
     require_jq "plugin/cel-kdev/.codex-plugin/plugin.json" '.hooks' "./hooks/codex-hooks.json"
 
-for skill in b4 drgn perf sashiko semcode stg trace-cmd; do
+for skill in b4 drgn perf sashiko semcode stg syzbot trace-cmd; do
     require_file "plugin/cel-kdev/skills/$skill/agents/openai.yaml"
 done
 

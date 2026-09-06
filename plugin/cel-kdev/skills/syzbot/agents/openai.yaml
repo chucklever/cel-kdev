@@ -1,0 +1,4 @@
+interface:
+  display_name: "syzbot"
+  short_description: "syzbot report triage and #syz command replies"
+  default_prompt: "Use $syzbot to retrieve and evaluate a syzbot report, write the fix's trailers, or compose and dry-run a #syz command reply for the user to send with git send-email."

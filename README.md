@@ -63,6 +63,19 @@ submission needs, the email delivery policy, review-status
 transitions, and the false-positive rate that governs how
 review output should be treated.
 
+### syzbot
+
+Teaches coding agents how to triage a
+[syzbot](https://syzkaller.appspot.com/upstream) crash report
+and talk back to the bot: retrieving the report thread and its
+reproducer and kernel config, the Fixes, Reported-by, Closes,
+and Tested-by trailers a fix carries, and the `#syz` command
+grammar (test, fix, dup, undup, invalid, upstream, set) with the
+recipient rules that keep a test request off patchwork-backed
+lists.  Dry-runs each reply with `git send-email` and hands
+the user the send command to run themselves.
+Reproducers are fetched for reading only, never run.
+
 ### semcode
 
 Teaches coding agents to query [semcode](https://github.com/facebookexperimental/semcode),
@@ -106,6 +119,7 @@ plugin/cel-kdev/
     perf/SKILL.md
     sashiko/SKILL.md
     semcode/SKILL.md
+    syzbot/SKILL.md
     trace-cmd/SKILL.md
 plugin/cel-prose/
   .claude-plugin/
@@ -173,6 +187,7 @@ python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-githu
   --path plugin/cel-kdev/skills/sashiko \
   --path plugin/cel-kdev/skills/semcode \
   --path plugin/cel-kdev/skills/stg \
+  --path plugin/cel-kdev/skills/syzbot \
   --path plugin/cel-kdev/skills/trace-cmd
 ```
 
