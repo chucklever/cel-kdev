@@ -79,6 +79,16 @@ lists; say what the set of them accomplishes and stop. And a
 walk through a new function's steps -- which field is filled
 first, what is copied where -- is the diff in prose.
 
+When asked to shorten, cut the what first. Mark each sentence
+why or what, then cut the what by the rule above: what the
+commit does, plus a design choice the diff cannot convey. A long
+why can hide what-content, a mechanism walk dressed as
+motivation; relabel any such sentence as what and cut it there.
+Trim the why itself only once the what is at its leanest and the
+message is still too long, and then by the earned-its-line test
+above, not by a proportional thinning of the reason the change
+exists.
+
 For a non-fix commit (a feature, cleanup, or optimization), the
 why is a limitation, a missing capability, or a cost the change
 removes rather than a bug. Open on that need; do not manufacture
@@ -175,7 +185,9 @@ without dropping the lock" is the why, "patch 5 retires the old
 path" is the bookkeeping.
 
 The check on a reroll is that the message is no longer than the one
-before it unless the code itself grew more subtle.
+before it unless the code itself grew more subtle. A shorter vN
+message loses what-content first, by the shortening rule under
+"Body: why before what".
 
 ## Trailers
 
