@@ -51,7 +51,11 @@ run them, do not just read them.
    -- *Searching is cheap*
 5. **Asserting absence or completeness, or did a lore or commit search feed
    the conclusion?** Emit the scope line in the template's shape. A verified
-   positive `find_function` hit does not need it. -- *Say what you searched*
+   positive `find_function` hit does not need it. When the absence is "no
+   replies" or "no review" on a thread -- including a thread that returned
+   only the author's own messages -- run the refresh-and-cross-check sequence
+   before making the claim, not after. -- *Say what you searched*,
+   *Lore: coverage first, then freshness*
 
 ## The two front ends
 
@@ -173,8 +177,12 @@ On the day this was written the archive held five lists; lkml, linux-mm, and
 every other list were absent. The set changes as archives get added, so the
 roster comes from your own `ls` (gate 3), never from memory -- a remembered
 list is how a coverage claim goes stale without anyone noticing.
-lore.kernel.org blocks bots, so there is no live fallback for a list that is
-not there.
+lore.kernel.org answers 403 to a plain fetch of its HTML, `raw`, search, and
+atom-feed paths, so there is no live *search* for a list that is not
+mirrored. The one path that does answer is the thread mbox,
+`https://lore.kernel.org/<list>/<msgid>/t.mbox.gz`, which plain curl fetches
+with a 200 (checked 2026-09-06). It needs a Message-ID you already hold, so
+it settles "did anyone reply to this thread" and nothing broader.
 
 Never report "not posted" or "lore has no copy" from an empty search. Say
 "not found in the local lore archive, which mirrors only <the lists your `ls`
@@ -182,12 +190,68 @@ printed>" -- and if you have not run the `ls`, run it now. An mm patch posted
 to linux-mm will never be found; a session once downgraded a sashiko lookup
 to "patch was local-only" on exactly that mistake.
 
-**The archive lags a day or two.** A reply sent yesterday is often not there
-yet; that is lag, not silence. Refresh a *named* archive:
+**Before you report that a thread has no replies, run this sequence.** It
+fires on the claim, not on the shape of the result: "no replies", "no
+review", "nobody responded". A lookup that returned the author's own patches
+and nothing else is the same unanswered question as an empty result, and it
+is the shape the failure actually took. "Recent" means the thread postdates
+the archive's last refresh, or you have not checked when that was. The
+archive lags a day or two, and lag is a reason to refresh, not a finding to
+report; a session once named the lag as the explanation and moved on to
+writing the changelog while the user was refreshing the archive by hand.
 
-```bash
-semcode-index --lore netdev
-```
+1. Refresh the *named* archive:
+
+   ```bash
+   semcode-index --lore netdev
+   ```
+
+2. Re-run the same query.
+3. Confirm the archive's newest indexed mail is later than the reply window
+   you care about. A recipient search over a narrow recent window prints the
+   mail the index holds for that list address:
+
+   ```bash
+   semcode -q "lore -t netdev@vger.kernel.org --since yesterday --limit 0"
+   ```
+
+   Read the *last* entry printed: output is sorted oldest first. Do not pass
+   a small `--limit`; the limit truncates the match set *before* that sort,
+   so `--limit 5` prints an arbitrary five of the window, and the latest
+   date among them is not the newest mail the index holds. `--since` bounds
+   the cost; the limit does not have to. The lore table has no list column,
+   so this measures mail addressed to that list across every mirrored
+   archive. Treat it as a floor: if the last date printed is older than the
+   posting, the refresh did not reach the window and the local archive
+   cannot answer. The converse does not prove it did.
+4. Cross-check against lore itself. Fetch the thread mbox for the Message-ID
+   of any message in the thread and count its messages:
+
+   ```bash
+   curl -fsSL 'https://lore.kernel.org/<list>/<msgid>/t.mbox.gz' \
+       | zcat | grep -c '^From '
+   ```
+
+   The local count is the `Thread: Found N message(s) in thread:` line that
+   `lore -m <msgid> --thread` prints; do not count the entries by eye. The
+   pipe leaves nothing on disk; if you want the bodies, write the file to
+   the session scratchpad, never into the worktree.
+
+   Lore's mbox is one list's copy of the thread, while the local index
+   threads across every mirrored archive at once, so a cross-posted thread
+   can legitimately show a *higher* local count. What settles the question
+   is whether lore holds a message the local thread does not: read the
+   mbox's `From:` lines and look for a sender who is not the author. If lore
+   has one, lore's copy is the answer and the local archive is behind it.
+
+   When either side fails -- `curl -f` exits non-zero (lore may have
+   tightened the 403 since 2026-09-06), or `-m` returns "not found" (see
+   *Pull a thread by message-id instead*) -- the cross-check did not run.
+   Say so in the scope line and report the local result as unconfirmed. Do
+   not report a bare "no replies".
+
+Report the outcome in the scope line below: the newest indexed timestamp
+from step 3 and whether the lore cross-check in step 4 ran.
 
 A bare `--lore` refreshes every archive ever indexed, lkml included -- far more
 work than checking one thread justifies.
@@ -295,6 +359,15 @@ Worked:
 ```
 Searched: netdev + linux-nfs, since 2026-06-01, limit 5, no thread expansion.
 Not covered: lkml, linux-mm; netdev mirror last refreshed 2026-08-06.
+```
+
+When the claim is about replies to a recent thread, the line also carries the
+newest mail the archive holds and whether lore was consulted:
+
+```
+Searched: linux-nfs thread <msgid>, refreshed 2026-09-04, newest indexed
+mail 2026-09-04 09:12; lore t.mbox.gz holds 11 messages, local 11.
+Not covered: lkml.
 ```
 
 The line is not a hedge and not optional where it applies: a conclusion with
