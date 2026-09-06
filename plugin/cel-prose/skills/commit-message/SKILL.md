@@ -93,6 +93,19 @@ documentation rides along with code, a kernel-doc block for a new
 function, the body is about the code; the block earns no sentence
 of its own.
 
+A count is either exact or absent. "Forty-plus call sites,"
+"hundreds of allocations," and "a large number of" say that
+the writer did not count. Drop the quantity and state the
+property that matters instead: that every caller changes, that
+the allocation is per-request. Keep a number only when the
+argument turns on it -- three entries justify a linear scan,
+one caller justifies inlining -- and then count it (the
+diffstat, `wc -l`) and give the exact figure. A count the
+diffstat already shows is padding even when exact. A
+measurement is different: report it as measured, with the run
+count or spread that bounds it, as references/kernel.md
+requires for any performance claim.
+
 When asked to shorten, cut the what first. Mark each sentence
 why or what, then cut the what by the rule above: what the
 commit does, plus a design choice the diff cannot convey. A long
