@@ -39,12 +39,30 @@ documentation is ordinary prose and does follow them.
   scheduler time" all drew "terms no kernel developer would
   use." The words for those things are "the syscall return
   bounds the loop," "process context," and "costs the caller
-  CPU time." When unsure whether a phrase is coined, grep the
-  subsystem. If neither the code nor the file's existing
-  comments use it, and a plain kernel term covers the same
-  thing, it is coined. Terminology the subsystem does use is
-  not coined however unfamiliar it looks, so read the tree
-  before cutting a term.
+  CPU time." "Consumes" used as a noun drew the same reply;
+  the noun is "consumer" or "the read side." When unsure
+  whether a phrase is coined, grep the subsystem. The corpus
+  for that grep is the tree and list traffic as they stand
+  before the patch. On an stg branch that means grep the stack
+  base (`git grep <term> $(stg id '{base}')`) or drop the
+  files `stg files` lists for the patch from the hits. Text
+  the patch adds, including its own README or Documentation/
+  page, does not vouch for a term, and neither does an earlier
+  version of the same series on the list; the corpus is what
+  other people wrote. An identifier the patch introduces names
+  what it names; a descriptive word that appears only in the
+  patch's prose is the patch's coinage. If the subsystem's
+  existing code and comments do not use the term, and either a
+  plain kernel term or the domain's standard term covers the
+  same thing, it is coined; the draft uses that term instead,
+  even when the coined word is ordinary English. Wire-to-memory
+  is "unmarshal" or "decode" in SUNRPC and XDR, never
+  "materialize"; a pool under pressure is "exhausted" or
+  "oversubscribed", not "over-utilized". A hit elsewhere in the
+  tree does not vouch: the scheduler's "over-utilized" is not
+  SUNRPC's word. Terminology the subsystem itself uses is not
+  coined however unfamiliar it looks, so read its files before
+  cutting a term.
 - Subsystem names in prose take their uppercase form: NFSD,
   SUNRPC, NFS, including the subject-line prefix of a kernel
   patch. Others write "nfsd" or "knfsd"; do not match them.
