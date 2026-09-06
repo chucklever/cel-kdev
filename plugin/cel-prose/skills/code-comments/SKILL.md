@@ -226,6 +226,36 @@ comment outside this list still has to pass the gate.
 - **Register:** old high-trust code sometimes reads informally
   ("belt and suspenders", "I'm not sure but"). That tone is earned
   in place; for new code write the plainer imperative form.
+- **In a file that implements a specification, do not borrow its
+  keywords.** In a file that quotes or implements a normative
+  specification -- an RFC, but equally a PCIe, IEEE, or POSIX text
+  -- an obligation phrased with "must", "should", or "may" reads
+  as a paraphrase of the spec's requirement levels, and a reader
+  goes looking for the clause it paraphrases. The scope is the
+  file, not the paragraph. The collision is with obligation and
+  permission, not possibility: "the list may be empty" states what
+  can happen and stays; "required" and "optional" are ordinary
+  English and stay. Reserve the deontic use -- "the caller must",
+  "callers should", "a server may" -- for statements that restate
+  an actual requirement in the cited spec. For a local obligation,
+  prefer the assertion (see "Code first"); where a comment is
+  still the right home, state the condition or the consequence
+  instead: "the completion handler frees the reply buffer" rather
+  than "the caller must not free the reply buffer", "does not
+  sleep" rather than "must not sleep". For a local permission,
+  write "can" or state the fact: "a stale handle is rejected here"
+  rather than "the server may reject a stale handle here". Where
+  the requirement really is the spec's, name the section, and
+  capitalize the keyword when you use one -- the one exception to
+  sentence case above -- paraphrasing the clause rather than
+  pasting it: "RFC 8881 Section 8.4.2 requires a new client ID
+  after NFS4ERR_STALE_CLIENTID" or "the client MUST establish a
+  new client ID (RFC 8881 Section 8.4.2)". A kernel-doc
+  `Context:` line is exempt: "Expects @lock to be held by caller"
+  and "May sleep" are that section's fixed grammar. The worked
+  examples in this file and in references/examples.md are mm/
+  code, where this rule is off; that is why they use "must"
+  freely.
 
 ## The API-documentation exception
 
@@ -374,6 +404,7 @@ bare.
 | Memory barrier or ordering primitive | One line: why, and what it pairs with |
 | Locking rule | State centrally; prefer an executable assertion in code |
 | Non-obvious workaround / cleanup | Comment *why*, cite erratum/RFC if any |
+| Obligation in a file that implements a spec | State the condition, not "must"; capitals and a section number only for the spec's own requirement |
 | Known shortcoming | FIXME/TODO naming the hazard |
 | Public / exported function | Full API doc block: every param, return, `Context:`, caller obligations; contract only, no body mechanism, no list of current callers |
 | Explaining *how* the code works | Rewrite the code instead |
@@ -403,6 +434,10 @@ Against that list:
 - **Every remaining entry names its reason:** a floor item, or a fact
   the code cannot carry (intent, invariant, hazard, caller
   obligation). If you cannot name it, cut it.
+- **In a file that implements a specification, any entry using
+  "must", "should", or "may" as an obligation** either restates a
+  requirement in that spec -- cite the section -- or gets restated
+  as a condition or a consequence.
 - **Any entry in the past tense, or that names this patch, a bug, a
   reporter, or a previous behavior, is commit-message material.**
   Move it; keep only the present-tense constraint it was protecting,

@@ -33,7 +33,9 @@ local assignment but required for correctness.
  * page table lock.
 ```
 Capitalized MUSTs spell out the exact locks a debug path needs so
-it doesn't itself crash.
+it doesn't itself crash. mm/ implements no specification; in a file
+carrying a specification's own capitalized keywords, reserve capitals
+for the specification (SKILL.md, "Voice").
 
 `mm/rmap.c`, before `mmu_notifier_invalidate_range_start()`
 ```c

@@ -22,6 +22,11 @@ Run SKILL.md's gate backward over each comment and land on exactly one:
   inscrutable code -- a magic number, an unnamed block, an unstated
   precondition. Recommend the name, constant, helper, or assertion that
   removes the need, not a better comment.
+- **Reword.** A smaller verdict for a comment that earns its place
+  but, in a file that implements a specification, borrows "must",
+  "should", or "may" for a local obligation (SKILL.md, "Voice"). Keep
+  the fact; restate the obligation as a condition or a consequence,
+  or cite the spec section it actually comes from. Do not delete it.
 
 For API documentation blocks, judge by completeness (SKILL.md's
 API-documentation exception), not the deletion test -- unless the
