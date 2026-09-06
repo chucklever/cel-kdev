@@ -63,8 +63,10 @@ commit message only when the prose illuminates a design choice
 the diff cannot convey: a reference taken rather than borrowed,
 a lock held across a wider region, an ordering that now matters.
 A paragraph narrating a mechanical factoring, defending a
-structural choice no reviewer would stop on, or restating a
-comment the change itself adds, is padding, not rationale.
+structural choice no reviewer would stop on, or restating text
+the change itself adds -- a code comment, a kernel-doc block, a
+Documentation/ page, a README, a man page -- is padding, not
+rationale.
 
 Two paragraphs is the common shape: why, then what. A third has
 to answer a question the code raises, and if you cannot name the
@@ -78,6 +80,18 @@ or a paragraph per new function, restates names the diff already
 lists; say what the set of them accomplishes and stop. And a
 walk through a new function's steps -- which field is filled
 first, what is copied where -- is the diff in prose.
+
+A third is a body that paraphrases documentation the patch adds.
+The reviewer reads the added text in the diff. When the change is
+the documentation itself -- a Documentation/ page, a README, a man
+page -- name what it now covers in one clause and spend the body
+on the gap it fills: what a reader could not learn from the tree
+before, or what the old text got wrong. A missing page needs no
+account of why nobody wrote it. Cut any sentence whose content the
+added text already carries, however the draft rewords it. When
+documentation rides along with code, a kernel-doc block for a new
+function, the body is about the code; the block earns no sentence
+of its own.
 
 When asked to shorten, cut the what first. Mark each sentence
 why or what, then cut the what by the rule above: what the
