@@ -25,13 +25,17 @@ kernel's grammar for it.
 A kernel-doc block (`/** */`) is a brief line, then every `@param` in
 order, then a `Context:` section recording execution context, sleeping
 behavior, and locks taken, released, or required, and finally the
-return value. `Return:` goes last.
+return value. `Return:` goes last. A lock passed as a parameter carries
+its ownership on its `@param` line; everything else about locking --
+the locks the caller must hold and the locks the function takes and
+releases itself -- is one line in `Context:`, never a narration of the
+function's own locking through the description.
 
 Every parameter is mandatory and they appear in signature order. A
 missing or misnamed one is a `scripts/kernel-doc` warning under
 `make W=1`, so never drop a parameter to shorten the block -- SKILL.md's
 length budget, redundancy gate, and banned-openings list do not reach
-inside it.
+inside it; the "never how" rule and the contract test do.
 
 Required for `EXPORT_SYMBOL*` and module-facing symbols; discretionary
 for file-static ones. Some subsystems, KVM among them, deliberately

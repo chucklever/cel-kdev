@@ -236,6 +236,44 @@ parameter, in order; a missing one is a `make W=1` warning, and rustdoc
 and docstring conventions expect the same completeness. The length
 budget above does not apply here and neither does the redundancy gate.
 
+Completeness is measured against the contract, not the body. A
+kernel-doc block states what a caller can rely on and what a caller
+must provide. It does not state how the body achieves it or which
+functions call it today -- those are implementation and change without
+notice, and a caller who reads them into the contract is misled when
+they do. The exception is a callback or ops-table method: the layer
+that invokes it and the condition under which it is invoked are its
+interface and belong in the block. A list of the ordinary functions
+that currently happen to call it is not. The "never how" rule under
+Voice applies inside the block; the "mechanism and causation, in
+order" bullet there orders the sentences of a contract, not the steps
+of the body.
+
+Test each sentence: does it tell a caller something to rely on,
+something to provide, or something to avoid, without reading the body?
+If not, it is not contract: cut it. If what you cut was a why the body
+cannot show, it is an ordinary comment at the site in the body and
+goes through the gate like any other. A sentence that fails the test
+may still be carrying a contract in disguise; restate that instead:
+
+```c
+ * Walks the hash chain under rcu_read_lock() and takes a   /* how */
+ * reference on the match before dropping it.
+```
+```c
+ * Takes a reference on the returned entry; the caller      /* contract */
+ * releases it with nfsd_file_put().
+ * Context: does not sleep.
+```
+
+Locking is contract. A lock passed as a parameter carries its ownership
+on its `@param` line; everything else about locking lives in
+`Context:`, in one line: the locks the caller must hold, and the locks
+the function takes and releases on its own. Whether the caller may also
+hold one of those follows from the lock type; say so only when it is
+true. Narrating the acquire and release sequence through the
+description paragraph is how, not contract.
+
 Over-commenting applies to the *content* of each line, not to which
 lines exist. Every parameter gets a line; make the line say what the
 signature cannot -- units, ownership, lifetime, nullability, valid
@@ -332,7 +370,7 @@ bare.
 | Locking rule | State centrally; prefer an executable assertion in code |
 | Non-obvious workaround / cleanup | Comment *why*, cite erratum/RFC if any |
 | Known shortcoming | FIXME/TODO naming the hazard |
-| Public / exported function | Full API doc block: every param, return, caller obligations |
+| Public / exported function | Full API doc block: every param, return, `Context:`, caller obligations; contract only, no body mechanism, no list of current callers |
 | Explaining *how* the code works | Rewrite the code instead |
 | Why the code changed, what it did before | Commit message; keep only the constraint it protects |
 | One rationale governs several sites | State it once; leave the rest bare |
