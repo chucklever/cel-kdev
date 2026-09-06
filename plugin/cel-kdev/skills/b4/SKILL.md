@@ -173,6 +173,78 @@ references/stack-base.md rather than naively joining
 composition's failure modes are documented there. A tag or
 an explicit remote ref passes directly.
 
+**Basing on another unmerged series.** A series that depends
+on patches still under review is enrolled on the tip of
+those patches, not on the remote ref beneath them. This is
+the right choice whenever applying the new series on bare
+upstream would conflict with the prerequisite: the author
+resolves the overlap once, locally, instead of every
+maintainer and bot resolving it on apply. A base that
+resolves to a commit inside the applied stack, above
+`stg id {base}`, is such a base whether or not the user
+says so. When the user names one, take it; do not argue
+for the remote ref.
+
+b4 records the base as a branch name, so the tip must be on
+a branch. Given a bare commit, `--enroll` looks for exactly
+one other branch that contains it and records that branch;
+with none it exits `No other branch contains <sha>: cannot
+use as fork base`. On an stg branch the prerequisite
+patches live under `refs/patches/`, which are not branches,
+so mark the tip first and enroll on the mark:
+
+    git branch <series>-base $(stg id <last-prerequisite-patch>)
+    b4 prep --enroll <series>-base
+
+A patch name is not a git rev; `stg id` resolves it.
+Flagless `git branch` creates the mark without moving HEAD,
+so the stg stack is undisturbed and the raw-git guard
+allows it.
+
+The prerequisite patches stay applied beneath the new
+series -- HEAD must still contain the base -- but they sit
+below the fork-point and are not in `series-range`. The
+"What b4 sees" diagram assumes the fork-point sits under
+the whole applied stack; here it sits in the middle of it.
+`stg push -a` before sending still applies.
+
+`b4 prep --show-info` then reports a `base-commit` that is
+not public. Check two things there, at enrollment and again
+before every `b4 send`: `base-commit` equals the current
+`stg id <last-prerequisite-patch>`, and `series-range`
+spans exactly the new patches. b4 recomputes the fork-point
+as the merge-base of the mark and HEAD on every command, so
+any `stg refresh`, `stg edit`, or `stg rebase` that touches
+a prerequisite patch or anything beneath it leaves the mark
+on a commit HEAD no longer contains; the merge-base drops
+to the last shared commit and `series-range` silently grows
+to include the rewritten prerequisites. Move the mark with
+`git update-ref refs/heads/<series>-base $(stg id
+<last-prerequisite-patch>)` -- `git branch -f` is blocked
+by the raw-git guard -- and re-check before sending.
+
+State the dependency in the cover letter, near the top, in
+one sentence that names the prerequisite series' subject
+and version, its lore link, and the public ref beneath it:
+"Applies on top of '[PATCH v3 0/5] ...' <lore link>, itself
+based on nfsd-testing." `b4 send` stamps the private
+`base-commit:` in the mail, so that sentence is what tells
+a reader what to apply first. The cel-prose:cover-letter
+skill governs the rest of the cover, not this sentence; it
+covers ordering within one series, not a dependency on
+another posting.
+
+b4 can also record the dependency itself. `b4 prep
+--edit-deps` takes `message-id:` or `change-id:vN` lines
+for the prerequisite and a public `base-commit:` line;
+`b4 prep --check-deps` verifies the prerequisites apply;
+`b4 send` then emits `prerequisite-patch-id:` trailers that
+`b4 am` and `b4 shazam` apply before the series, and stamps
+the public `base-commit:` in place of the private one.
+Offer this to the user. `--edit-deps` opens `$EDITOR`; use
+the `EDITOR="cp ..."` override from "Avoiding interactive
+editors".
+
 ### Describing the base branch
 
 Whenever you name the base branch in prose -- a cover
@@ -269,7 +341,10 @@ in-flight change-id and cover letter, rewrite the
 instead -- see "The b4-tracking JSON" in
 [references/config.md](references/config.md) -- then verify
 with `b4 prep --show-info` that `base-commit` and
-`series-range` look correct.
+`series-range` look correct. A series enrolled on a mark
+above another unmerged series goes stale on any edit to the
+prerequisite patches, not only on rebase; see "Basing on
+another unmerged series" under Setup.
 
 **GPG/patatt signing requires pinentry**: Signing is
 interactive and unavailable in non-interactive agent shells. Default
