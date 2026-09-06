@@ -115,6 +115,19 @@ column is variable width during operations.
 | Commit log for a patch | `stg log <patch-name>` |
 | Files changed by a patch | `stg files <patch-name>` |
 | Patches that modify a file | `stg patches <file-path>` |
+| Stack base of the current branch | `stg id {base}` |
+| Stack base of another branch | `stg id --branch <branch> {base}` |
+| Series of another branch | `stg series --branch <branch>` |
+
+`--branch <name>` is a per-subcommand option, not a global
+one: `stg -b <branch> ...` and `stg --branch <branch> ...`
+are rejected with "unexpected argument". Exactly these
+commands take it: `id`, `series`, `show`, `log`, `top`,
+`patches`, `export`. `diff` and `files` do not; for another
+branch's diff or file list, resolve the commit with
+`stg id --branch <branch> <patch>` and hand it to git. It
+reads the other branch without switching to it; to change
+that stack, switch with `stg branch <name>` first.
 
 ## Reordering
 

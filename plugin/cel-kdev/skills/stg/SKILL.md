@@ -96,7 +96,11 @@ This applies to all agents and subagents.
 `stg branch <name>` both creates and switches branches; it
 is the canonical stg interface for branch operations. The
 runtime hook's `git branch -> stg branch` line refers to
-this.
+this. To read another branch's stack without switching to
+it, pass `--branch <name>` to a read-only command
+(`stg series`, `stg show`, `stg id`, `stg log`, `stg top`);
+there is no global `stg -b`, and `stg files`/`stg diff` do
+not take it.
 
 `git checkout` is not used on an stg branch in any form,
 period. The branch forms (`git checkout <branch>`,
@@ -174,7 +178,8 @@ The stack base is the commit each applied patch sits above.
 It is recorded per branch in stg metadata; do not assume
 `origin/master` -- a branch may be rooted on any ref. The
 base *commit* comes from `stg id {base}`, the canonical
-lookup. The *upstream ref name* (the b4 fork-point) is
+lookup (`stg id --branch <branch> {base}` for a non-current
+branch). The *upstream ref name* (the b4 fork-point) is
 composed from the recorded parent branch, and the
 composition has enough failure modes that you must read
 [references/stack-base.md](references/stack-base.md) for the

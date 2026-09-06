@@ -7,7 +7,9 @@ composed from the recorded parent branch.
 
 ```bash
 # Upstream ref name (the form b4 expects as a fork-point).
-# <name> is the current branch (git branch --show-current).
+# <name> is the branch whose stack you are asking about: the
+# current branch (git branch --show-current) unless you are
+# reading another branch. These config reads need no checkout.
 remote=$(git config branch.<name>.remote)
 parent=$(git config branch.<name>.stgit.parentbranch)
 # With no parentbranch recorded there is nothing to compose:
@@ -45,7 +47,8 @@ echo "$ref"
 handles both.  Not every stg branch has `parentbranch`
 configured, so `stg id {base}` -- which reads the recorded
 base directly and never hits the composition above -- is the
-canonical lookup when only the commit hash is needed.
+canonical lookup when only the commit hash is needed
+(`stg id --branch <name> {base}` for a non-current branch).
 
 **When `branch.<name>.remote` differs from the parent's
 tracked remote** (the WARN case above): the rev-parse guard
