@@ -6,6 +6,15 @@ markers and guessing at the right resolution misses available
 context that substantially improves accuracy.  The strategy
 below gathers that context before any editing begins.
 
+A conflicted `stg float`/`stg sink` (top `stg log` entry
+`float (CONFLICT)`/`sink (CONFLICT)`) is not finished after
+Step 5: re-run the identical float/sink command, which
+pushes only what remains, in the intended order.  Never
+`stg push -a` there; it reapplies the remainder in the order
+the pops left it plus every other unapplied patch, and can
+lose the reorder with no error.  See the float/sink pitfall
+in SKILL.md (grep "conflicted `stg float`").
+
 A `stg pick` conflict is not resolved at all; it signals a
 prerequisite the destination never received.  Skip to "Pick
 conflicts: back out, do not resolve".
@@ -178,10 +187,11 @@ operation recorded in stg's stack log -- it reads that log,
 not the worktree -- and `--hard` additionally discards the
 index and worktree.  So `stg undo --hard` recovers cleanly
 only when that last recorded operation is what left this
-state: a real `stg push`/`stg rebase`/`stg goto` conflict
-(the recovery StGit's own push-conflict message recommends),
-possibly already half-rolled-back.  Confirm with `stg log`
-before undoing.
+state: a real `stg push`/`stg rebase`/`stg goto`/`stg float`/
+`stg sink` conflict (the recovery StGit's own conflict
+message recommends; `stg log` shows it as
+`<command> (CONFLICT)`), possibly already half-rolled-back.
+Confirm with `stg log` before undoing.
 
 If `stg log` shows the last operation is something else --
 the state came from raw git, or from tooling that dirtied

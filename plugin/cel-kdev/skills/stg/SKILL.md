@@ -312,6 +312,29 @@ conflict); `push -a` applies them too, overshooting the prior
 applied set. Use `push -a` only when applying the whole stack
 is itself the goal (e.g. the series-end append above).
 
+**A conflicted `stg float`/`stg sink` is resumed by
+re-running the same command, never with `stg push -a`.**
+float and sink pop the affected patches and push them back
+in the new order; a conflict stops them mid-push with the
+new order only partly applied, and the unapplied list still
+carries the original order. The signal is the top `stg log`
+entry: `float (CONFLICT)` or `sink (CONFLICT)`. `push -a` is
+refused while the conflict stands, so the trap is right
+after `stg refresh --index`, when the float looks finished
+but is not. `stg push -a` there pushes the remainder in the
+order the pops left it, plus every patch that was unapplied
+before the float, and can lose the reorder with no error.
+Resolve and finalize per "Merge conflict resolution", then
+re-run the identical `stg float`/`stg sink` command with the
+same arguments: it pops nothing already in place and pushes
+only the remainder, in the intended order. To abandon
+instead, `stg undo --hard` while that `(CONFLICT)` entry is
+still the last one in `stg log`. If `push -a` has already
+run, a single `stg undo` reverts it and keeps the
+resolution; add `--hard` only if that push itself stopped on
+a conflict. Confirm in `stg log` that the undone entry was
+the push, then re-run the float/sink command.
+
 **Editing a non-top patch cascades conflicts on re-push.**
 Re-pushing the stack after a `stg goto` edit re-runs a 3-way
 merge for every intervening patch. When the edited line sits
