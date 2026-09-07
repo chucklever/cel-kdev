@@ -69,6 +69,12 @@ sashiko-cli --server <url> submit --type mbox \
     <dir>/0001-*.patch --baseline <public-commit>
 ```
 
+`<url>` takes no trailing slash (`http://host:8080`); a
+trailing slash makes every request `//api/...` and the
+daemon answers 404 Not Found with an empty body.  A 404
+from `submit` itself, or from `list`, is that slash, not a
+missing record: fix the URL before reading any 404 below.
+
 Git spells the header `Message-ID` and b4 spells it
 `Message-Id`.  Sashiko lowercases before matching, so both
 ingest -- but a case-sensitive `grep` or `sed` written

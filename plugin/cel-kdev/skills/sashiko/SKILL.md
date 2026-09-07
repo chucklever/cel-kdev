@@ -257,7 +257,8 @@ subcommand except the two one-shot reviews (`sashiko-cli
 local`, `sashiko review`) needs a running daemon.
 
 Default server is `http://127.0.0.1:8080`, which is right
-only when a daemon runs on this host.  Build via
+only when a daemon runs on this host.  Override with
+`--server <url>`.  Build via
 `cargo run --bin sashiko-cli -- <subcommand>` from the
 sashiko source tree (`cargo run --bin sashiko -- review
 [<input>]` for the one-shot review from the `sashiko`
@@ -273,16 +274,33 @@ not fall through to 127.0.0.1, and do not substitute
 sashiko.dev: it is a different instance with its own
 patchset ids, and it does not accept submits.  Pass
 whatever the lookup yields as `--server <url>` on every
-call.  The LOCAL.md line is a note the next session reads,
-not an exported variable: LOCAL.md is instruction text the
-harness loads into context, so nothing sets it in the
-shell.  Once the user gives a URL, suggest recording it
-there in that exact form.  Do not suggest a `Settings.toml`
-`[server]` section for this: `sashiko-cli local` probes
-that file in the current directory to decide whether to
-submit instead of reviewing locally (see
+call.  If the value ends in `/`, drop the slash before
+passing it and say the recorded line needs the same fix.
+The LOCAL.md line is a note the next session reads, not an
+exported variable: LOCAL.md is instruction text the harness
+loads into context, so nothing sets it in the shell.  Once
+the user gives a URL, suggest recording it there in that
+form, without a trailing slash.  Do not suggest a
+`Settings.toml` `[server]` section for this: `sashiko-cli
+local` probes that file in the current directory to decide
+whether to submit instead of reviewing locally (see
 references/submitting.md), so setting it changes that
 command's behavior.
+
+Give the URL as scheme, host, and port with no trailing
+slash: `http://host:8080`, never `http://host:8080/`.  No
+path either: the daemon routes `/api/...` at the root.
+sashiko-cli appends `/api/...` verbatim, so a trailing slash
+turns every request into `//api/...` and the daemon answers
+404 Not Found with an empty body (`Submission failed (404
+Not Found):` from `submit`).  A dead daemon does not answer
+at all: sashiko-cli prints `Hint: Is the Sashiko server
+running at <url>?` on a refused connection and never on a
+404.  So a 404 from `status`, `list`, or `submit` is the
+URL, not the daemon; check it before anything else.  A 404
+on a single patchset lookup after other calls succeeded is
+a poll-key or ingestion question (see "Confirming a submit
+landed" in references/submitting.md), not the URL.
 
 | Command | Purpose |
 | ------- | ------- |
