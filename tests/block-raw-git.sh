@@ -119,6 +119,39 @@ expect_allowed "git branch topic"
 # chained after it; the old whole-text test failed open here.
 expect_blocked "git worktree list; git commit -m update"
 expect_allowed "stg edit -m 'mention git commit in text'"
+# A heredoc body is data, not command text: prose naming a prohibited
+# command there must not block, in any operator form. Command text
+# after the terminator line is still checked.
+expect_allowed $'cat > x.md <<\'EOF\'\nsome prose about git commit\nEOF'
+expect_allowed $'cat > x.md <<"EOF"\nnever git rebase here\nEOF'
+expect_allowed $'cat > x.md <<EOF > /dev/null\nnever git reset here\nEOF\necho done'
+expect_allowed $'cat > x.md <<-EOF\n\tnever git commit here\n\tEOF\nstg series'
+expect_blocked $'cat > x.md <<EOF\nsome prose\nEOF\ngit commit -m update'
+expect_blocked $'grep x <<<here\ngit commit -m update'
+# The delimiter is any word bash accepts. A narrower class would
+# truncate it, leave the body open, and delete the command after the
+# real terminator unchecked.
+expect_allowed $'cat > x.md <<END-OF\nnever git commit here\nEND-OF'
+expect_blocked $'cat > x.md <<END-OF\nsome prose\nEND-OF\ngit commit -m update'
+expect_allowed $'cat > x.md <<EOF.txt\nnever git commit here\nEOF.txt'
+# A body left open at end of input is put back and checked.
+expect_blocked $'cat > x.md <<EOF\nsome prose\ngit commit -m update'
+# "<<" inside a quoted string, a comment, or an arithmetic expansion
+# starts no body, so the command on the next line is still checked.
+expect_blocked $'echo "<<EOF"\ngit commit -m update'
+expect_blocked $'stg edit -m \'see <<EOF later\'\ngit commit -m update'
+expect_blocked $'echo "<<\'EOF\'"\ngit commit -m update'
+expect_blocked $'echo $((1<<n))\ngit commit -m update'
+expect_blocked $'echo x # see <<EOF\ngit commit -m update'
+# The backslash, spaced, and digit delimiter forms bash accepts.
+expect_allowed $'cat > x.md <<\\EOF\nnever git commit here\nEOF'
+expect_allowed $'cat > x.md << EOF\nnever git commit here\nEOF'
+expect_allowed $'cat > x.md <<1\nnever git commit here\n1'
+expect_blocked $'cat > x.md <<\\EOF\nsome prose\nEOF\ngit commit -m update'
+# Several heredocs on one line open their bodies in operator order.
+expect_allowed $'cat <<A <<B\nx\nA\nnever git commit here\nB'
+expect_allowed $'cat <<A; cat <<B\nnever git rebase here\nA\nnever git commit here\nB'
+expect_blocked $'cat <<A <<B\nx\nA\ny\nB\ngit commit -m update'
 expect_allowed "git merge-tree --write-tree base topic"
 expect_allowed "git merge-base master topic"
 expect_allowed "git merge-file ours.txt base.txt theirs.txt"

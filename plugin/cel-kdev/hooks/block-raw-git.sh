@@ -10,6 +10,72 @@ fi
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
+# Delete heredoc bodies before any pattern looks at the text. A body
+# is data the shell hands to a command, not command text, yet it is
+# where prose naming a prohibited command lands (a commit message
+# written with "cat > msg <<EOF", a test script, a prompt). The quote
+# strip below cannot help: a body is unquoted. The body runs from the
+# line after the operator to the line consisting of WORD alone
+# (tab-indented with "<<-"); the terminator is a whole line, so it
+# cannot be confused with command text. The operator is "<<" or
+# "<<-", optional space, then WORD bare, quoted, or with a leading
+# backslash. Several operators on one line open their bodies in
+# order, as bash reads them. A here-string ("<<<") is not a heredoc
+# and must not start a body: swallowing the rest of the command on
+# one would fail open.
+#
+# Two more ways a body could swallow command text and fail open.
+# WORD is any word bash accepts, not just an identifier: a narrower
+# class truncates "END-OF" to "END", the terminator never matches,
+# and every later line is deleted unchecked. And "<<" inside a
+# quoted string, a comment, or an arithmetic expansion starts no
+# body: the operator is looked for on a copy of the line with those
+# removed, after unquoting the delimiter itself so that a quoted
+# WORD survives the strip. A body still open at end of input is put
+# back, since bash reads to end of input there too.
+if [[ $COMMAND == *'<<'* ]]; then
+COMMAND=$(echo "$COMMAND" | awk -v q="'" -v dq='"' '
+    BEGIN {
+        word = "[^[:space:]<>;|&" q dq "]+"
+        quoted = "<<-?[[:space:]]*[" q dq "]" word "[" q dq "]"
+        re = "<<-?[[:space:]]*" word
+    }
+    body {
+        held = held $0 "\n"
+        if (dash[i]) sub(/^\t+/, "")
+        if ($0 == term[i]) {
+            held = ""
+            if (++i > n) body = 0
+        }
+        next
+    }
+    { print }
+    {
+        probe = $0
+        while (match(probe, quoted)) {
+            op = substr(probe, RSTART, RLENGTH)
+            gsub("[" q dq "]", "", op)
+            probe = substr(probe, 1, RSTART - 1) op \
+                substr(probe, RSTART + RLENGTH)
+        }
+        gsub(dq "[^" dq "]*" dq, "", probe)
+        gsub(q "[^" q "]*" q, "", probe)
+        gsub(/\$\(\([^)]*\)\)/, "", probe)
+        sub(/(^|[[:space:]])#.*/, "", probe)
+        gsub(/<<<[^[:space:]]*/, "", probe)
+        n = 0
+        while (match(probe, re)) {
+            term[++n] = substr(probe, RSTART, RLENGTH)
+            dash[n] = (substr(term[n], 1, 3) == "<<-")
+            sub(/^<<-?[[:space:]]*\\?/, "", term[n])
+            probe = substr(probe, RSTART + RLENGTH)
+        }
+        if (n) { i = 1; body = 1 }
+    }
+    END { if (body) printf "%s", held }
+')
+fi
+
 # Each "git -C <dir>" invocation targets <dir>; a bare "git
 # <subcommand>" (no -C) targets the hook's cwd -- the session's primary
 # branch. The guard must test stg-activity on the repo each subcommand
