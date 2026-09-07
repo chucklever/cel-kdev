@@ -249,16 +249,19 @@ ending `-0-<hash>@...` is itself the cover id.
 ## Local sashiko-cli
 
 When the sashiko source is checked out locally (typically
-at `~/src/sashiko/`) and the daemon is running, prefer the
-`sashiko-cli` wrapper over hitting the JSON API directly.
-Subcommands are stable, default output is human-readable,
-and `--format json` returns the same shape as the Backend
-API above.
+at `~/src/sashiko/`), prefer the `sashiko-cli` wrapper over
+hitting the JSON API directly.  Subcommands are stable,
+default output is human-readable, and `--format json`
+returns the same shape as the Backend API above.  Every
+subcommand except the two one-shot reviews (`sashiko-cli
+local`, `sashiko review`) needs a running daemon.
 
 Default server is `http://127.0.0.1:8080`, which is right
 only when a daemon runs on this host.  Build via
 `cargo run --bin sashiko-cli -- <subcommand>` from the
-sashiko source tree, or install per the upstream README.
+sashiko source tree (`cargo run --bin sashiko -- review
+[<input>]` for the one-shot review from the `sashiko`
+binary), or install per the upstream README.
 
 Before the first `sashiko-cli` call that talks to a server
 (every subcommand except `local`, which never leaves this
@@ -288,8 +291,37 @@ command's behavior.
 | `sashiko-cli status` | Daemon status and aggregate counts |
 | `sashiko-cli submit <input>` | Queue a patch for review. Only `--type mbox` ships patch content; the commit and range forms send a bare ref the daemon resolves in *its own* clone, so they review something else without failing. For a lore thread, `--type thread` with a bare Message-Id (not a URL). See "Submitting a patch" |
 | `sashiko-cli local [<input>]` | Run a one-shot review in the local tree without enqueuing (defaults to `HEAD`).  Ignores `--server`; it cannot target a remote instance.  The review is a full LLM pass that routinely outruns a foreground shell call, and its stdout is the only copy of the result -- nothing is stored, so a timed-out run forfeits the paid review.  Always start it with the shell tool's background mode (`run_in_background`), never a shell `&` or a raised foreground timeout, with output redirected to a file outside the repo (the session scratchpad, when one is provided), and read that file when the run exits |
+| `sashiko review [<input>]` | One-shot review from the `sashiko` binary itself, no daemon and no enqueuing (defaults to `HEAD`).  The same LLM pass and the same background rule as `sashiko-cli local`.  Takes no `--server`.  Reads the tree you are sitting in rather than a worktree; see below |
 | `sashiko-cli rerun <id>` | Re-review a completed patchset |
 | `sashiko-cli cancel <id>` | Cancel a `Pending` or `Incomplete` review.  Writes to a shared instance and cannot be undone -- confirm with the user first |
+
+Neither one-shot command (`sashiko-cli local`, `sashiko
+review`) touches the branch or its stack, so running either
+on an stg branch is safe.  `sashiko-cli local` checks the
+reviewed commits out into a throwaway worktree
+(`git worktree add --detach --no-checkout` plus a reset,
+removed when the run ends); the checkout you are sitting in,
+its branch, and `refs/stacks/<branch>` are untouched.
+`sashiko review` creates no worktree at all: it reads the
+current tree in place and never moves HEAD, so whatever is
+uncommitted is what gets reviewed.  It prints a WARNING when
+the tree is dirty and asks `[y/N]` only when stdin is a
+terminal; under the shell tool's background mode there is
+no terminal, so it warns and proceeds.  Run `git status
+--porcelain` first; if anything prints, refresh, commit, or
+stash it before starting the run.  The `sashiko-cli local`
+worktree goes under `$TMPDIR` (default `/tmp`), and a kernel
+checkout is larger than a stock tmpfs `/tmp`: "unable to
+write file ..." with `exit=3` is that overflow, not a patch
+failure.  `sashiko-cli local` takes no worktree-directory
+flag, so set `TMPDIR` on every invocation to an on-disk
+directory that already exists (the shell tool resets the
+environment between calls, so an `export` in one call does
+not reach the next).  `--force-local` skips the
+`Settings.toml` server probe described above, so the run
+stays local even where a daemon is reachable:
+
+    mkdir -p $HOME/tmp && TMPDIR=$HOME/tmp sashiko-cli local --force-local HEAD
 
 When a numeric patchset id appears in user input (e.g.,
 "run `sashiko-cli show 10`"), it refers to the local
