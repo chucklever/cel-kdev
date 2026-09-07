@@ -302,11 +302,35 @@ stg also writes `<dir>/series` there.
 ## Splitting a patch
 
 1. `stg goto <patch-name>`
-2. `stg spill`
-3. Stage the first portion of changes.
-4. `stg refresh --index`
-5. `stg new <next-name> -m "message"` then `stg refresh`
-6. Repeat 3-5 for additional splits.
+2. `stg spill --reset` -- empties the patch and leaves the
+   changes unstaged in the worktree. Plain `stg spill` leaves
+   them all staged, so the `--index` refresh in step 4 takes
+   everything back into the first patch and the next patch
+   comes out empty. If a plain `stg spill` already ran,
+   recover with `stg refresh --index`, which folds the staged
+   set back into the empty patch and leaves the index clean;
+   then `stg spill --reset`. Do not reach for `git reset` (the
+   raw-git guard blocks it) or `stg reset --hard` (it discards
+   the worktree, spilled changes included).
+3. Stage the first portion. Whole files: `git add <file>...`.
+   Individual hunks: `git diff > <tmp>`, cut `<tmp>` down to
+   the hunks that belong in this patch, then
+   `git apply --cached <tmp>`. Never `git add -p`: it prompts,
+   and a non-interactive shell cannot answer it. Staging here
+   is the deliberate exception to "do not `git add` before
+   `stg refresh`" -- the `--index` refresh in step 4 is what
+   makes the staged set, and only the staged set, this
+   patch's content.
+4. `stg refresh --index` -- leaving the unstaged remainder
+   out is the point here, so the second-column `M` entries
+   `git status --short` reports are expected, not a warning.
+   Never substitute `--force`: it folds every remaining
+   portion into this patch.
+5. `stg new <next-name> -m "message"`
+6. Repeat 3-5 for each portion after the first. The last
+   portion takes no `git add`: a bare `stg refresh` sweeps
+   every still-unstaged change into it. Run that bare refresh
+   only for the last portion.
 7. `stg push -a`
 
 ## Inserting a patch mid-series
@@ -320,7 +344,9 @@ stg also writes `<dir>/series` there.
 
 ```bash
 stg clean      # remove empty patches
-stg spill      # reset current patch to empty, keep changes in worktree
+stg spill      # empty the current patch; changes stay staged
+               # and in the worktree (--reset leaves them
+               # unstaged -- see "Splitting a patch")
 ```
 
 Patches go empty on their own after `stg rebase --merged`
