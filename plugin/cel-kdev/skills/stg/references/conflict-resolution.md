@@ -223,17 +223,19 @@ top-patch check above before `stg resolved`.
 # Top patch confirmed; after editing each conflicted file:
 stg resolved <file>
 
-# Once all conflicts are resolved:
+# Once all conflicts are resolved (never bare stg refresh here;
+# --force only after git status --short shows the unstaged edits belong):
 stg refresh --index
 ```
 
-`stg resolved` stages the file. A bare `stg refresh` handles a
-staged-only resolution, but when any tracked file also carries an
-unstaged change -- an edit made after its `stg resolved`, or a
-dirty file unrelated to the conflict -- it refuses with "error:
-the index is dirty; consider using `--index` or `--force`".
-`stg refresh --index` folds in exactly what `stg resolved` staged
-and succeeds in both states, so it is the default finalizer here.
+`stg resolved` stages the file. A bare `stg refresh` is not the
+finalizer: when any tracked file also carries an unstaged change
+-- an edit made after its `stg resolved`, or a dirty file
+unrelated to the conflict -- it refuses with "error: the index is
+dirty; consider using `--index` or `--force`", and the `--force`
+that error offers is not the answer. `stg refresh --index` folds
+in exactly what `stg resolved` staged and succeeds whether or not
+such a change exists, so it is the finalizer here.
 An unstaged edit is silently left out: the refresh succeeds and
 the edit stays dirty in the worktree, with nothing to flag the
 omission. Before finalizing, check `git status --short` -- a

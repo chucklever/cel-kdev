@@ -448,7 +448,15 @@ in both the index and the worktree (e.g., after `stg add`,
 `stg mv`, `stg rm`, or `stg resolved` staged some paths --
 the staged and unstaged changes need not touch the same
 file), plain `stg refresh` refuses with "the index is
-dirty." Two overrides:
+dirty; consider using `--index` or `--force`". That
+error's "or `--force`" is not a suggestion to take. On that
+error, run `git status --short` first. After `stg resolved`,
+the finalizer is `stg refresh --index`; run it when no
+second-column `M` entry exists, or when none of them belongs
+in the patch. `--force` is allowed only when the status
+output has listed second-column `M` entries and each one is
+judged to belong in the patch. The two flags, `--index`
+first:
 
 - `--index` (`-i`): refresh only from what is staged,
   ignoring worktree changes. Use after `stg add`, `stg mv`,
@@ -812,8 +820,9 @@ When `stg push` or `stg rebase` produces conflicts, follow
 [references/conflict-resolution.md](references/conflict-resolution.md):
 survey with `git status`, classify each conflict, resolve,
 then `stg resolved <file>` (not `git add`) per file and
-`stg refresh --index` to finalize. Non-negotiable gates,
-detailed in the reference:
+`stg refresh --index` to finalize; bare `stg refresh` is
+never the finalizer after `stg resolved`. Non-negotiable
+gates, detailed in the reference:
 
 - To enumerate the in-flight patch's full file set (e.g. for
   a per-file mechanical loop), use `git status --short`,
