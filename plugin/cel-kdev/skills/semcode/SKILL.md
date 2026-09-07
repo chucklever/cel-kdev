@@ -44,7 +44,9 @@ run them, do not just read them.
    -- *Index freshness*
 3. **Searching lore?** Run `ls $SEMCODE_DB/lore/` and read what it prints.
    That output is the only source for the archive roster; quote it, not a
-   list remembered from elsewhere. -- *Lore: coverage*
+   list remembered from elsewhere. A list it did not print cannot be
+   answered from semcode: go to the marc.info fallback, not to another
+   query. -- *Lore: coverage*
 4. **Expanding a thread?** By message-id. From a search, only with a small
    `limit`: the cost is a fixed per-message amount summed across every
    matched thread, and nothing shows you that number before you commit.
@@ -54,7 +56,9 @@ run them, do not just read them.
    positive `find_function` hit does not need it. When the absence is "no
    replies" or "no review" on a thread -- including a thread that returned
    only the author's own messages -- run the refresh-and-cross-check sequence
-   before making the claim, not after. -- *Say what you searched*,
+   on a mirrored list before making the claim, not after; on an unmirrored
+   list, answer from marc.info and the lore t.mbox.gz. -- *Say what you
+   searched*,
    *Lore: coverage first, then freshness*
 
 ## The two front ends
@@ -178,17 +182,57 @@ every other list were absent. The set changes as archives get added, so the
 roster comes from your own `ls` (gate 3), never from memory -- a remembered
 list is how a coverage claim goes stale without anyone noticing.
 lore.kernel.org answers 403 to a plain fetch of its HTML, `raw`, search, and
-atom-feed paths, so there is no live *search* for a list that is not
-mirrored. The one path that does answer is the thread mbox,
+atom-feed paths, so lore itself offers no live *search*; for a list that is
+not mirrored, search a different archive (next paragraph). The one lore path
+that does answer is the thread mbox,
 `https://lore.kernel.org/<list>/<msgid>/t.mbox.gz`, which plain curl fetches
 with a 200 (checked 2026-09-06). It needs a Message-ID you already hold, so
 it settles "did anyone reply to this thread" and nothing broader.
 
-Never report "not posted" or "lore has no copy" from an empty search. Say
-"not found in the local lore archive, which mirrors only <the lists your `ls`
-printed>" -- and if you have not run the `ls`, run it now. An mm patch posted
-to linux-mm will never be found; a session once downgraded a sashiko lookup
-to "patch was local-only" on exactly that mistake.
+**When `ls` does not print the list, do not query semcode for it; search
+marc.info instead.** Ten queries against an unmirrored list return the same
+nothing as one; a session ran ten, tried lore's HTML (403), and stopped,
+when one marc.info query answered the question. The one local query worth
+making is a single subject or recipient search, because a copy Cc'd to a
+mirrored list is in the index; then stop. marc.info carries most kernel
+lists, vger and kvack alike, under their bare names (linux-nfs, netdev,
+linux-mm, linux-kernel) and answers curl (checked 2026-09-07):
+
+```bash
+curl -fsSL 'https://marc.info/?l=<list>&s=<word+word>'   # search; join words with +
+curl -fsSL 'https://marc.info/?i=<msgid>'                # one message
+```
+
+A literal space in the search URL makes curl reject it. A 404 on `?l=`
+means marc.info does not carry the list, and then no fallback search
+exists: say so in the scope line ("no fallback archive found for <list>")
+and do not go back to semcode. A 200 page reading "No hits found" means the
+list is there and the search matched nothing.
+
+A search hit links to `?l=<list>&m=<number>`; the search page prints no
+Message-IDs. Fetch that page (append `&q=raw` for plain text with headers)
+and read its `Message-ID:` line. marc.info obfuscates addresses in what it
+prints, including inside a Message-ID: ` () ` stands for `@` and ` ! ` for
+`.`, and nothing else is altered -- dots left of the `@` print as-is. So
+`178867037632.207413.7103786340154818903 () noble ! neil ! brown ! name` is
+`178867037632.207413.7103786340154818903@noble.neil.brown.name`. Restore it
+before handing the ID to lore (`?i=` accepts either form). With the ID in
+hand, fetch the lore t.mbox.gz if you need the whole thread. The
+refresh-and-cross-check sequence below is for a mirrored list: on a list
+`ls` did not print, `semcode-index --lore <list>` clones the entire archive.
+Answer the thread from marc.info and the t.mbox.gz instead, and report it in
+the scope line's template shape (see *Say what you searched*), naming the
+fallback archive as the thing searched and the local mirror as the gap.
+
+Never report "not posted" or "lore has no copy" from an empty search. An
+empty result on an unmirrored list is a coverage statement, not a search
+result: say "not mirrored locally" and which fallback archive you checked.
+"Not found on marc.info linux-kernel" is a search result; "not mirrored
+locally" is not. On a mirrored list, say "not found in the local lore
+archive, which mirrors only <the lists your `ls` printed>" -- and if you
+have not run the `ls`, run it now. A patch posted to a list `ls` did not
+print will never be found; a session once downgraded a sashiko lookup to
+"patch was local-only" on exactly that mistake.
 
 **Before you report that a thread has no replies, run this sequence.** It
 fires on the claim, not on the shape of the result: "no replies", "no
@@ -205,6 +249,9 @@ writing the changelog while the user was refreshing the archive by hand.
    ```bash
    semcode-index --lore netdev
    ```
+
+   Only for a list `ls` printed; on any other list this clones the
+   archive.
 
 2. Re-run the same query.
 3. Confirm the archive's newest indexed mail is later than the reply window
@@ -340,13 +387,13 @@ unlimited except where a tool declares a max, which wins.
 
 Every rule above is about a result that looks more complete than it is. Emit
 this line whenever the answer asserts absence or completeness -- "nobody
-replied", "not posted", "no callers", "no commit touches X" -- or whenever a
-lore or commit search fed the conclusion; a single positive `find_function`
-or `find_type` hit verified against the worktree does not need it. The line
-carries the shape of the search that produced the answer: what you covered,
-how you bounded the work, and what you know you did not reach. A reader who
-can see the scope can judge the gap; a reader given only the conclusion
-cannot.
+replied", "not posted", "not mirrored locally", "no callers", "no commit
+touches X" -- or whenever a lore or commit search fed the conclusion; a
+single positive `find_function` or `find_type` hit verified against the
+worktree does not need it. The line carries the shape of the search that
+produced the answer: what you covered, how you bounded the work, and what
+you know you did not reach. A reader who can see the scope can judge the
+gap; a reader given only the conclusion cannot.
 
 Put it in one line, adjacent to the finding it qualifies:
 
@@ -368,6 +415,15 @@ newest mail the archive holds and whether lore was consulted:
 Searched: linux-nfs thread <msgid>, refreshed 2026-09-04, newest indexed
 mail 2026-09-04 09:12; lore t.mbox.gz holds 11 messages, local 11.
 Not covered: lkml.
+```
+
+When the list is not mirrored locally, the fallback archive is what was
+searched and the mirror is the gap:
+
+```
+Searched: marc.info linux-kernel, subject "guarded+OPEN"; lore t.mbox.gz
+for <msgid>, 4 messages. Not covered: local semcode mirror (lkml absent
+from `ls`).
 ```
 
 The line is not a hedge and not optional where it applies: a conclusion with
