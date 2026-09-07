@@ -542,8 +542,10 @@ edit or fold is not adding one.
 editor, which the `-m`/`--file` forms this skill mandates do
 not). Two consequences:
 
-- `stg edit -m`/`--file`: a `Signed-off-by` omitted from the
-  message drops one the patch carried. Re-include the line in
+- `stg edit -m`/`--file`, and `stg refresh -m`/`--file`
+  (which replaces the message the same way, with or without
+  `-p <patch>`): a `Signed-off-by` omitted from the message
+  drops one the patch carried. Re-include the line in
   the message text (recent stg de-duplicates an identical
   trailer) or restore it with `-s`/`--signoff`. A patch
   created while autosign was unset carries none; do not add
@@ -742,6 +744,12 @@ Always provide `-m` to `stg new` and `--file <path>` to
 temp file and pass it with `--file`; both commands accept
 it. On a partially-applied stack, check the applied state
 before `stg new` -- see the `stg new` pitfall.
+
+`stg refresh` takes the same `-m`/`--file` pair and replaces
+the patch message as part of the refresh; with `-p <patch>`
+it does so for an applied patch below the top. Like
+`stg edit --file`, it does not autosign -- see the
+`stgit.autosign` pitfall.
 
 Keep the repo as the working directory when the temp file
 lives elsewhere (the session scratchpad): write the file at

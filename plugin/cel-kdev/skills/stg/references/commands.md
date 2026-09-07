@@ -10,6 +10,8 @@
 | Update current patch (staged only) | `stg refresh --index` |
 | Update current patch (specific files) | `stg refresh <file1> <file2>` |
 | Update a non-current patch | `stg refresh -p <patch-name>` |
+| Update a non-current patch and its message | `stg refresh -p <patch-name> -f <msgfile>` |
+| Update current patch and replace its message | `stg refresh -m "msg"` / `-f <msgfile>` |
 | Edit current patch message | `stg edit --file <path>` |
 | Edit message and diff | `stg edit --diff --file <path>` |
 | Track a new file | `stg add <file>` |
@@ -22,6 +24,26 @@ The `-s` form adds a `Signed-off-by` only when a sign-off is
 actually wanted; it is not a default to apply by hand. When
 `stgit.autosign` is unset, omit it unless the user explicitly
 asks for one (see the `stgit.autosign` pitfall in SKILL.md).
+
+`stg refresh -m`/`--file` replaces the whole message the way
+`stg edit --file` does and, like it, does not autosign: the
+replacement text must carry the trailer the patch already
+had, and none if it had none (see the `stgit.autosign`
+pitfall in SKILL.md). Use `stg edit --file` when only the
+message changes; `stg refresh` always folds modified tracked
+files into the patch as well. To keep the message and add
+only a trailer, `stg edit -s <patch>` appends it without
+touching patch content; `stg refresh -s` does the same for
+the top patch but also folds the worktree into it.
+
+`stg refresh -p` requires `<patch>` to be applied, and it
+rewrites every patch above it: a change adjacent to lines
+those patches touch fans out into the conflict cascade
+described in "Editing a non-top patch cascades conflicts on
+re-push" in SKILL.md, which asks you to price that cost with
+the user first. The default route stays `stg goto <patch>`,
+edit, refresh; reach for `-p` only when the stack position
+must not move.
 
 ## Combining patches
 
