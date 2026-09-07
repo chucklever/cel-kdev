@@ -225,7 +225,21 @@ After a remote takes a patch -- a maintainer merging part of
 a series, or a plain `git push` to a repo you own -- clear it
 from the stack by re-deriving from upstream: `git fetch`,
 `stg rebase -m <upstream-ref>` (patches already upstream go
-empty), `stg clean` (drop the emptied ones). Never
+empty), `stg clean` (drop the emptied ones). A push is not
+finished until the stack is re-derived: when you run the
+`git push`, read
+[references/retiring.md](references/retiring.md) and run
+that sequence in the same turn, with `<upstream-ref>` the
+ref you pushed to, and report the result. Do not hand it
+back to the user as a "later" step; a stack still carrying
+patches the remote already has is the state the next
+session trips on. The only reason to stop short is a
+sequence that cannot run cleanly now: on `worktree not
+clean` use `stg rebase --autostash`; if the rebase
+conflicts or `<upstream-ref>` cannot be determined, change
+nothing and report what is blocked -- never
+`stg reset --hard`, and never a `stg refresh` to clear the
+way, which folds the dirt into the top patch. Never
 `stg commit <patch>`, which consults no remote and can leave
 the stack asserting work upstream never received. The rebase
 re-derives only the *applied* set, so check `stg series -d`
