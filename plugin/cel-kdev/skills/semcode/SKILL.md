@@ -6,10 +6,14 @@ description: >-
   callers, call chains, or commits, or to search the local lore mailing-list
   archive. Load it BEFORE the first call, not after one goes wrong, and even
   when a sibling skill (sashiko, b4, kreview) is the reason you are querying.
-  Triggers on "search lore", "check the lore archive", "did anyone reply to",
-  "who calls this function", "find callers", "find the commit that changed
-  X", "is this posted upstream", or any request whose answer would come from
-  semcode.
+  Triggers on any of these intents, however worded: "search lore", "check
+  the lore archive", "did anyone reply to", "who calls this function",
+  "find callers", "find the commit that changed X", "is this posted
+  upstream". It fires just as much when the lookup is your own idea:
+  verifying a claim about upstream state, checking whether a reply landed,
+  confirming a Message-ID or a commit exists, or whenever `lore` is about
+  to appear in a shell command. There is no `lore` executable; load this
+  for the real spelling.
 ---
 
 # semcode
