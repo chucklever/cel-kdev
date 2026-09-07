@@ -36,9 +36,10 @@ resets cwd between calls. So drive the second repo with
 `git -C <repo> <subcommand>`, giving `<repo>` as an absolute
 path or one starting with `~/`, `$HOME/`, or `${HOME}/`. The
 hook inspects the command text before the shell expands it
-and expands only those three prefixes itself; `~user/` or
-any other variable in `<repo>` is unresolvable and triggers
-the cwd fallback. The guard then resolves `<repo>`, and once
+and expands only those three prefixes itself; `~user/`, `$S`,
+or any other variable in `<repo>` is unresolvable and
+triggers the cwd fallback, even when the variable holds an
+absolute path. The guard then resolves `<repo>`, and once
 it confirms `<repo>` carries no stg stack it permits raw git
 there. This is not a license to bypass the guard on an
 actual stg branch.

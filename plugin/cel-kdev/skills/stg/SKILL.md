@@ -59,7 +59,37 @@ never a `cd <repo> &&` prefix, which the hook cannot see
 path form is unresolvable to the hook and falls back to
 checking the session's primary branch, blocking the command
 whenever that branch is stg even though the target repo is
-not. See
+not. This includes a scratch repo you create yourself for a
+test or reproduction. Build it with a literal absolute path
+on every command, never a variable, a `cd` prefix, or
+`GIT_DIR=`. Create the directory in its own Bash call:
+
+```bash
+mkdir -p <scratchpad>/repo
+```
+
+Then drive it in later calls with that same literal path:
+
+```bash
+git -C <scratchpad>/repo init
+git -C <scratchpad>/repo commit -m "msg"
+```
+
+Write the path out in full from the session's scratchpad
+directory; `mktemp -d` and any other `$(...)` cannot be
+resolved by the hook either. Do not fold the two into one
+call. The hook resolves every
+`-C` target before the shell runs the line, so a directory
+created by a `mkdir` earlier on the same line does not exist
+yet: the check falls back to the primary branch and blocks
+the command. Once the directory exists, every command
+resolves it, finds no stack, and is allowed; `git init` is
+not a guarded subcommand, so the hook never checks it.
+`git -C $S` is blocked even when `$S` holds an absolute
+path: the hook expands only `~/`, `$HOME/`, and `${HOME}/`
+itself and takes everything else literally. `GIT_DIR=` is
+blocked even with a literal path, because it leaves a bare
+`git`, which the hook checks against the cwd. See
 [references/raw-git-guard.md](references/raw-git-guard.md)
 for the fallback mechanics. This is not a license to bypass
 the guard on an actual stg branch.
@@ -245,6 +275,14 @@ restore-position caveats that are easy to get wrong from
 memory.
 
 ## Pitfalls
+
+**Scratch repo in the scratchpad**: a throwaway git repo you
+create for a test or reproduction is not exempt from the
+raw-git guard. `mkdir` it in one Bash call, then drive it
+with `git -C <literal absolute path>` in later calls -- the
+hook resolves the target before the shell runs, so a
+directory created on the same command line does not exist
+yet. See the guard-hook paragraph near the top of this file.
 
 **`stg diff` without `-r`**: `stg diff <patch-name>` treats
 the argument as a file path, producing silent wrong output.
