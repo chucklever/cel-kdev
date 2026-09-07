@@ -1,6 +1,6 @@
 ---
 name: version-changelog
-description: Use when writing or reworking the per-version changelog of a rerolled patch series -- the "Changes in vN:" block, with its "Link to v(N-1):" line, that b4 places below a "---" divider at send time. Load it whenever a v2-or-later posting needs its list of what changed since the previous one -- "write the changelog", "what changed since v2", "update the changelog for the reroll" -- whether that block rides in the series cover letter or below the "---" of a lone patch. Covers what earns a bullet, what a changelog leaves out, reviewer credit, and bullet form. Not for the commit message body, which the kernel docs also call a changelog; that is cel-prose:commit-message. For the cover letter's own prose use cel-prose:cover-letter, and for where the changelog file lives and how the series is sent, series-send and cel-kdev:b4.
+description: Use when writing or reworking the per-version changelog of a rerolled patch series -- the "Changes in vN:" block, with its "Link to v(N-1):" line, that sits below a "---" divider -- b4 places it there at send time for an enrolled series, and this skill covers placing it by hand when b4 is not in play. Load it whenever a v2-or-later posting needs its list of what changed since the previous one -- "write the changelog", "what changed since v2", "update the changelog for the reroll" -- whether that block rides in the series cover letter or below the "---" of a lone patch. Covers what earns a bullet, what a changelog leaves out, reviewer credit, and bullet form. Not for the commit message body, which the kernel docs also call a changelog; that is cel-prose:commit-message. For the cover letter's own prose use cel-prose:cover-letter, and for where the changelog file lives and how an enrolled series is sent, series-send and cel-kdev:b4.
 ---
 
 # version-changelog
@@ -11,10 +11,12 @@ in vN:` heading, with a `Link to v(N-1):` bullet beneath.
 
 Patch count decides which message carries the block -- the cover
 letter for a multi-patch series, the lone patch when there is only
-one -- but it lands below a `---` divider either way, so it stays
-reviewer-facing and never enters git history. Which message is a
-series-send/b4 concern rather than this skill's, and the content
-rules below hold for both.
+one -- but it belongs below a `---` divider either way, so it stays
+reviewer-facing and never reaches the applied commit. For an enrolled
+series b4 puts it there at send time, and which message it picks is a
+series-send/b4 concern rather than this skill's. For a lone patch that
+was never enrolled, no tool does it; "A single-patch reroll" below says
+where to put it by hand. The content rules hold for all of these.
 
 The kernel documentation calls this the "patch changelog"
 (`submitting-patches.rst`), and uses "changelog" alone for the commit
@@ -84,10 +86,39 @@ declining.
 
 A lone patch has no cover letter. b4 folds this same changelog into the
 patch's commentary below the `---` divider, which git strips at apply
-time, so it stays reviewer-facing only. The rules above are unchanged,
-and the "Link to v(N-1):" matters more here, since no cover carries the
-context. Design rationale for the patch belongs in its commit message
-(see cel-prose:commit-message), not in that commentary.
+time, so it stays reviewer-facing only. The content rules in the
+sections above apply unchanged, and the "Link to v(N-1):" matters more
+here, since no cover carries the context. Design rationale for the
+patch belongs in its commit message (see cel-prose:commit-message), not
+in that commentary.
+
+When the patch is not enrolled with b4 (a bare `git format-patch` or
+`stg email format` send), nothing folds the changelog in for you. Put
+it in the commit message yourself: after the trailers, a line
+containing only `---`, then the block as b4 would fold it in below
+that divider:
+
+```
+Signed-off-by: <author>
+---
+Changes in v2:
+- <bullet>
+- Link to v1: https://lore.kernel.org/r/<msgid>
+```
+
+format-patch emits the commit message verbatim and then adds its own
+`---` before the diffstat, so the mail carries two dividers and the
+block sits between them. `git am` ends the commit log at the first
+`---`, so the block never reaches the applied commit. The `---` line
+must be the first thing after the last trailer; a blank line before it
+is fine, message prose after it is not, since `git am` drops it with
+the rest.
+
+Update the block in place on each reroll, newest version first, with
+`stg edit --file` on the patch (see cel-kdev:stg). That file replaces
+the whole message, so it must carry the trailers, the `---`, and every
+prior version's block, not just the new bullets; stg treats a bare
+`---` as ordinary message text and keeps it verbatim.
 
 ## Voice
 
