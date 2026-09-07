@@ -66,13 +66,14 @@ if ! echo "$STRIPPED" | grep -qE '\bgit\s+(branch|commit|rebase|reset|cherry-pic
 fi
 
 # stg_active <dir>: succeed when the branch checked out in <dir> (the
-# cwd when <dir> is empty) carries an stg stack ref.
+# cwd when <dir> is empty) carries an stg stack ref. Leaves the branch
+# name in STG_BRANCH so the BLOCKED line can name it.
 stg_active() {
-    local dir=$1 branch
+    local dir=$1
     local -a g=(git)
     [ -n "$dir" ] && g=(git -C "$dir")
-    branch=$("${g[@]}" symbolic-ref --short HEAD 2>/dev/null) || return 1
-    "${g[@]}" show-ref --verify "refs/stacks/$branch" >/dev/null 2>&1
+    STG_BRANCH=$("${g[@]}" symbolic-ref --short HEAD 2>/dev/null) || return 1
+    "${g[@]}" show-ref --verify "refs/stacks/$STG_BRANCH" >/dev/null 2>&1
 }
 
 # Block when any repo the command addresses carries an stg stack. A
@@ -80,8 +81,15 @@ stg_active() {
 # quoted shell variable stripped above) falls back to the cwd check,
 # keeping the guard fail-closed. The cwd is checked when a bare git
 # addresses it, or when an unresolvable -C falls back to it.
+#
+# Record which check tripped in HIT and print it in the BLOCKED line:
+# a block that names only "this branch" cannot be told apart from a
+# fallback, and the agent reads a stack in the target repo as the cwd
+# vouching for it.
 check_cwd=$BARE_PRESENT
 addressed_stg=no
+unresolved=
+HIT=
 for dir in "${GIT_C_DIRS[@]}"; do
     # The hook sees the command text before the shell runs it, so a
     # leading ~ or $HOME is still literal here. Expand the forms the
@@ -95,14 +103,19 @@ for dir in "${GIT_C_DIRS[@]}"; do
     if [ -d "$dir" ]; then
         if stg_active "$dir"; then
             addressed_stg=yes
+            HIT="$dir (branch $STG_BRANCH)"
             break
         fi
     else
         check_cwd=yes
+        [ -z "$unresolved" ] && unresolved=$dir
     fi
 done
 if [ "$addressed_stg" = no ] && [ "$check_cwd" = yes ] && stg_active ""; then
     addressed_stg=yes
+    HIT="cwd $PWD (branch $STG_BRANCH)"
+    [ -n "$unresolved" ] &&
+        HIT="$HIT; fallback: -C target $unresolved did not resolve"
 fi
 [ "$addressed_stg" = no ] && exit 0
 
@@ -142,7 +155,16 @@ fi
 # cannot reach it. Scope the next refresh with a pathspec, or git
 # stash the unwanted change, instead of discarding it.
 
-echo "BLOCKED: stg is active on this branch. Use stg commands instead:" >&2
+echo "BLOCKED: stg is active in $HIT." >&2
+# Branch on HIT, not on $unresolved: an unresolved target followed by a
+# resolved stg target is a genuine hit, and HIT carries no fallback
+# note in that case.
+case $HIT in
+*'; fallback: '*)
+    echo "The -C target did not resolve, so the cwd was checked in its place. Give the target as an absolute path or one starting with ~/, \$HOME/, or \${HOME}/ and rerun. If the cwd itself is the intended repo, use stg commands instead:" >&2 ;;
+*)
+    echo "Use stg commands instead:" >&2 ;;
+esac
 echo "  git branch       -> stg branch (manages stg metadata alongside branches)" >&2
 echo "  git commit       -> stg new + stg refresh" >&2
 echo "  git commit --amend -> stg edit / stg refresh" >&2

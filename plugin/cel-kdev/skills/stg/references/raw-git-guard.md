@@ -12,8 +12,24 @@ targets: a leading `git -C <dir>` retargets the check at
 falls back to the hook's cwd -- the session's primary branch
 -- keeping the guard fail-closed. That fallback blocks the
 command whenever the session's primary branch is stg, even
-though the target repo is not, and the BLOCKED message names
-the primary branch, not the target.
+though the target repo is not.
+
+When the hook blocks you, read the first BLOCKED line: it
+names the repo and branch whose check tripped, in one of
+three forms.
+
+- `in <dir> (branch <name>)`, no `cwd`: the resolved `-C`
+  target carries a stack; the command is prohibited there.
+  Use the stg equivalent in that repo.
+- `in cwd <dir> (branch <name>)` alone: a bare `git`
+  addressed the primary branch. Use stg, or if you meant
+  another repo, write `git -C <repo> ...` (a `cd` prefix is
+  invisible to the hook).
+- `in cwd <dir> (branch <name>); fallback: -C target <text>
+  did not resolve`: the hook never examined the target. Fix
+  the path form and retry; the retry is then checked against
+  the target itself and may be blocked with `in <dir>`,
+  which is a different block, not the fallback repeating.
 
 The hook cannot see a `cd <repo> &&` prefix; the harness
 resets cwd between calls. So drive the second repo with
