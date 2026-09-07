@@ -241,7 +241,8 @@ echo "  git reset HEAD~N -> stg pop (unapply patches)" >&2
 echo "  git reset --hard -> stg reset --hard (restore to last stg state)" >&2
 echo "  git cherry-pick  -> stg pick" >&2
 echo "  git checkout/switch <branch> -> stg branch <branch>" >&2
-echo "  git checkout/restore <file> -> scope 'stg refresh <pathspec>' or git stash; never discard a refreshed change this way" >&2
+echo "  git checkout/restore <file> -> drop or park the edits: git stash push -- <file> (then stash drop / pop);" >&2
+echo "                      keep them out of the patch: scope 'stg refresh <other paths>'; never discard a refreshed change this way" >&2
 echo "  git worktree add -> unsupported on stg branches" >&2
 echo "  git merge        -> no stg merge; build a base merge commit, then stg rebase onto it" >&2
 echo "                      (git merge-tree/commit-tree plumbing is allowed)" >&2

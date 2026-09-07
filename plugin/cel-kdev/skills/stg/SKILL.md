@@ -118,7 +118,7 @@ absence from the table is not permission to reach for raw git.
 | `git rebase -i` (squash) | fold workflow (see "Combining patches: avoid stg squash") |
 | `git worktree add` | (not supported with stg) |
 | `git checkout <branch>` / `git switch <branch>` | `stg branch <branch>` |
-| `git checkout`/`git restore` (pathspec, any form) | prohibited; leave worktree dirty + scope `stg refresh <pathspec>` (see Pitfalls) |
+| `git checkout`/`git restore` (pathspec, any form) | to drop or park one file's edits: `git stash push -- <file>` (`git stash pop` brings them back, `git stash drop` discards them); to keep them out of the patch but in the worktree: `stg refresh <other paths>`. Never restore a file to remove an already-refreshed change (see Pitfalls) |
 | `git merge` | No stg merge; build a base merge commit and `stg rebase` onto it (see "Combining branches: there is no stg merge") |
 
 This applies to all agents and subagents.
@@ -456,15 +456,26 @@ dirty." Two overrides:
   patch, and to finalize a conflict resolution after
   `stg resolved`. Mutually exclusive with pathspecs,
   `--update`, and `--force`.
-- `--force` (`-F`): fold in all changes from both the index
-  and the worktree.
+- `--force` (`-F`): skip the check and fold in changes from
+  both the index and the worktree. Pathspecs still scope it
+  -- `stg refresh -F <paths>` refreshes only those paths --
+  so it is the override to pair with `stg add`.
 
 **Unintended files in `stg refresh`**: bare `stg refresh`
 captures *all* modified tracked files, not just the ones
 edited for the current patch -- unrelated dirty files
 silently enter the patch. When only specific files belong,
 pass them as pathspecs: `stg refresh path/to/file1
-path/to/file2`. Do not run bare `stg refresh` after
+path/to/file2`. `stg refresh` never sees an untracked file,
+pathspec or not: a path `git status --short` reports as `??`
+is skipped, and the refresh exits 0 with the patch
+unchanged. `stg add <file>` every `??` path that belongs in
+the patch before any refresh, whoever or whatever created
+it. `stg add` stages, so a scoped refresh that then names
+both the added file and a file with unstaged edits hits the
+dirty-index guard above; run it as
+`stg refresh --force <paths>` (`--index` cannot take
+pathspecs). Do not run bare `stg refresh` after
 `stg new` when the worktree contains other modifications;
 check `git status` first if uncertain.
 
@@ -472,18 +483,35 @@ check `git status` first if uncertain.
 noise**: reverting a file in the worktree does not remove an
 already-refreshed change from the patch commit -- the stale
 diff stays baked in, a later `stg refresh` cannot undo it,
-and the patch must be deleted and recreated. When only some
-worktree changes belong in the patch, scope the refresh
-(`stg refresh <pathspec>`) and leave the rest dirty; deal
-with them after the patch is complete -- `git stash` /
-`git stash pop` is safe on an stg branch (it never touches
-HEAD or stack metadata), or fold them into a later patch. To
-back out a change *already folded into* the patch: edit the
-file to the wanted content and refresh; or, if the refresh
-was the last operation, `stg undo` -- which un-folds into an
-applied `refresh-temp` patch, discarded with `stg delete
-refresh-temp`, not back to the worktree; or, when the patch
-is beyond repair, `stg delete <patch>` and recreate it.
+and the patch must be deleted and recreated. First determine
+which case you are in: `stg files` lists the paths the top
+patch already touches, and `git diff HEAD -- <file>` shows
+what is not yet folded in.
+
+- **Not yet refreshed.** When only some worktree changes
+  belong in the patch, scope the refresh
+  (`stg refresh <pathspec>`) and leave the rest dirty; deal
+  with them after the patch is complete -- `git stash` /
+  `git stash pop` is safe on an stg branch (it never touches
+  HEAD or stack metadata), or fold them into a later patch.
+  To set aside one file's edits, `git stash push -- <file>`
+  (add `-u` if the file is still untracked), then
+  `git stash pop` when the patch is done or `git stash drop`
+  to discard them. The stash fails safe: it saves nothing
+  when the edits are already in the patch, so it cannot mask
+  a refreshed change. Do not reach for
+  `git show HEAD:<file> > <file>` instead: the shell
+  truncates the file before git runs, so a path git cannot
+  resolve (an untracked file, a name relative to the cwd
+  rather than the repo root) leaves it empty with nothing to
+  restore from, and on a change that was refreshed it
+  rewrites identical bytes and reports success.
+- **Already refreshed.** Edit the file to the wanted content
+  and refresh; or, if the refresh was the last operation,
+  `stg undo` -- which un-folds into an applied `refresh-temp`
+  patch, discarded with `stg delete refresh-temp`, not back
+  to the worktree; or, when the patch is beyond repair,
+  `stg delete <patch>` and recreate it.
 
 **`stgit.autosign` trailer**: When set (e.g., to
 `Signed-off-by`), `stg new` and `stg import` append that

@@ -8,7 +8,7 @@
 | Create with Signed-off-by | `stg new <name> -s -m "message"` |
 | Update current patch (working tree) | `stg refresh` |
 | Update current patch (staged only) | `stg refresh --index` |
-| Update current patch (specific files) | `stg refresh -- <file1> <file2>` |
+| Update current patch (specific files) | `stg refresh <file1> <file2>` |
 | Update a non-current patch | `stg refresh -p <patch-name>` |
 | Edit current patch message | `stg edit --file <path>` |
 | Edit message and diff | `stg edit --diff --file <path>` |
