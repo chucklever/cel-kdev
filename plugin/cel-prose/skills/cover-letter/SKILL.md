@@ -251,8 +251,8 @@ attention, not between anchoring and neutrality.
 **Tense: mark which tree you mean.** The cover's default frame is
 the code as it stands, so a sentence about behavior after the
 series reads, unmarked, as a statement about today's tree.
-"Currently the server credits a control record's octets to the RPC
-stream" on one side; "after this series the server marks the
+"Currently svcsock credits a control record's octets to the RPC
+stream" on one side; "after this series svcsock marks the
 transport when it consumes a control record" on the other. The
 imperative is not available here. A commit message's imperative is
 addressed to the tree the patch is applied to; the cover is never
