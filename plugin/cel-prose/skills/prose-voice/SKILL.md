@@ -19,7 +19,10 @@ documentation is ordinary prose and does follow them.
 - Describe mechanism and causation: what happens, in what order,
   why. Make the component the subject ("the encoder drops the
   reply"), not "we," and not what the code "wants" or "tries to
-  do."
+  do." Keep the action in the verb. A nominalization ("performs
+  validation of," "does a lookup of," "makes a comparison of")
+  buries the action in a noun and demotes the actor to an
+  of-phrase; write "validates," "looks up," "compares."
 - The subject is the component, not the role it plays in the
   protocol. "The server retries" and "the client sends" name a
   role that any implementation fills, so the reader cannot tell
@@ -109,6 +112,18 @@ documentation is ordinary prose and does follow them.
   runs. Do not
   bullet-ize reasoning that already reads clearly, and do not
   restructure prose that is already clear.
+- Every pronoun points at a named noun. "This fixes it," "this
+  is because," and a bare "This" opening a sentence after a
+  paragraph of setup leave the reader to guess which of the
+  preceding things is meant. "This patch" and "this series"
+  name their noun and are fine. Name the antecedent in the
+  sentence's own frame: in a comment or a why-paragraph, "the
+  loop never exits because the socket stays locked"; in a
+  commit message's what-half, the imperative already names
+  nothing, so "Retry the send after NFS4ERR_DELAY" replaces
+  "This fixes the hang." A "which" that refers back to a whole
+  clause is the same fault, and usually the second causal link
+  the one-link rule forbids.
 - Dashes: do not reach for an em dash when drafting. The first
   choice is always a period. Split the clauses into separate
   sentences and let each one carry its own subject and verb.
