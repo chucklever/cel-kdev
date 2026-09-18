@@ -60,10 +60,12 @@ documentation is ordinary prose and does follow them.
   CPU time." "Consumes" used as a noun drew the same reply;
   the noun is "consumer" or "the read side." When unsure
   whether a phrase is coined, grep the subsystem. The corpus
-  for that grep is the tree and list traffic as they stand
-  before the patch. On an stg branch that means grep the stack
-  base (`git grep <term> $(stg id '{base}')`) or drop the
-  files `stg files` lists for the patch from the hits. Text
+  for that grep is the subsystem's own directories and its list
+  traffic as they stand before the patch. On an stg branch that
+  means grep the stack base with a pathspec
+  (`git grep <term> $(stg id '{base}') -- <subsystem paths>`;
+  for NFSD and SUNRPC, `fs/nfsd net/sunrpc include/linux/sunrpc`),
+  and search the list archive with semcode's lore_search. Text
   the patch adds, including its own README or Documentation/
   page, does not vouch for a term, and neither does an earlier
   version of the same series on the list; the corpus is what
