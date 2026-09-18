@@ -135,10 +135,14 @@ documentation is ordinary prose and does follow them.
   sentences and let each one carry its own subject and verb.
   Colons, semicolons, and parentheses are not neutral
   substitutes. A clause bolted on with any of the three is as
-  strong an LLM tell as the em dash it replaced, so reserve
-  them for the cases a period genuinely cannot handle: a colon
-  before a true list, commas around a tight appositive. An
-  occasional "--" aside is fine. Density is the tell.
+  strong an LLM tell as the em dash it replaced. The cases a
+  period genuinely cannot handle: a colon before a true list;
+  parentheses around a reference the sentence does not read
+  through (a commit citation, "(patch 3)", an RFC section);
+  commas around a tight appositive. A semicolon has no such
+  case; write two sentences. An occasional "--" aside is fine
+  on a sentence that carries no causal link. Density is the
+  tell.
 - Kernel maintainers distrust prose that reads as LLM-generated.
   The bullets above are the pass for that; do not load a
   general de-AI skill or fetch a tells catalog while drafting.
