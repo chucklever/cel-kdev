@@ -83,12 +83,15 @@ documentation is ordinary prose and does follow them.
   SUNRPC's word. Terminology the subsystem itself uses is not
   coined however unfamiliar it looks, so read its files before
   cutting a term.
-- Subsystem names in prose take their uppercase form: NFSD,
-  SUNRPC, NFS, including the subject-line prefix of a kernel
-  patch. Others write "nfsd" or "knfsd"; do not match them.
-  This overrides the preceding rule about taking vocabulary
-  from the subsystem's list traffic. Quoted commit subjects
-  keep their original casing.
+- A subsystem's name in prose, and in the subject-line prefix
+  of a kernel patch, takes the casing that subsystem's own
+  maintainers use in their subject prefixes: NFSD, SUNRPC, NFS
+  uppercase; net, tls lowercase. Check `git log --oneline --
+  <dir>` when unsure. Module, transport, and directory names
+  keep the code's spelling (svcrdma, xprtrdma). Others write
+  "nfsd" or "knfsd" for NFSD; do not match them. This overrides
+  the rule about taking vocabulary from the subsystem's list
+  traffic. Quoted commit subjects keep their original casing.
 - Write for a reader fluent in the subsystem. Do not explain its
   own mechanics back to it. A paragraph deriving how
   cond_resched() in __release_sock() lets a syscall path
