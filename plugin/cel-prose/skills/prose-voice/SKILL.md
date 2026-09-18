@@ -6,7 +6,7 @@ description: Use when drafting or editing prose written for other developers -- 
 # Prose voice
 
 Voice rules shared by the prose written for other developers --
-kernel code comments, commit messages in any repository, and
+code comments in any codebase, commit messages in any repository, and
 cover letters with their changelogs. The cel-prose:code-comments,
 cel-prose:commit-message, cel-prose:cover-letter, and
 cel-prose:version-changelog skills own the per-artifact specifics
