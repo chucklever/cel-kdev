@@ -160,11 +160,9 @@ something the sentence never said, and that omission is what to
 repair. Every entry names what the term stands in for, so the
 entry is only satisfied when that thing is on the page.
 
-Two rules keep this list from becoming a checklist. A term earns
-a place only after it has been caught in prose that was about to
-be sent to someone. And the general catalog of AI vocabulary is
-not this list's job; that is the guide the last bullet points to.
-A list long enough to check mechanically will be checked
+This list is short on purpose. The general catalog of AI
+vocabulary is not its job; that is the guide the last bullet
+points to. A list long enough to check mechanically will be checked
 mechanically, and the failures that draw a maintainer's reply --
 run-on causal chains, coined abstractions, explaining a
 subsystem to itself -- have no vocabulary to check.
