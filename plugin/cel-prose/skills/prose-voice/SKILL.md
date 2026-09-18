@@ -139,12 +139,16 @@ documentation is ordinary prose and does follow them.
   them for the cases a period genuinely cannot handle: a colon
   before a true list, commas around a tight appositive. An
   occasional "--" aside is fine. Density is the tell.
-- Kernel maintainers increasingly distrust prose that reads as
-  LLM-generated. For the full catalog of tells to avoid --
-  em-dash overuse, rule-of-three cadence, inflated symbolism,
-  negative parallelism ("not X, but Y"), and the rest -- see
-  Wikipedia's "Signs of AI writing", or a third-party skill that
-  packages it, such as /humanizer.
+- Kernel maintainers distrust prose that reads as LLM-generated.
+  The bullets above are the pass for that; do not load a
+  general de-AI skill or fetch a tells catalog while drafting.
+  The catalog they draw on, for reference only, is Wikipedia's
+  "Signs of AI writing": em-dash overuse, rule-of-three cadence,
+  inflated symbolism, negative parallelism ("not X, but Y"), and
+  the rest. Consult it, or a skill that packages it such as
+  /humanizer, only when a reviewer has flagged a draft as
+  LLM-written or the user asks for that audit, and keep this
+  file's rules where the two disagree.
 
 ## Words to drop
 
