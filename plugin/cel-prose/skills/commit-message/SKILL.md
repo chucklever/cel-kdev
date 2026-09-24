@@ -316,4 +316,10 @@ nothing else bounds the loop.
 The kernel worked examples -- a bug fix carrying `Fixes:` and a
 `Reported-by:`, and an optimization carrying no trailers at all --
 are in [references/kernel.md](references/kernel.md), alongside the
-rules they illustrate.
+rules they illustrate. Verbatim messages from the author's own
+kernel postings, annotated, are in
+[references/samples.md](references/samples.md); the typical body
+there is 40 to 90 words, and that figure holds in any repository.
+Open the file when drafting for a kernel tree, or when a draft's
+length or register is in doubt; a short fix in one of your own
+repositories does not need it.

@@ -348,6 +348,12 @@ resource the cover is meant to spend wisely.
 A series with no cross-cutting design story earns a thin cover --
 a sentence or two. Do not manufacture architecture to fill space.
 
+Verbatim covers from the author's own postings, annotated, are in
+[references/samples.md](references/samples.md); their median body
+is about 50 words, and none exceeds 150. Open it when a cover is
+running past 150 words, or when the series has a design story and
+you want to see how briefly one is told.
+
 ## Subject line
 
 The cover subject follows commit-subject conventions: short, a

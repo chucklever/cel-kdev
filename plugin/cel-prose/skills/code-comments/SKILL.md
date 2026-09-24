@@ -492,6 +492,11 @@ the procedure; do not hand wrap prose there.
   specimens across mm/, sched/, locking/, net/, lib/, arch/x86,
   in five categories, with the e1000 driver as a counter-example
   control.
+- [references/samples.md](references/samples.md) -- comments the
+  author added in a year of NFS and SUNRPC patches: about 140
+  comment blocks, of which around 20 explain a why. That count is
+  the calibration for how rarely an explanatory comment is
+  warranted; the why comments are quoted nearly whole.
 - [references/literature.md](references/literature.md) -- the
   empirical and practitioner evidence (Ousterhout, McConnell,
   Kernighan & Plauger, Martin; Padioleau, Tan, Fluri, Wen, Potdar
