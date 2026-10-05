@@ -4,7 +4,9 @@ description: >-
   Use whenever you are about to query semcode -- any mcp__semcode__* tool,
   the `semcode` CLI, or `semcode-index` -- to look up functions, types,
   callers, call chains, or commits, or to search the local lore mailing-list
-  archive. Load it BEFORE the first call, not after one goes wrong, and even
+  archive. Load it too on a "failed to connect" notice for the semcode MCP
+  server: that can be deliberate, and the CLI covers every lookup. Load it
+  BEFORE the first call, not after one goes wrong, and even
   when a sibling skill (sashiko, b4, kreview) is the reason you are querying.
   Triggers on any of these intents, however worded: "search lore", "check
   the lore archive", "did anyone reply to", "who calls this function",
@@ -19,8 +21,8 @@ description: >-
 # semcode
 
 semcode is a local semantic index over source trees and lore.kernel.org
-archives. Its MCP tool descriptions document parameters well but say nothing
-about how the index goes stale, what the archive actually contains, or which
+archives. Its MCP tool descriptions (or, with no MCP, `semcode -q "help"`)
+document parameters well but say nothing about how the index goes stale, what the archive actually contains, or which
 query shapes are dangerous. Those are what generate false starts, and they are
 what this skill covers.
 
@@ -30,8 +32,10 @@ Five gates. Gates 1, 3, and 4 run before you send the query; gates 2 and 5
 run before you use what came back. Each names the section that explains it;
 run them, do not just read them.
 
-1. **Code lookup via MCP, and HEAD has moved since `semcode-mcp` started?**
-   Any commit or rebase moves it, and on an stg branch so does every
+1. **Code lookup, and HEAD has moved since the index last saw it?** Through
+   the MCP that is since `semcode-mcp` started. The CLI has no long-lived
+   server and never indexes, so there it is since the last `semcode-index`
+   run. Any commit or rebase moves HEAD, and on an stg branch so does every
    `refresh`, `goto`, `push`, or `pop`. Reindex the changed files first:
    `semcode-index --git <range>..HEAD` -- on an stg branch the range start is
    `$(stg id {base})`, on a plain branch the upstream ref. If you cannot tell
@@ -69,6 +73,14 @@ shell exports it, so the Bash tool and the MCP server both inherit it. Check
 than passing `-d` guesses or searching the worktree: there is never a copy in
 the kernel tree.
 
+The MCP server may be absent on purpose. It keeps its query working set
+resident for the whole session, so a memory-constrained host disables the
+semcode plugin. A "failed to connect" notice for the semcode MCP server, or
+a session with no `mcp__semcode__*` tools, is therefore a configuration, not
+a fault to repair: do not re-enable the semcode plugin, edit the MCP
+configuration, or debug the server registration unless the user asks. Use
+the CLI for every lookup; each MCP lookup has a CLI spelling (tables below).
+
 Binaries are on `$PATH` (typically `~/.cargo/bin`: `semcode`, `semcode-index`,
 `semcode-mcp`, `semcode-lsp`). Locate them with `command -v semcode-mcp`,
 never a build tree such as `target/release` -- an MCP registration pointing
@@ -81,7 +93,11 @@ language: `semcode -q "lore ..."`. `semcode -q "lore --help"` fails with
 
 Pick by job:
 
-- **MCP for code lookups.** Structured, small, cheap.
+- **MCP for code lookups when the server is present; otherwise the CLI.**
+  The MCP is structured, small, cheap. Without it nothing is lost: every
+  code lookup has a CLI spelling (second table below;
+  `semcode -q "help"` prints the full list). Use those, and redirect to a
+  file when the result may be large.
 - **CLI for lore bodies and threads.** Redirect to a file and read the ranges
   you need; the MCP has an output cap you will hit on any thread of substance.
   Strip colour when saving: `sed 's/\x1b\[[0-9;]*m//g'`.
@@ -95,6 +111,17 @@ thus:
 | `message_id` | `-m <msgid>` |
 | `show_thread` / `verbose` | `--thread` / `-v` |
 | `limit` / `since_date` / `until_date` | `--limit N` / `--since D` / `--until D` |
+
+The code rules are phrased in MCP tool names too. The CLI spells them thus:
+
+| MCP tool | CLI `semcode -q "..."` |
+|---|---|
+| `find_function` / `find_type` | `func <name>` / `type <name>` |
+| `find_callers` / `find_calls` / `find_callchain` | `callers <name>` / `calls <name>` / `callchain <name>` |
+| `find_implementors` / `find_registrations` | `implementors <type>.<member>` / `registrations <name>` |
+| `grep_functions` / `vgrep_functions` | `grep [-v] <pattern>` / `vgrep <text>` |
+| `find_commit` (`git_ref`, `git_range`, `symbol_patterns`) | `commit [ref]`, `--git <range>`, `-s <symbol>` |
+| `vcommit_similar_commits` / `dig` / `list_branches` | `vcommit <text>` / `dig <commit>` / `branches` |
 
 ## Index freshness: the failure that looks like success
 
