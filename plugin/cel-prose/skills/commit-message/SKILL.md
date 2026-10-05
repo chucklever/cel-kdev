@@ -251,8 +251,10 @@ patch already carries. When present, the sign-off sorts last.
 ## Voice
 
 The commit body follows the voice rules in the
-cel-prose:prose-voice skill; load it before drafting. One rule
-specific to a commit message:
+cel-prose:prose-voice skill; load it before drafting. Run its
+"Before delivering: the pronoun walk" section on every draft and
+every edit of a message, over the whole message and not only the
+paragraph an edit touched. One rule specific to a commit message:
 
 - Do not pad to look thorough. A two-sentence message for a
   two-line fix is correct.

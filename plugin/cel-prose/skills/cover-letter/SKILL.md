@@ -407,7 +407,9 @@ forbids is the substance of that document.
 ## Voice
 
 The cover follows the voice rules in the cel-prose:prose-voice
-skill; load it before drafting.
+skill; load it before drafting. Run its "Before delivering: the
+pronoun walk" section on every draft and every edit of a cover,
+over the whole cover and not only the paragraph an edit touched.
 
 ## Example: recasting a patch roll-call
 

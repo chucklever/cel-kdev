@@ -129,10 +129,17 @@ documentation is ordinary prose and does follow them.
   that kind can exist, so the phrase has one reading ("has no
   effect," "makes no difference"). A floor, a payload, a
   lock, or a reference can be null or empty; negate the verb.
-- Every pronoun points at a named noun. "This fixes it," "this
-  is because," and a bare "This" opening a sentence after a
-  paragraph of setup leave the reader to guess which of the
-  preceding things is meant. "This patch" and "this series"
+- Every pronoun has an unambiguous antecedent: exactly one named
+  noun it can point at. Count the candidates by grammar, not by
+  which reading makes sense; the reader should not have to
+  pick. A pronoun with no named noun fails.
+  "This fixes it," "this is because," and a bare "This" opening
+  a sentence after a paragraph of setup leave the reader to
+  guess which of the preceding things is meant. A pronoun with
+  two candidates fails the same way. In "treats a want for a
+  write delegation from a client that holds a read delegation
+  as a request to upgrade it," "it" has two delegations to
+  choose from. Repeat the noun. "This patch" and "this series"
   name their noun and are fine. Name the antecedent in the
   sentence's own frame: in a comment or a why-paragraph, "the
   loop never exits because the socket stays locked"; in a
@@ -141,6 +148,20 @@ documentation is ordinary prose and does follow them.
   "This fixes the hang." A "which" that refers back to a whole
   clause is the same fault, and usually the second causal link
   the one-link rule forbids.
+- A demonstrative on a generic noun carries the pronoun fault
+  too. "That value," "that type," and "those two reasons" name
+  their noun but not their referent when two values or two
+  types are in play. In "nfs4_set_delegation() returns -EAGAIN
+  when the delegation conflicts, but the caller discards the
+  error, so that value never arrives," "that value" could be
+  the error or -EAGAIN. Write the value:
+  "so nfsd4_open_deleg_none_ext() never sees -EAGAIN." The same
+  goes for a pro-form that is not a pronoun ("the reverse,"
+  "does neither," "by then"): "A server that does neither"
+  becomes "A server that supports neither upgrade nor
+  downgrade." It goes as well for a bare "the client" or "the
+  file" in a paragraph that has two of them: "the NFS client
+  sending the OPEN," "the file being opened."
 - Dashes: do not reach for an em dash when drafting. The first
   choice is always a period. Split the clauses into separate
   sentences and let each one carry its own subject and verb.
@@ -164,6 +185,28 @@ documentation is ordinary prose and does follow them.
   /humanizer, only when a reviewer has flagged a draft as
   LLM-written or the user asks for that audit, and keep this
   file's rules where the two disagree.
+
+## Before delivering: the pronoun walk
+
+Stating the pronoun rules while drafting does not catch these
+faults; a pass over the finished text does. Before delivering a
+draft or an edit, walk the text and name the antecedent of every
+pronoun (it, its, they, them, this, that, these, those, which);
+every demonstrative on a noun ("this value," "that type," "those
+reasons"; "this patch" and "this series" pass); every pro-form
+("the reverse," "does neither," "by then," "the former," "the
+latter"); and every bare role noun ("the client," "the file") in
+a paragraph that has more than one of that kind. Where a second
+noun could fit, replace the pronoun with the noun. Where the
+antecedent is a whole clause, there is no noun to put in: split
+the sentence there and state what the clause did, or in a
+what-half recast it in the imperative, as the pronoun rules
+prescribe.
+
+On an edit, walk the whole text, not only the paragraph the edit
+touched: an edit can add the second candidate for a pronoun in a
+sentence it did not change. Change only the pronouns the walk
+faults; the rest of the text stays as it was.
 
 ## Words to drop
 
