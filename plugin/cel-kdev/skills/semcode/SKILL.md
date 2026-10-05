@@ -28,7 +28,7 @@ what this skill covers.
 
 ## Before the first query
 
-Five gates. Gates 1, 3, and 4 run before you send the query; gates 2 and 5
+Six gates. Gates 1, 3, 4, and 5 run before you send the query; gates 2 and 6
 run before you use what came back. Each names the section that explains it;
 run them, do not just read them.
 
@@ -61,11 +61,23 @@ run them, do not just read them.
    list remembered from elsewhere. A list it did not print cannot be
    answered from semcode: go to the marc.info fallback, not to another
    query. -- *Lore: coverage*
-4. **Expanding a thread?** By message-id. From a search, only with a small
+4. **First lore search of the session?** Refresh the mirror before sending
+   the query: bare `semcode-index --lore`, which fetches every archive `ls`
+   printed and cannot clone a new one. The mirror lags a day or two, and a
+   search that runs before the refresh can miss a reroll or reply posted
+   since the last one. When the question names one list, `semcode-index
+   --lore <list>` is cheaper, but only for a list `ls` printed; on any
+   other list it clones the entire archive. If you cannot tell whether this
+   session refreshed, refresh; it is idempotent. Give it a timeout above
+   the Bash default. If the refresh fails, search anyway and say "mirror
+   not refreshed" in the scope line. A "no replies" claim made later
+   refreshes again (step 1 of the sequence).
+   -- *Lore: coverage first, then freshness*
+5. **Expanding a thread?** By message-id. From a search, only with a small
    `limit`: the cost is a fixed per-message amount summed across every
    matched thread, and nothing shows you that number before you commit.
    -- *Searching is cheap*
-5. **Asserting absence or completeness, or did a lore or commit search feed
+6. **Asserting absence or completeness, or did a lore or commit search feed
    the conclusion?** Emit the scope line in the template's shape. A verified
    positive `find_function` hit does not need it. When the absence is "no
    replies" or "no review" on a thread -- including a thread that returned
@@ -291,7 +303,11 @@ archive lags a day or two, and lag is a reason to refresh, not a finding to
 report; a session once named the lag as the explanation and moved on to
 writing the changelog while the user was refreshing the archive by hand.
 
-1. Refresh the *named* archive:
+1. Refresh the *named* archive now, unless your context shows a
+   `semcode-index --lore` run covering it made for this same question
+   moments ago (gate 4). A refresh from earlier in the session does not
+   count: replies arrive after it regardless of how old the thread is. If
+   you cannot tell when the archive was last refreshed, refresh:
 
    ```bash
    semcode-index --lore netdev
@@ -347,8 +363,11 @@ writing the changelog while the user was refreshing the archive by hand.
 Report the outcome in the scope line below: the newest indexed timestamp
 from step 3 and whether the lore cross-check in step 4 ran.
 
-A bare `--lore` refreshes every archive ever indexed, lkml included -- far more
-work than checking one thread justifies.
+A bare `--lore` refreshes every archive `ls` prints and nothing else, so it
+cannot clone a new one; that is why gate 4 uses it. It is slower, not unsafe:
+one run with every list already current finished in under two minutes
+(2026-09-26), and a mirror several days behind takes longer, by an amount not
+measured. Name the list when one thread is all you are checking.
 
 ### Searching is cheap; expanding threads is what costs
 
