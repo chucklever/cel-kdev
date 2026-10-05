@@ -246,6 +246,19 @@ subsystem to itself -- have no vocabulary to check.
   Where the subsystem's own code uses "answer" for a peer outside
   this tree ("rpcbind did not answer"), keep it; the subject there
   is already the component.
+- "Say" in any form, as the verb for what a document, comment,
+  commit, output message, or person reports ("RFC 7530 Section
+  9.1.7 says," "the comment says"). Stands in for the force the
+  source carries in the argument, which is what the reader needs
+  to judge the change against: an RFC requires, permits, forbids,
+  or defines; a comment or commit explains or describes; a
+  reviewer asked, reported, or objected. Write that verb.
+  "States" is right only for a bare citation that carries no
+  force, and "claims" only where the source is in doubt. Quoted
+  text keeps "says." "Say" meaning "for example" ("(say, a
+  GETATTR)") is a different word and stays. The list traffic
+  writes "says" freely; as with casing, that does not vouch for
+  it.
 - "It's worth noting," "essentially," "importantly," "in order
   to." Do not stand in for anything. Delete the phrase and check that
   the meaning survived; it will.

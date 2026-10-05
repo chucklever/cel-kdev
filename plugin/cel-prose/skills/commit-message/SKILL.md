@@ -266,15 +266,15 @@ establishes the wrong behavior and its cause before naming the
 correction.
 
 ```
-commit: Fix path_patterns no-match message to say ANY (OR)
+commit: Fix path_patterns no-match message to report ANY (OR)
 
 The query tool's commit-summary output prints "No commits matched ALL N
 path pattern(s)" when a path filter excludes everything. path_patterns
 is OR'd, though: the filter keeps a commit when ANY pattern matches any
 changed file (matches_any_pattern), and the sibling author and subject
-messages already say "matched ANY". Only the path branch says "ALL".
+messages already read "matched ANY". Only the path branch prints "ALL".
 
-Say "ANY" to match the OR behavior, mirroring the same fix in the
+Print "ANY" to match the OR behavior, mirroring the same fix in the
 MCP server's find_commit and vcommit_similar_commits output. The
 regex and symbol messages, which really are AND'd, keep "ALL".
 ```
