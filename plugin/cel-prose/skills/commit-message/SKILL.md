@@ -20,13 +20,13 @@ disagree, this skill's more specific rule wins.
 **Linux kernel patches take one more file.** Read
 [references/kernel.md](references/kernel.md) before drafting one.
 Everything below still applies; the reference covers where the kernel
-departs from it -- subject case, the trailer block, sign-off ownership
+departs from it -- prefix casing, the trailer block, sign-off ownership
 -- and carries the kernel worked examples.
 
 ## The shape of a commit message
 
 ```
-component: imperative summary, no trailing period
+component: Imperative summary, no trailing period
 
 Body that opens with why the change is necessary -- the problem,
 the user-visible symptom, the invariant being restored -- before
@@ -41,17 +41,18 @@ The subject is a one-line claim a reader scans in `git log
 --oneline`, so it must read as a specific action, not a topic.
 
 - Prefix with the component, then `: `, then an imperative summary
-  (`fix`, `add`, `remove` -- not `fixed`, `adds`, `fixing`).
+  (`Fix`, `Add`, `Remove` -- not `Fixed`, `Adds`, `Fixing`).
 - Find the prevailing prefix by reading `git log --oneline` for the
   files you touched; match what that project already uses (`stg:`,
   `mcp:`, `reviewer:`, `scripts:`). Do not invent a new prefix where
   one is established, and do not impose one on a project whose log
   carries none -- the Internet-Draft repositories take a bare
   imperative summary.
-- Capitalization after the prefix follows the project, so read it off
-  the same `git log --oneline`: your own repositories capitalize the
-  summary (`stg: Scope the orientation call on a deep stack`), while
-  the Linux kernel lowercases it.
+- Capitalize the first word of the summary in your own repositories
+  (`stg: Scope the orientation call on a deep stack`) and in your
+  Linux kernel patches, where other contributors' lowercase
+  summaries do not set the case for yours. In any other project,
+  match the case its `git log --oneline` shows.
 - No trailing period. Keep it under ~70 columns; the summary should
   survive on its own.
 
@@ -258,9 +259,9 @@ specific to a commit message:
 
 ## Examples
 
-A fix in one of your own repositories: capitalized summary after the
-prefix, no trailers, and a body that establishes the wrong behavior
-and its cause before naming the correction.
+A fix in one of your own repositories: no trailers, and a body that
+establishes the wrong behavior and its cause before naming the
+correction.
 
 ```
 commit: Fix path_patterns no-match message to say ANY (OR)

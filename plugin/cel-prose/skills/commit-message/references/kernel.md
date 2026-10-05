@@ -10,23 +10,29 @@ cel-kdev:stg.
 ## Subject line
 
 ```
-subsystem: imperative summary, no trailing period
+subsystem: Imperative summary, no trailing period
 ```
 
-- Lowercase after the prefix. This is the one place the general rule
-  inverts: your own repositories capitalize the summary, the kernel
-  does not. The rule governs the summary that follows the colon,
-  never the prefix itself.
+- Capitalize the first word of the summary, as in your own
+  repositories: `NFSD: Fix a page leak in ...`. submitting-patches.rst
+  sets no summary case, and the maintainer profiles that do (tip,
+  KVM x86) require a capital, so a lowercase log records a
+  subsystem's habit, not a rule you must match. This holds in every
+  subsystem, whatever `git log --oneline` shows: other contributors
+  write `tls: fix ...`; your patch there reads `tls: Fix ...`, the
+  log's prefix with your summary case. Their lines do not set the
+  case for your own patches.
 - Prefix with the subsystem. For NFSD, SUNRPC, and NFS the prefix
   is `NFSD:`, `SUNRPC:`, `NFS:`, the proper casing from
   cel-prose:prose-voice, whatever `git log --oneline` shows: other
   contributors write `nfsd:` or `sunrpc:`, and their lines do not
-  set the prefix for your own patches. A contributor's patch keeps
-  the prefix it arrived with; do not recase it when applying. For
-  any other subsystem, read `git log --oneline` for the files you
-  touched and match the prefix it already uses, casing included
-  (`svcrdma:`, `xprtrdma:`). Do not invent a new prefix when one is
-  established.
+  set the prefix for your own patches. For any other subsystem,
+  read `git log --oneline` for the files you touched and match the
+  prefix it already uses, casing included (`svcrdma:`,
+  `xprtrdma:`). Do not invent a new prefix when one is established.
+  Both rules govern the subject you draft. A contributor's patch
+  keeps the case it arrived with, prefix and summary alike; do not
+  recase it when applying.
 - When `git log --oneline` on the touched files shows no established
   prefix (a new file or subsystem), derive one from the directory or
   nearest parent subsystem rather than dropping it; a prefix-less
@@ -151,7 +157,7 @@ arrives carrying one keeps it -- do not strip it when applying.
 A bug fix whose body leads with the symptom and the cause:
 
 ```
-NFSD: fix use-after-free in nfsd4_encode_fattr4
+NFSD: Fix use-after-free in nfsd4_encode_fattr4
 
 A client that closes a stateid while another thread is encoding
 GETATTR for the same file can free the nfs4_stid out from under the
@@ -168,14 +174,15 @@ Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
 ```
 
 The `Fixes:` line quotes the fixed commit's subject as its author
-wrote it, `nfsd:` and all; the casing rule governs the subject you
-are drafting, not a subject you quote.
+wrote it, lowercase `nfsd:` prefix, lowercase summary and all; the
+casing rules govern the subject you are drafting, not a subject you
+quote.
 
 An optimization with no bug to cite: the body leads with the cost
 the change removes and carries no `Fixes:`.
 
 ```
-SUNRPC: cache the svc_rqst maximum payload at allocation
+SUNRPC: Cache the svc_rqst maximum payload at allocation
 
 Every incoming call recomputes the maximum payload size from the
 transport's parameters, though the value is fixed for the life of
