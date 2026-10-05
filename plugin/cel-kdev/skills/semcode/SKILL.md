@@ -34,12 +34,22 @@ run them, do not just read them.
 
 1. **Code lookup, and HEAD has moved since the index last saw it?** Through
    the MCP that is since `semcode-mcp` started. The CLI has no long-lived
-   server and never indexes, so there it is since the last `semcode-index`
-   run. Any commit or rebase moves HEAD, and on an stg branch so does every
+   server and never indexes, so there it is since the last
+   `semcode-index --git` run that reached HEAD (a `--commits` run does not
+   count). Before a session's first CLI code lookup you cannot know when
+   that was, so treat HEAD as moved. Any commit or rebase moves HEAD, and
+   on an stg branch so does every
    `refresh`, `goto`, `push`, or `pop`. Reindex the changed files first:
    `semcode-index --git <range>..HEAD` -- on an stg branch the range start is
-   `$(stg id {base})`, on a plain branch the upstream ref. If you cannot tell
-   whether HEAD moved, run it; it is cheap and idempotent. The CLI's worktree
+   `$(stg id {base})`, on a plain branch the upstream ref. `semcode-index`
+   takes the repository from the current directory, and so does the range:
+   run it from the tree whose code you are asking about, or pass
+   `-s <tree>` and resolve the range there (`stg -C <tree> id {base}`). If
+   you cannot tell
+   whether HEAD moved or when the index last ran, run it; it is cheap and
+   idempotent. It refreshes only files the range's commits touch: if the
+   base may have moved since the index was built, a body from any other
+   file is unverified until gate 2 passes. The CLI's worktree
    overlay is not a substitute: it reflects uncommitted edits only, not
    committed-but-unindexed blobs. -- *Index freshness*
 2. **About to trust a returned body?** Grep the reported `path:start` in the
@@ -96,8 +106,18 @@ Pick by job:
 - **MCP for code lookups when the server is present; otherwise the CLI.**
   The MCP is structured, small, cheap. Without it nothing is lost: every
   code lookup has a CLI spelling (second table below;
-  `semcode -q "help"` prints the full list). Use those, and redirect to a
-  file when the result may be large.
+  `semcode -q "help"` prints the full list). Use those. Read a single
+  exact-name `func` or `type` directly. Send every other code query to a
+  file in the session scratchpad, never the worktree; `wc -l` it, then
+  read the ranges you need. The CLI
+  takes HEAD from the current
+  directory's repository, so run it from the indexed tree or pass
+  `semcode --git-repo <tree> -q "..."`. From any other directory a code
+  lookup fails as if the symbol were absent: `func` and `type` print "No
+  function" / "No type or typedef ... found at git SHA <that repository's
+  HEAD>" (all zeros outside any repository), and `callers` and `calls`
+  print "No function ... found in database" with no SHA. Both are
+  wrong-repo results, not absence.
 - **CLI for lore bodies and threads.** Redirect to a file and read the ranges
   you need; the MCP has an output cap you will hit on any thread of substance.
   Strip colour when saving: `sed 's/\x1b\[[0-9;]*m//g'`.
@@ -463,9 +483,14 @@ it is not.
   calls and function-like macros. A function reached only through an ops table
   -- `svc_tcp_recvfrom` via `svc_tcp_class` -- has no direct callers by
   construction.
-- **"not found at git SHA X"** means either the symbol is absent at X *or* the
-  file's current blob was never indexed. Check the tree before reporting
-  absence.
+- **"not found at git SHA X"**: through the CLI, first rule out the wrong
+  repository, and do the same for "found in database", which carries no
+  SHA. Unless you passed `--git-repo`, the lookup ran against the current
+  directory's repository: if `git rev-parse --show-toplevel` is not the
+  tree you meant to query, rerun with `--git-repo <tree>` (see *The two
+  front ends*). Otherwise the message means either the symbol is absent at
+  X *or* the file's current blob was never indexed. Check the tree before
+  reporting absence.
 - `vgrep_functions`, `vcommit_similar_commits`, and `vlore_similar_emails`
   need embeddings that may not be present in the database.
 
