@@ -98,7 +98,7 @@ documentation is ordinary prose and does follow them.
   reschedule tells netdev what netdev wrote. A slip in that
   derivation is what draws the reply. State the change and the
   constraint it operates under, then stop.
-- Cut throat-clearing and hedges that carry no information.
+- Cut throat-clearing and hedges that do not carry information.
   Test: if removing the phrase preserves the meaning, it was
   filler. "Words to drop" below lists the ones that recur.
 - Do not stack more than three nouns in a row. "RPC transport
@@ -106,7 +106,7 @@ documentation is ordinary prose and does follow them.
   noun modifies which. Break the stack with a preposition or a
   verb: "the completion handler for a transport reconnect."
 - Short declarative sentences. A causal chain stays connected:
-  "the record delivers no payload, so the loop never exits."
+  "the record does not deliver a payload, so the loop never exits."
   One link per sentence, though. Spend "so" or "because" once,
   and never hang an aside off a sentence that already carries
   one. The run-on a maintainer bounces is a sentence past
@@ -118,6 +118,17 @@ documentation is ordinary prose and does follow them.
   runs. Do not
   bullet-ize reasoning that already reads clearly, and do not
   restructure prose that is already clear.
+- Negate the verb, not the object. "The attempt does not pin a
+  floor," not "the attempt pins no floor." "No" on the object
+  noun is terse, but it hides the negation inside a noun phrase
+  and lets a reader attach it to the noun instead of the clause:
+  "pins no floor" can mean "pins a null floor." "Not" on the
+  verb negates the clause and only the clause. "No" stays on a noun
+  only where the noun is the subject of an active verb ("no
+  caller holds the lock"), or where nothing null or empty of
+  that kind can exist, so the phrase has one reading ("has no
+  effect," "makes no difference"). A floor, a payload, a
+  lock, or a reference can be null or empty; negate the verb.
 - Every pronoun points at a named noun. "This fixes it," "this
   is because," and a bare "This" opening a sentence after a
   paragraph of setup leave the reader to guess which of the
@@ -125,8 +136,8 @@ documentation is ordinary prose and does follow them.
   name their noun and are fine. Name the antecedent in the
   sentence's own frame: in a comment or a why-paragraph, "the
   loop never exits because the socket stays locked"; in a
-  commit message's what-half, the imperative already names
-  nothing, so "Retry the send after NFS4ERR_DELAY" replaces
+  commit message's what-half, the imperative does not name an
+  antecedent, so "Retry the send after NFS4ERR_DELAY" replaces
   "This fixes the hang." A "which" that refers back to a whole
   clause is the same fault, and usually the second causal link
   the one-link rule forbids.
@@ -141,7 +152,7 @@ documentation is ordinary prose and does follow them.
   through (a commit citation, "(patch 3)", an RFC section);
   commas around a tight appositive. A semicolon has no such
   case; write two sentences. An occasional "--" aside is fine
-  on a sentence that carries no causal link. Density is the
+  on a sentence that does not carry a causal link. Density is the
   tell.
 - Kernel maintainers distrust prose that reads as LLM-generated.
   The bullets above are the pass for that; do not load a
@@ -182,5 +193,5 @@ subsystem to itself -- have no vocabulary to check.
   labeling one point honest implies the rest are not. State the
   point.
 - "It's worth noting," "essentially," "importantly," "in order
-  to." Stand in for nothing. Delete the phrase and check that
+  to." Do not stand in for anything. Delete the phrase and check that
   the meaning survived; it will.
