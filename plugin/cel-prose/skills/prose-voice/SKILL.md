@@ -235,6 +235,17 @@ subsystem to itself -- have no vocabulary to check.
 - "Honest," "honestly," as framing. Honesty is assumed, and
   labeling one point honest implies the rest are not. State the
   point.
+- "Answer" in any form, for a component in this tree replying to
+  a request ("the request is answered with the cached reply").
+  Stands in for the component that sends the reply: the sentence
+  names the request and the payload and leaves out who sends it,
+  the first bullet's fault with a different verb. Name the
+  component as the subject and keep the action in the verb: "NFSD
+  replies with the cached reply from so_replay." Swapping in
+  "replied to" while the request stays the subject fixes nothing.
+  Where the subsystem's own code uses "answer" for a peer outside
+  this tree ("rpcbind did not answer"), keep it; the subject there
+  is already the component.
 - "It's worth noting," "essentially," "importantly," "in order
   to." Do not stand in for anything. Delete the phrase and check that
   the meaning survived; it will.
