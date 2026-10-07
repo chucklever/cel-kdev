@@ -108,7 +108,7 @@ strategy is `file`, b4 stores per-series state under
 
 | File | Contents |
 | ---- | -------- |
-| `cover` | Cover letter (subject, blank line, body) |
+| `cover` | Cover letter (subject, blank line, body). b4's enroll template ends it with a `Signed-off-by:` line; delete that line (cel-prose:cover-letter). `To:`/`Cc:` trailers are recipient data and may stay |
 | `changelog` | Per-revision changelog, newest first |
 | `recipients` | Per-patch To/Cc from `--auto-to-cc` |
 
@@ -294,7 +294,7 @@ series never depends on the sentence.
 
 | Step | Command |
 | ---- | ------- |
-| Edit cover letter | See [references/cover-strategies.md](references/cover-strategies.md); to name the base branch in the prose, "Describing the base branch" above |
+| Edit cover letter | See [references/cover-strategies.md](references/cover-strategies.md); delete the `Signed-off-by:` line b4's enroll template put there (cel-prose:cover-letter); to name the base branch in the prose, "Describing the base branch" above |
 | Populate To/Cc from MAINTAINERS | `b4 prep --auto-to-cc` |
 | Show series state | `b4 prep --show-info` |
 | Export patches to directory | `b4 prep --format-patch <dir>` |

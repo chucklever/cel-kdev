@@ -40,6 +40,14 @@ cover coordinates the series but never substitutes for a patch's own
 commit message -- anything a single patch needs to justify itself
 belongs in that patch, not only in the cover.
 
+A cover therefore carries no `Signed-off-by:` trailer. A sign-off
+certifies the DCO for a commit, and there is no commit; the sign-off
+belongs on each patch. A `Signed-off-by:` line anywhere in the cover
+text, at the end of the body or above the `---` that starts a
+changelog, was left by b4's enroll template or by an earlier edit.
+Delete it on every draft and every edit, whether or not the edit
+touched that line.
+
 ## Before drafting: sourcing the rationale
 
 The cover carries what the patches do not, so the patches cannot be
@@ -338,6 +346,9 @@ reviewing side.
   it only when the session knows tests beyond a build were run --
   from the author, or from having run them -- and the cover does
   not say so.
+- A `Signed-off-by:` line in the cover is a defect to report, on any
+  surface that is not itself a commit; see "What a cover letter is
+  for".
 
 ## Length
 
