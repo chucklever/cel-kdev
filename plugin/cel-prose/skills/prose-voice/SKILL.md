@@ -272,6 +272,15 @@ subsystem to itself -- have no vocabulary to check.
   GETATTR)") is a different word and stays. The list traffic
   writes "says" freely; as with casing, that does not vouch for
   it.
+- "Float" in any form, for making a proposal ("the approach
+  floated in v2," "a fix floated on the list"). Stands in for the
+  form the proposal took and how firm it was, which is what the
+  reader needs to weigh it: a question asked in review, a
+  suggestion, a patch posted to the list, a design set out in a
+  cover letter. Name the source and write that verb: "a reviewer
+  asked in review of v2 whether," "the v2 cover letter proposed,"
+  "the author posted a fix to the list." Swapping in "proposed"
+  while the sentence stays otherwise unchanged fixes nothing.
 - "It's worth noting," "essentially," "importantly," "in order
   to." Do not stand in for anything. Delete the phrase and check that
   the meaning survived; it will.
