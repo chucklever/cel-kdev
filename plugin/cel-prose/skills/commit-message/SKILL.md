@@ -109,7 +109,11 @@ the allocation is per-request. Keep a number only when the
 argument turns on it -- three entries justify a linear scan,
 one caller justifies inlining -- and then count it (the
 diffstat, `wc -l`) and give the exact figure. A count the
-diffstat already shows is padding even when exact. A
+diffstat already shows is padding even when exact. A count the
+argument turns on is used by a clause that follows it ("two
+callers remain, so the helper stays"); a count followed only by
+the items it counts is an announcement, and prose-voice's bullet
+on announcing sentences applies: the sentence goes. A
 measurement is different: report it as measured, with the run
 count or spread that bounds it, as references/kernel.md
 requires for any performance claim.

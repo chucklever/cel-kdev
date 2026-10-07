@@ -118,6 +118,19 @@ documentation is ordinary prose and does follow them.
   runs. Do not
   bullet-ize reasoning that already reads clearly, and do not
   restructure prose that is already clear.
+- Do not announce what the next sentences will list ("Two defects
+  remain.", "Three things changed.", "There are two cases."),
+  whether the announcement opens the paragraph or sits inside it.
+  A count followed by an enumeration is an LLM cadence, like the
+  rule of three, and the sentence carries nothing the enumeration
+  does not. Put the frame into the first content sentence ("After
+  this series, X still ..." in place of "Two defects remain. X
+  still ..."; "When X, ..." in place of "There are two cases. When
+  X, ...") and let each item carry its own sentence. A lead-in
+  before a true bulleted list is different: that is the colon case
+  the dash rule allows, and the list is what carries the count.
+  This holds when fixing a run-on: split it into content
+  sentences, never into a header sentence plus content.
 - Negate the verb, not the object. "The attempt does not pin a
   floor," not "the attempt pins no floor." "No" on the object
   noun is terse, but it hides the negation inside a noun phrase
